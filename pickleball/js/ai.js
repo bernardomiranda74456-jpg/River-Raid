@@ -81,6 +81,10 @@ PB.AI = (function () {
       a.letGo = margin > 0.15 && Math.random() < readable * (0.25 + 0.65 * p.skill);
     }
 
+    if (m.state !== 'live') {
+      p.tx = p.x; p.tz = p.z;                 // hold still between points
+      return;
+    }
     if (m.state === 'ready') {
       if (p.id === m.serverIdx) { p.tx = p.x; p.tz = p.z; return; }
       if (p.id === m.receiverIdx) { p.tx = p.x; p.tz = p.z; return; }

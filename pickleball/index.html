@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d1622">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Jogo de pickleball para celular com simples, duplas, 1 ou 2 jogadores e regras oficiais.">
+<title>Pickleball</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; overflow: hidden; background: #0b131d; color: #eaf2f8;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overscroll-behavior: none; user-select: none; -webkit-user-select: none;
+  }
+  #app { position: fixed; inset: 0; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+  .screen {
+    position: absolute; inset: 0; display: none; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px;
+    padding: calc(18px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom));
+    background: radial-gradient(120% 90% at 50% 0%, #1d3a56 0%, #0b131d 62%);
+    overflow-y: auto; z-index: 10;
+  }
+  .screen.on { display: flex; }
+  .screen.sheet { background: rgba(6, 11, 18, 0.88); backdrop-filter: blur(6px); }
+
+  h1 { font-size: clamp(30px, 10vw, 52px); letter-spacing: 2px; font-weight: 800; }
+  h1 span { color: #d9ff3d; }
+  h2 { font-size: 19px; font-weight: 700; margin-bottom: 2px; }
+  .tag { color: #8fa7bb; font-size: 13px; text-align: center; max-width: 320px; line-height: 1.45; }
+
+  .card { width: min(400px, 100%); display: flex; flex-direction: column; gap: 16px; }
+  .group { display: flex; flex-direction: column; gap: 7px; }
+  .label { font-size: 11px; letter-spacing: 1.4px; color: #7f9ab1; font-weight: 700; text-transform: uppercase; }
+  .opts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .opt {
+    flex: 1 1 0; min-width: 92px; padding: 12px 8px; border-radius: 12px; border: 1.5px solid #24384c;
+    background: #131f2c; color: #cfe0ee; font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: transform .06s ease, background .15s, border-color .15s;
+  }
+  .opt small { display: block; font-weight: 500; font-size: 11px; color: #7f9ab1; margin-top: 3px; }
+  .opt[aria-pressed="true"] { background: #1d4f74; border-color: #4fd0ff; color: #fff; }
+  .opt[aria-pressed="true"] small { color: #b9e6ff; }
+  .opt:active { transform: scale(.97); }
+  .opt[hidden] { display: none; }
+
+  .btn {
+    padding: 15px 22px; border-radius: 14px; border: none; font-size: 16px; font-weight: 800;
+    background: #d9ff3d; color: #12202c; cursor: pointer; letter-spacing: .5px; width: 100%;
+  }
+  .btn.ghost { background: transparent; border: 1.5px solid #2c4258; color: #cfe0ee; font-weight: 600; }
+  .btn:active { transform: scale(.98); }
+  .row { display: flex; gap: 10px; width: min(400px, 100%); }
+
+  #pauseBtn {
+    position: absolute; z-index: 6; top: calc(10px + env(safe-area-inset-top)); right: 12px;
+    width: 42px; height: 42px; border-radius: 12px; border: none;
+    background: rgba(9,16,24,.72); color: #eaf2f8; font-size: 15px; cursor: pointer; display: none;
+  }
+  #pauseBtn.on { display: block; }
+
+  .how { width: min(420px, 100%); display: flex; flex-direction: column; gap: 11px; }
+  .how div { background: #101c28; border: 1px solid #1e3346; border-radius: 12px; padding: 11px 13px; font-size: 13.5px; line-height: 1.5; color: #cfe0ee; }
+  .how b { color: #d9ff3d; }
+  .final { font-size: 46px; font-weight: 800; letter-spacing: 2px; }
+  .muted { color: #7f9ab1; font-size: 13px; }
+  .foot { position: absolute; bottom: calc(10px + env(safe-area-inset-bottom)); font-size: 11px; color: #4d6478; }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+  <button id="pauseBtn" aria-label="Pausar">⏸</button>
+
+  <!-- título -->
+  <section id="scr-title" class="screen on">
+    <h1>PICKLE<span>BALL</span></h1>
+    <p class="tag">Simples ou duplas, sozinho ou com um amigo no mesmo aparelho. Regras oficiais, cozinha e tudo.</p>
+    <div class="card">
+      <button class="btn" id="btn-play">JOGAR</button>
+      <div class="row">
+        <button class="btn ghost" id="btn-how">Como jogar</button>
+        <button class="btn ghost" id="btn-sound">🔊 Som</button>
+      </div>
+    </div>
+    <div class="foot">Dica: vire o celular na horizontal para uma visão mais ampla</div>
+  </section>
+
+  <!-- configuração -->
+  <section id="scr-setup" class="screen">
+    <div class="card">
+      <h2>Configurar partida</h2>
+      <div class="group">
+        <div class="label">Formato</div>
+        <div class="opts" data-group="format">
+          <button class="opt" data-val="singles">Simples<small>1 contra 1</small></button>
+          <button class="opt" data-val="doubles">Duplas<small>2 contra 2</small></button>
+        </div>
+      </div>
+      <div class="group">
+        <div class="label">Jogadores</div>
+        <div class="opts" data-group="humans">
+          <button class="opt" data-val="1">Sozinho<small>contra a CPU</small></button>
+          <button class="opt" data-val="2">Dois jogadores<small>mesmo aparelho</small></button>
+        </div>
+      </div>
+      <div class="group" id="grp-arrangement">
+        <div class="label">Vocês dois vão…</div>
+        <div class="opts" data-group="arrangement">
+          <button class="opt" data-val="coop">Jogar juntos<small>dupla contra a CPU</small></button>
+          <button class="opt" data-val="versus">Um contra o outro<small>cada um com um parceiro CPU</small></button>
+        </div>
+      </div>
+      <div class="group">
+        <div class="label">Dificuldade</div>
+        <div class="opts" data-group="difficulty">
+          <button class="opt" data-val="facil">Fácil<small>golpe automático</small></button>
+          <button class="opt" data-val="normal">Normal<small>faltas assistidas</small></button>
+          <button class="opt" data-val="dificil">Difícil<small>regras sem perdão</small></button>
+        </div>
+      </div>
+      <div class="group">
+        <div class="label">Partida até</div>
+        <div class="opts" data-group="targetPoints">
+          <button class="opt" data-val="7">7 pontos</button>
+          <button class="opt" data-val="11">11 pontos</button>
+          <button class="opt" data-val="15">15 pontos</button>
+        </div>
+      </div>
+      <button class="btn" id="btn-start">COMEÇAR</button>
+      <button class="btn ghost" id="btn-back">Voltar</button>
+    </div>
+  </section>
+
+  <!-- como jogar -->
+  <section id="scr-how" class="screen">
+    <div class="how">
+      <h2>Como jogar</h2>
+      <div><b>Mover:</b> arraste o dedo em qualquer lugar da sua metade da tela. O jogador acompanha o dedo.</div>
+      <div><b>Golpear:</b> dê um <b>flick</b> (deslize rápido) para cima na hora da bola.<br>
+        • rápido e longo = <b>drive</b> no fundo<br>
+        • rápido e curto = <b>voleio</b> firme<br>
+        • lento e longo = <b>lob</b> por cima<br>
+        • lento e curto = <b>dink</b> na cozinha<br>
+        A direção do flick define para onde a bola vai.</div>
+      <div><b>Sacar:</b> deslize para cima. O saque é por baixo, na diagonal, e precisa passar da cozinha.</div>
+      <div><b>Regra dos dois quiques:</b> o saque tem que quicar, e a devolução também. Só depois vale voleio.</div>
+      <div><b>Cozinha (zona de não-voleio):</b> os 2,13 m junto à rede. Não dá para bater na bola antes do quique estando lá dentro — nem entrar por impulso logo depois do voleio.</div>
+      <div><b>Pontuação:</b> só quem saca pontua. Nas duplas, os dois parceiros sacam antes de passar o saque (o jogo começa em 0-0-2). Partida com 2 de vantagem.</div>
+      <div class="muted">Dois jogadores no mesmo aparelho: no modo “um contra o outro” a tela divide em duas, cada um com a sua visão. No modo “juntos”, quem toca a metade esquerda controla o jogador da esquerda.</div>
+      <button class="btn ghost" id="btn-how-back">Voltar</button>
+    </div>
+  </section>
+
+  <!-- pausa -->
+  <section id="scr-pause" class="screen sheet">
+    <div class="card">
+      <h2>Pausa</h2>
+      <button class="btn" id="btn-resume">Continuar</button>
+      <button class="btn ghost" id="btn-restart">Reiniciar partida</button>
+      <button class="btn ghost" id="btn-quit">Sair para o menu</button>
+    </div>
+  </section>
+
+  <!-- fim -->
+  <section id="scr-over" class="screen sheet">
+    <div class="card" style="align-items:center;text-align:center">
+      <h2 id="over-title">Fim de jogo</h2>
+      <div class="final" id="over-score">11 - 5</div>
+      <p class="muted" id="over-sub"></p>
+      <button class="btn" id="btn-rematch">Revanche</button>
+      <button class="btn ghost" id="btn-menu">Menu</button>
+    </div>
+  </section>
+</div>
+
+<script src="js/court.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/shots.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/match.js"></script>
+<script src="js/render.js"></script>
+<script src="js/input.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
