@@ -65,6 +65,19 @@ Bola de plástico de 2,9 pol e 0,8 oz: gravidade, arrasto quadrático (a bola
 numericamente contra o arrasto, então cada tacada realmente chega ao alvo
 escolhido — drives saem a ~38 mph, dinks a ~15 mph.
 
+## Versão nativa (Pickleball.swiftpm)
+
+`Pickleball.swiftpm/` é a mesma simulação portada para Swift, com a quadra, a
+física, as regras e a IA idênticas às da versão web. A tela é desenhada com
+SpriteKit (câmera fixa, cenário construído uma vez e só os atores atualizados
+por quadro), os menus são SwiftUI e o toque é multitoque nativo — dois dedos
+funcionam ao mesmo tempo, e no modo "um contra o outro" cada metade da tela é
+uma cena com a perspectiva do seu jogador.
+
+Diferenças em relação à web: sem áudio sintetizado (usa vibração/haptics) e sem
+rastro da bola. Abra a pasta no Swift Playgrounds (iPad) ou no Xcode e rode em
+um dispositivo/simulador iOS 15.2+.
+
 ## Estrutura
 
 ```
@@ -79,4 +92,11 @@ pickleball/
   js/input.js       arrastar para mover, flick para golpear
   js/audio.js       sons sintetizados (sem arquivos)
   js/main.js        telas e laço principal
+
+Pickleball.swiftpm/
+  Sources/Court.swift, Physics.swift, Shots.swift, Match.swift, AI.swift
+                    porte direto do núcleo de simulação
+  Sources/GameScene.swift   render SpriteKit + toque multitoque
+  Sources/GameModel.swift   estado, laço e haptics
+  Sources/ContentView.swift menus SwiftUI
 ```
