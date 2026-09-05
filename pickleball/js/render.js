@@ -123,8 +123,9 @@ PB.Renderer = (function () {
       ctx.fillRect(vp.x, vp.y, vp.w, vp.h);
 
       this.drawStands(ctx, cam);
-      // ground plane, stopping at the back fence
-      this.quad(ctx, cam, [[-60, -42], [60, -42], [60, FENCE_Z], [-60, FENCE_Z]], COL.surround);
+      // ground plane, stopping at the back fence (mirrored for the far camera)
+      const F = cam.side === 1 ? -1 : 1;
+      this.quad(ctx, cam, [[-60, -42 * F], [60, -42 * F], [60, FENCE_Z * F], [-60, FENCE_Z * F]], COL.surround);
       this.drawFence(ctx, cam);
       this.drawCourt(ctx, cam);
 
@@ -144,6 +145,7 @@ PB.Renderer = (function () {
     }
 
     drawFence(ctx, cam) {
+      const F = cam.side === 1 ? -1 : 1;
       const mesh = (pts, fill) => {
         ctx.beginPath();
         for (let i = 0; i < pts.length; i++) {
@@ -155,25 +157,27 @@ PB.Renderer = (function () {
         ctx.fill();
       };
       // side fences first, then the back wall
+      const FZ = FENCE_Z * F;
       for (const sx of [-FENCE_X, FENCE_X]) {
-        mesh([[sx, 0, -30], [sx, FENCE_H, -30], [sx, FENCE_H, FENCE_Z], [sx, 0, FENCE_Z]], 'rgba(16,32,42,0.55)');
+        mesh([[sx, 0, -30 * F], [sx, FENCE_H, -30 * F], [sx, FENCE_H, FZ], [sx, 0, FZ]], 'rgba(16,32,42,0.55)');
       }
-      mesh([[-FENCE_X, 0, FENCE_Z], [-FENCE_X, FENCE_H, FENCE_Z], [FENCE_X, FENCE_H, FENCE_Z], [FENCE_X, 0, FENCE_Z]], 'rgba(14,28,38,0.72)');
+      mesh([[-FENCE_X, 0, FZ], [-FENCE_X, FENCE_H, FZ], [FENCE_X, FENCE_H, FZ], [FENCE_X, 0, FZ]], 'rgba(14,28,38,0.72)');
       // fence mesh lines + a sponsor band, the thing that reads as "a real venue"
       ctx.strokeStyle = 'rgba(255,255,255,0.07)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       for (let i = -FENCE_X; i <= FENCE_X; i += 3) {
-        const a = cam.proj(i, 0, FENCE_Z), b = cam.proj(i, FENCE_H, FENCE_Z);
+        const a = cam.proj(i, 0, FZ), b = cam.proj(i, FENCE_H, FZ);
         ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
       }
       for (let hgt = 1; hgt < FENCE_H; hgt += 2) {
-        const a = cam.proj(-FENCE_X, hgt, FENCE_Z), b = cam.proj(FENCE_X, hgt, FENCE_Z);
+        const a = cam.proj(-FENCE_X, hgt, FZ), b = cam.proj(FENCE_X, hgt, FZ);
         ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
       }
       ctx.stroke();
-      mesh([[-FENCE_X, 2.2, FENCE_Z - 0.05], [-FENCE_X, 4.6, FENCE_Z - 0.05], [FENCE_X, 4.6, FENCE_Z - 0.05], [FENCE_X, 2.2, FENCE_Z - 0.05]], 'rgba(20,90,120,0.85)');
-      const a = cam.proj(0, 3.4, FENCE_Z - 0.06);
+      const bz = FZ - 0.05 * F;
+      mesh([[-FENCE_X, 2.2, bz], [-FENCE_X, 4.6, bz], [FENCE_X, 4.6, bz], [FENCE_X, 2.2, bz]], 'rgba(20,90,120,0.85)');
+      const a = cam.proj(0, 3.4, bz - 0.01 * F);
       ctx.save();
       ctx.font = `700 ${Math.max(7, a.s * 0.9)}px system-ui, sans-serif`;
       ctx.textAlign = 'center';
@@ -185,7 +189,7 @@ PB.Renderer = (function () {
     // Grandstand and light towers, drawn in world space so they sit correctly
     // behind the fence in every viewport shape.
     drawStands(ctx, cam) {
-      const Z = 41, X = 52, H = 21;
+      const Z = 41 * (cam.side === 1 ? -1 : 1), X = 52, H = 21;
       const poly = (pts, fill) => {
         ctx.beginPath();
         for (let i = 0; i < pts.length; i++) {
@@ -217,11 +221,12 @@ PB.Renderer = (function () {
 
       // floodlights
       for (const px of [-23, 23]) {
-        const base = cam.proj(px, 0, Z - 4), top = cam.proj(px, 32, Z - 4);
+        const zz = Z + (Z < 0 ? 4 : -4);
+        const base = cam.proj(px, 0, zz), top = cam.proj(px, 32, zz);
         ctx.strokeStyle = '#1a2a3a';
         ctx.lineWidth = Math.max(2, base.s * 0.5);
         ctx.beginPath(); ctx.moveTo(base.x, base.y); ctx.lineTo(top.x, top.y); ctx.stroke();
-        const lamp = cam.proj(px, 33.5, Z - 4);
+        const lamp = cam.proj(px, 33.5, zz);
         const r = Math.max(6, lamp.s * 4.5);
         const glow = ctx.createRadialGradient(lamp.x, lamp.y, 0, lamp.x, lamp.y, r);
         glow.addColorStop(0, 'rgba(255,246,214,0.55)');
@@ -513,6 +518,17 @@ PB.Renderer = (function () {
     // ── overlays ───────────────────────────────────────────────────────────
     drawViewHud(ctx, m, v, me) {
       const r = v.rect;
+      if (m.banner) this.drawBanner(ctx, m, r);
+      if (m.hint) {
+        ctx.save();
+        ctx.font = '600 13px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(255,225,120,0.95)';
+        ctx.shadowColor = 'rgba(0,0,0,0.7)';
+        ctx.shadowBlur = 6;
+        ctx.fillText(m.hint, r.x + r.w / 2, r.y + r.h - 18);
+        ctx.restore();
+      }
       if (m.state === 'ready' && me && m.players[m.serverIdx] === me) {
         this.centerText(ctx, r, 'DESLIZE PARA SACAR', r.y + r.h * 0.62, 15, 'rgba(255,255,255,0.92)');
         this.centerText(ctx, r, 'curto = curto  •  longo = fundo', r.y + r.h * 0.62 + 18, 11, 'rgba(255,255,255,0.6)');
@@ -534,53 +550,44 @@ PB.Renderer = (function () {
 
     drawHud(ctx, m) {
       const w = this.w;
-      const pad = 10;
       const boxW = 168, boxH = 44;
-      const x = w / 2 - boxW / 2, y = pad;
+      const x = w / 2 - boxW / 2;
+      // in split screen the scoreboard sits on the seam so both players read it
+      const y = m.versus ? Math.round(this.h / 2 - boxH / 2) : 10;
       ctx.save();
-      ctx.fillStyle = 'rgba(8,14,22,0.72)';
+      ctx.fillStyle = 'rgba(8,14,22,0.78)';
       this.roundRect(ctx, x, y, boxW, boxH, 10);
       ctx.fill();
 
-      const s = m.servingTeam, r = 1 - s;
+      const s = m.servingTeam;
       ctx.font = '700 22px system-ui, -apple-system, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillStyle = '#fff';
       ctx.fillText(m.scoreText(), x + boxW / 2, y + 27);
       ctx.font = '600 10px system-ui, sans-serif';
       ctx.fillStyle = COL.team[s].shirt;
-      ctx.fillText(m.isDoubles() ? 'SACA  ' + (s === 0 ? 'TIME 1' : 'TIME 2') : 'SACA  ' + (s === 0 ? 'TIME 1' : 'TIME 2'),
-        x + boxW / 2, y + 39);
+      ctx.fillText('SACA  ' + (s === 0 ? 'TIME 1' : 'TIME 2'), x + boxW / 2, y + 39);
       ctx.restore();
+    }
 
-      if (m.banner) {
-        const t = m.banner;
-        const bw = 236, bh = 62;
-        const bx = w / 2 - bw / 2, by = this.h / 2 - bh / 2;
-        ctx.save();
-        ctx.fillStyle = 'rgba(8,14,22,0.86)';
-        this.roundRect(ctx, bx, by, bw, bh, 12);
-        ctx.fill();
-        ctx.textAlign = 'center';
-        ctx.fillStyle = COL.team[t.team].shirt;
-        ctx.font = '700 20px system-ui, sans-serif';
-        ctx.fillText(t.label, w / 2, by + 26);
-        ctx.fillStyle = 'rgba(255,255,255,0.75)';
-        ctx.font = '600 12px system-ui, sans-serif';
-        ctx.fillText(t.sideOut ? 'Troca de saque' : 'Ponto ' + (t.team === 0 ? 'Time 1' : 'Time 2'), w / 2, by + 46);
-        ctx.restore();
-      }
-
-      if (m.hint) {
-        ctx.save();
-        ctx.font = '600 13px system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = 'rgba(255,225,120,0.95)';
-        ctx.shadowColor = 'rgba(0,0,0,0.7)';
-        ctx.shadowBlur = 6;
-        ctx.fillText(m.hint, this.w / 2, this.h - 24);
-        ctx.restore();
-      }
+    drawBanner(ctx, m, rect) {
+      const t = m.banner;
+      const bw = Math.min(236, rect.w - 24), bh = 62;
+      const bx = rect.x + rect.w / 2 - bw / 2;
+      const by = rect.y + rect.h * 0.42 - bh / 2;
+      ctx.save();
+      ctx.fillStyle = 'rgba(8,14,22,0.86)';
+      this.roundRect(ctx, bx, by, bw, bh, 12);
+      ctx.fill();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = COL.team[t.team].shirt;
+      ctx.font = '700 20px system-ui, sans-serif';
+      ctx.fillText(t.label, bx + bw / 2, by + 26);
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.font = '600 12px system-ui, sans-serif';
+      ctx.fillText(t.sideOut ? 'Troca de saque' : 'Ponto ' + (t.team === 0 ? 'Time 1' : 'Time 2'),
+        bx + bw / 2, by + 46);
+      ctx.restore();
     }
 
     drawTouch(ctx, input) {
