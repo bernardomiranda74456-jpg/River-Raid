@@ -7,18 +7,24 @@
   const input = new PB.Input(canvas);
 
   const DEFAULTS = { format: 'singles', humans: '1', arrangement: 'coop', difficulty: 'normal', targetPoints: '11' };
+  // Storage can throw outright (private mode, sandboxed frame, site data blocked),
+  // so every read and write goes through here.
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* not available */ } },
+  };
   let cfg = load();
   let match = null;
   let last = 0;
-  let sound = localStorage.getItem('pb.sound') !== '0';
+  let sound = store.get('pb.sound') !== '0';
 
   function load() {
     try {
-      const raw = JSON.parse(localStorage.getItem('pb.cfg') || '{}');
+      const raw = JSON.parse(store.get('pb.cfg') || '{}');
       return Object.assign({}, DEFAULTS, raw);
     } catch (e) { return Object.assign({}, DEFAULTS); }
   }
-  function save() { try { localStorage.setItem('pb.cfg', JSON.stringify(cfg)); } catch (e) { /* private mode */ } }
+  function save() { store.set('pb.cfg', JSON.stringify(cfg)); }
 
   // ── screens ──────────────────────────────────────────────────────────────
   const screens = ['scr-title', 'scr-setup', 'scr-how', 'scr-pause', 'scr-over'];
@@ -61,7 +67,7 @@
     sound = !sound;
     PB.Audio.init();
     PB.Audio.setMuted(!sound);
-    localStorage.setItem('pb.sound', sound ? '1' : '0');
+    store.set('pb.sound', sound ? '1' : '0');
     // exposed for debugging and automated play-testing
   window.PBGame = { get match() { return match; }, input, renderer, start, cfg: () => cfg };
 

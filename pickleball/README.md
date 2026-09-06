@@ -8,6 +8,11 @@ Jogo de pickleball para celular, com regras oficiais, feito em HTML5 Canvas puro
 **Web (qualquer celular):** abra `pickleball/index.html` — funciona direto do
 arquivo ou servido por HTTP. Funciona offline.
 
+**Arquivo único:** `pickleball/pickleball-single.html` tem tudo embutido (HTML,
+CSS e JS num arquivo só, ~91 KB). É o jeito mais fácil de mandar para um
+celular ou iPad: AirDrop, e-mail ou qualquer serviço de arquivos, e abrir no
+navegador. Regenere com `node build-single.js` dentro de `pickleball/`.
+
 **iPad/iPhone (nativo):** abra `Pickleball.swiftpm` no Swift Playgrounds ou no Xcode.
 
 ## Modos
