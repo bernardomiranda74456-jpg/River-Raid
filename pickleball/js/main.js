@@ -68,10 +68,7 @@
     PB.Audio.init();
     PB.Audio.setMuted(!sound);
     store.set('pb.sound', sound ? '1' : '0');
-    // exposed for debugging and automated play-testing
-  window.PBGame = { get match() { return match; }, input, renderer, start, cfg: () => cfg };
-
-  $('btn-sound').textContent = sound ? '🔊 Som' : '🔇 Som';
+    $('btn-sound').textContent = sound ? '🔊 Som' : '🔇 Som';
   };
   $('btn-start').onclick = () => start();
   $('pauseBtn').onclick = () => { if (match) { match.paused = true; show('scr-pause'); } };

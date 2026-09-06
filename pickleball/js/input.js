@@ -40,6 +40,7 @@ PB.Input = (function () {
       // keyboard fallback so the game is playable on a desktop too
       this.keys = {};
       window.addEventListener('keydown', e => {
+        if (!this.enabled) return;              // menus own the keyboard
         this.keys[e.code] = true;
         if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) >= 0) e.preventDefault();
         if (e.code === 'Space') this.kbSwipe('p1', 0, 0.65, true, true);

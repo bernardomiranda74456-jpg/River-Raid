@@ -94,6 +94,7 @@ PB.Match = (function () {
       this.winner = -1;
       this.pred = null;
       this.paused = false;
+      this.pendingSwing = {};
       this.prepareServe();
     }
 
@@ -208,13 +209,14 @@ PB.Match = (function () {
       this.events.push({ type: 'hit', style: 'serve', x: b.x, z: b.z });
     }
 
-    // Legal service target for a given aim strength (assist keeps it inside).
+    // Legal service target. `lateral` is world-space (-1 = toward -x) and maps
+    // continuously across the width of the diagonal box.
     serveTarget(lateral, depth, clampInside) {
-      const rTeam = 1 - this.servingTeam;
-      const rSign = C.teamSign(rTeam);
-      const xs = -this.serveXSign;
-      let x = xs * (1.1 + Math.abs(lateral) * 8.3);
-      if (lateral * xs < 0) x = xs * (1.1 + (1 - Math.abs(lateral)) * 8.3);
+      const rSign = C.teamSign(1 - this.servingTeam);
+      const xs = -this.serveXSign;                    // which half the box is on
+      const t = (Math.max(-1, Math.min(1, lateral)) + 1) / 2;
+      const near = xs * 0.8, far = xs * 9.2;          // centre line -> sideline
+      let x = xs > 0 ? near + (far - near) * t : far + (near - far) * t;
       let z = rSign * (9.5 + depth * 12.2);
       if (clampInside) {
         x = xs * Math.max(0.8, Math.min(9.2, Math.abs(x)));
@@ -252,14 +254,14 @@ PB.Match = (function () {
         this.ball.x = server.x + this.serveXSign * 0.9;
         this.ball.z = server.z + C.teamSign(server.team) * 0.35;
         this.ball.y = 1.95;
-        if (server.ctrl === 'cpu' && this.stateT > 0.75) {
+        if (server.ctrl === 'cpu' && this.stateT > 0.6) {
           PB.AI.serve(this, server);
         }
       } else if (this.state === 'live') {
         this.stepBall(dt);
       } else if (this.state === 'point') {
         if (this.ball.live) this.stepBall(dt, true);
-        if (this.stateT > 1.55) this.afterPoint();
+        if (this.stateT > 1.25) this.afterPoint();
       }
       return this.events;
     }
@@ -360,7 +362,9 @@ PB.Match = (function () {
     legality(p) {
       const r = this.rally;
       const volley = r.bounces === 0;
-      const mustBounce = r.shotCount <= 1;              // serve and return must bounce
+      // serve (shot 1) and return (shot 2) must both bounce, so anything up to
+      // and including the third shot is played off the ground
+      const mustBounce = r.shotCount <= 2;
       if (volley && mustBounce) return 'dois_quiques_regra';
       if (volley && C.inKitchen(p.x, p.z, p.team)) return 'cozinha';
       return null;
@@ -397,8 +401,14 @@ PB.Match = (function () {
       } else {
         if (bad) return;                                  // the CPU never breaks the rules
         if (PB.AI.letsItGo(this, p)) return;              // reading the ball as going out
-        const cq = this.contactQuality(p);
-        if (cq < 0.42 && Math.random() < (0.42 - cq) * 2.1 * (1.3 - p.skill)) return;  // can't get there cleanly
+        // decide once per shot: checkHits runs several times per frame, and
+        // re-rolling here meant the miss almost never stuck
+        if (p.ai.missShot !== this.rally.shotCount) {
+          p.ai.missShot = this.rally.shotCount;
+          const cq = this.contactQuality(p);
+          p.ai.willMiss = cq < 0.42 && Math.random() < (0.42 - cq) * 2.1 * (1.3 - p.skill);
+        }
+        if (p.ai.willMiss) return;                        // can't get there cleanly
         swing = PB.AI.swing(this, p);
         if (!swing) return;
       }
@@ -493,7 +503,6 @@ PB.Match = (function () {
 
     // ── human control ──────────────────────────────────────────────────────
     driveHuman(p, inp, dt, slot, inputs) {
-      this.pendingSwing = this.pendingSwing || {};
       if (!inp) { p.tx = p.x; p.tz = p.z; p.mx = 0; p.mz = 0; return; }
       const sign = p.team === 0 ? 1 : -1;                 // view space -> world
       p.mx = (inp.mx || 0) * sign;
@@ -503,7 +512,8 @@ PB.Match = (function () {
         const sw = inp.swipe;
         const lateral = Math.max(-1, Math.min(1, sw.lateral));
         if (this.state === 'ready' && p.id === this.serverIdx) {
-          const aim = this.serveTarget(lateral, Math.max(0, Math.min(1, sw.depth)), this.assistRules);
+          // lateral is in view space; the target lives in world space
+          const aim = this.serveTarget(lateral * sign, Math.max(0, Math.min(1, sw.depth)), this.assistRules);
           this.doServe(aim, 0.75 + 0.25 * sw.power);
           inputs[slot].swipe = null;
           return;

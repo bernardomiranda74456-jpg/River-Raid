@@ -107,6 +107,17 @@ rastro da bola e os jogadores ainda usam o desenho simples anterior — o boneco
 articulado descrito abaixo existe só na versão web por enquanto. Abra a pasta no Swift Playgrounds (iPad) ou no Xcode e rode em
 um dispositivo/simulador iOS 15.2+.
 
+## Testes
+
+```
+node test/rules.test.js
+```
+
+29 testes sem dependência nenhuma cobrindo o regulamento: geometria e faltas do
+saque, regra dos dois quiques (incluindo o terceiro golpe), cozinha e regra do
+impulso, pontuação por saque, rodízio 0-0-2 das duplas, troca de lado dos
+parceiros, vitória com 2 de vantagem, bola dentro/fora e sanidade da física.
+
 ## Estrutura
 
 ```
@@ -121,6 +132,8 @@ pickleball/
   js/input.js       arrastar para mover, flick para golpear
   js/audio.js       sons sintetizados (sem arquivos)
   js/main.js        telas e laço principal
+  build-single.js   empacota tudo num arquivo só
+  test/rules.test.js  testes do regulamento
 
 Pickleball.swiftpm/
   Sources/Court.swift, Physics.swift, Shots.swift, Match.swift, AI.swift

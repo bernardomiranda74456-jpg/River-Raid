@@ -16,7 +16,7 @@ PB.AI = (function () {
   function contactPoint(m, p) {
     if (!m.pred || !m.pred.trace.length) return null;
     const sign = C.teamSign(p.team);
-    const mustBounce = m.rally.shotCount <= 1;
+    const mustBounce = m.rally.shotCount <= 2;
     const tr = m.pred.trace;
     const land = m.pred.landing;
 
@@ -85,13 +85,6 @@ PB.AI = (function () {
       p.tx = p.x; p.tz = p.z;                 // hold still between points
       return;
     }
-    if (m.state === 'ready') {
-      if (p.id === m.serverIdx) { p.tx = p.x; p.tz = p.z; return; }
-      if (p.id === m.receiverIdx) { p.tx = p.x; p.tz = p.z; return; }
-      p.tx = p.x; p.tz = p.z;
-      return;
-    }
-
     const sign = C.teamSign(p.team);
     let spot = null;
     if (m.ball.live && a.timer <= 0) {
