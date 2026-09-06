@@ -62,6 +62,16 @@ pontos, sempre com 2 de vantagem.
   *sacador–recebedor–número do sacador*.
 - Bola fora, na rede, dois quiques e ponto de virada de saque implementados.
 
+## Câmera
+
+A câmera fica atrás da linha de fundo e é enquadrada para caber **a quadra
+inteira na largura da linha de fundo** — nas duplas, os dois parceiros precisam
+estar na tela ao mesmo tempo. O retrato usa uma câmera mais alta e mais afastada
+(12,8 m de altura, 17,7 m atrás) porque tem menos largura disponível; a paisagem
+usa uma mais baixa, que preenche melhor o quadro. O enquadramento vertical conta
+o espaço de corrida atrás das duas linhas de fundo, então nenhum jogador é
+cortado no topo nem embaixo.
+
 ## Jogadores
 
 Cada jogador é um boneco articulado desenhado por quadro: cabeça com cabelo (quatro

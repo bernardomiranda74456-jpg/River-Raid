@@ -55,12 +55,14 @@ PB.Court = {
     return Math.sign(x) === xSign || ax < 0.15; // centre line is a fault in theory, be kind
   },
 
+  // Players stay inside what the camera can show: 5 ft wide of the sideline and
+  // 4.5 ft behind the baseline, and never across the net plane.
+  BACK_ROOM: 4.5,
   clampToPlayArea(p, team) {
     const s = this.teamSign(team);
     p.x = Math.max(-this.HALF_W - 5, Math.min(this.HALF_W + 5, p.x));
-    // never cross the net plane
-    if (s < 0) p.z = Math.max(-this.HALF_L - 7, Math.min(-0.7, p.z));
-    else       p.z = Math.min(this.HALF_L + 7, Math.max(0.7, p.z));
+    if (s < 0) p.z = Math.max(-this.HALF_L - this.BACK_ROOM, Math.min(-0.7, p.z));
+    else       p.z = Math.min(this.HALF_L + this.BACK_ROOM, Math.max(0.7, p.z));
     return p;
   },
 };

@@ -25,27 +25,37 @@ PB.Renderer = (function () {
     paddleFace: ['#2b4a6b', '#6b2b3a', '#1f5a4a', '#4a3a6b'],
   };
 
-  const FENCE_Z = 34, FENCE_H = 10, FENCE_X = 26;
+  const FENCE_Z = 34, FENCE_H = 8, FENCE_X = 26;
+  const BACK_ROOM = 4.5;   // how far behind the baseline a player may run
 
   function Cam(vp, side, focusX) {
-    const camY = 20, camZ = -45, aimY = 2.0, aimZ = 8;
+    // Portrait has to show a 20 ft width in a narrow frame, so it uses a higher,
+    // further camera; landscape can afford a lower one and still fit the court.
+    const portrait = vp.h > vp.w * 1.2;
+    const camY = portrait ? 42 : 26;
+    const camZ = portrait ? -58 : -50;
+    const aimY = 2.0, aimZ = 6;
     const pitch = Math.atan2(camY - aimY, aimZ - camZ);
     const sin = Math.sin(pitch), cos = Math.cos(pitch);
     const czOf = z => camY * sin + (z - camZ) * cos;
     const vOf = z => -((-camY) * cos + (z - camZ) * sin) / czOf(z);
 
-    // Fit: portrait accepts the near sidelines running off screen (the camera
-    // pans with the player), landscape is limited by height instead.
-    const portrait = vp.h > vp.w * 1.2;
-    const halfNear = C.HALF_W / czOf(-18);
-    const span = vOf(-23.5) - vOf(22);
-    const focal = Math.min((portrait ? 1.25 : 1.45) * vp.w / (2 * halfNear), 0.74 * vp.h / span);
+    // Fit the full width of the court at the near baseline — that is where the
+    // near pair stands, and both partners have to be on screen at once — then
+    // cap it so the whole length still fits vertically.
+    const BACK = C.HALF_L + BACK_ROOM;
+    const halfNear = C.HALF_W / czOf(-C.HALF_L);
+    const span = vOf(-BACK) - vOf(BACK);   // both run-back areas, or far players clip the top
+    const focal = Math.min(
+      (portrait ? 0.98 : 1.0) * vp.w / (2 * halfNear),
+      (portrait ? 0.86 : 0.80) * vp.h / span
+    );
 
     this.side = side; this.sin = sin; this.cos = cos; this.focal = focal;
     this.y = camY; this.z = camZ;
-    this.x = (side === 1 ? -1 : 1) * focusX * 0.55;
+    this.x = (side === 1 ? -1 : 1) * focusX * 0.25;
     this.cx = vp.x + vp.w / 2;
-    this.cy = vp.y + vp.h * 0.98 - focal * vOf(-23.5);
+    this.cy = vp.y + vp.h * 0.99 - focal * vOf(-BACK);
     this.horizonY = this.cy - focal * (sin / cos);
     this.vp = vp;
   }
@@ -562,8 +572,8 @@ PB.Renderer = (function () {
       }
       ctx.stroke();
       const bz = FZ - 0.05 * F;
-      mesh([[-FENCE_X, 2.2, bz], [-FENCE_X, 4.6, bz], [FENCE_X, 4.6, bz], [FENCE_X, 2.2, bz]], 'rgba(20,90,120,0.85)');
-      const a = cam.proj(0, 3.4, bz - 0.01 * F);
+      mesh([[-FENCE_X, 2.0, bz], [-FENCE_X, 4.2, bz], [FENCE_X, 4.2, bz], [FENCE_X, 2.0, bz]], 'rgba(20,90,120,0.85)');
+      const a = cam.proj(0, 3.1, bz - 0.01 * F);
       ctx.save();
       ctx.font = `700 ${Math.max(7, a.s * 0.9)}px system-ui, sans-serif`;
       ctx.textAlign = 'center';
@@ -575,7 +585,7 @@ PB.Renderer = (function () {
     // Grandstand and light towers, drawn in world space so they sit correctly
     // behind the fence in every viewport shape.
     drawStands(ctx, cam) {
-      const Z = 41 * (cam.side === 1 ? -1 : 1), X = 52, H = 21;
+      const Z = 45 * (cam.side === 1 ? -1 : 1), X = 56, H = 14;
       const poly = (pts, fill) => {
         ctx.beginPath();
         for (let i = 0; i < pts.length; i++) {
@@ -588,7 +598,7 @@ PB.Renderer = (function () {
       };
       // seating block
       poly([[-X, 0, Z], [-X, H, Z], [X, H, Z], [X, 0, Z]], '#152535');
-      const rows = 9;
+      const rows = 7;
       for (let i = 0; i < rows; i++) {
         const y0 = 2 + (i * (H - 3)) / rows;
         const y1 = y0 + (H - 3) / rows - 0.45;
@@ -603,16 +613,16 @@ PB.Renderer = (function () {
         }
         void seen;
       }
-      poly([[-X, H, Z], [-X, H + 2.4, Z], [X, H + 2.4, Z], [X, H, Z]], '#0e1a26');
+      poly([[-X, H, Z], [-X, H + 1.8, Z], [X, H + 1.8, Z], [X, H, Z]], '#0e1a26');
 
       // floodlights
       for (const px of [-23, 23]) {
         const zz = Z + (Z < 0 ? 4 : -4);
-        const base = cam.proj(px, 0, zz), top = cam.proj(px, 32, zz);
+        const base = cam.proj(px, 0, zz), top = cam.proj(px, 26, zz);
         ctx.strokeStyle = '#1a2a3a';
         ctx.lineWidth = Math.max(2, base.s * 0.5);
         ctx.beginPath(); ctx.moveTo(base.x, base.y); ctx.lineTo(top.x, top.y); ctx.stroke();
-        const lamp = cam.proj(px, 33.5, zz);
+        const lamp = cam.proj(px, 27.5, zz);
         const r = Math.max(6, lamp.s * 4.5);
         const glow = ctx.createRadialGradient(lamp.x, lamp.y, 0, lamp.x, lamp.y, r);
         glow.addColorStop(0, 'rgba(255,246,214,0.55)');
