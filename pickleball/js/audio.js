@@ -8,17 +8,24 @@ var PB = (function () {
 PB.Audio = (function () {
   let ctx = null, master = null, muted = false;
 
+  // Audio is a nicety: if the context cannot be created (older iOS, a frame
+  // without permission, an autoplay policy) the game must carry on silently.
   function init() {
     if (ctx) return;
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    ctx = new AC();
-    master = ctx.createGain();
-    master.gain.value = 0.5;
-    master.connect(ctx.destination);
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0.5;
+      master.connect(ctx.destination);
+    } catch (e) {
+      ctx = null;
+      master = null;
+    }
   }
 
-  function resume() { if (ctx && ctx.state === 'suspended') ctx.resume(); }
+  function resume() { try { if (ctx && ctx.state === 'suspended') ctx.resume(); } catch (e) { /* ignore */ } }
 
   function noise(dur) {
     const n = Math.floor(ctx.sampleRate * dur);
@@ -44,6 +51,12 @@ PB.Audio = (function () {
 
   function play(kind, power) {
     if (!ctx || muted) return;
+    try {
+      playInner(kind, power);
+    } catch (e) { /* never let a sound break the frame */ }
+  }
+
+  function playInner(kind, power) {
     resume();
     const p = Math.max(0.2, Math.min(1, power || 0.6));
     if (kind === 'hit') {
@@ -75,7 +88,7 @@ PB.Audio = (function () {
     }
   }
 
-  function setMuted(v) { muted = v; if (master) master.gain.value = v ? 0 : 0.5; }
+  function setMuted(v) { muted = v; try { if (master) master.gain.value = v ? 0 : 0.5; } catch (e) { /* ignore */ } }
   function isMuted() { return muted; }
 
   return { init, play, setMuted, isMuted, resume };

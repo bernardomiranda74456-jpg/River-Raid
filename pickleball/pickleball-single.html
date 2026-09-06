@@ -15,18 +15,25 @@
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     overscroll-behavior: none; user-select: none; -webkit-user-select: none;
   }
-  #app { position: fixed; inset: 0; }
-  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #app { position: fixed; top: 0; right: 0; bottom: 0; left: 0; inset: 0; }
+  canvas {
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0;
+    width: 100%; height: 100%; display: block; touch-action: none;
+  }
 
   .screen {
-    position: absolute; inset: 0; display: none; flex-direction: column;
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0;
+    display: none; flex-direction: column;
     align-items: center; justify-content: center; gap: 14px;
     padding: calc(18px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom));
     background: radial-gradient(120% 90% at 50% 0%, #1d3a56 0%, #0b131d 62%);
     overflow-y: auto; z-index: 10;
   }
   .screen.on { display: flex; }
-  .screen.sheet { background: rgba(6, 11, 18, 0.88); backdrop-filter: blur(6px); }
+  .screen.sheet {
+    background: rgba(6, 11, 18, 0.88);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  }
 
   h1 { font-size: clamp(30px, 10vw, 52px); letter-spacing: 2px; font-weight: 800; }
   h1 span { color: #d9ff3d; }
@@ -2200,17 +2207,24 @@ var PB = (function () {
 PB.Audio = (function () {
   let ctx = null, master = null, muted = false;
 
+  // Audio is a nicety: if the context cannot be created (older iOS, a frame
+  // without permission, an autoplay policy) the game must carry on silently.
   function init() {
     if (ctx) return;
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    ctx = new AC();
-    master = ctx.createGain();
-    master.gain.value = 0.5;
-    master.connect(ctx.destination);
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0.5;
+      master.connect(ctx.destination);
+    } catch (e) {
+      ctx = null;
+      master = null;
+    }
   }
 
-  function resume() { if (ctx && ctx.state === 'suspended') ctx.resume(); }
+  function resume() { try { if (ctx && ctx.state === 'suspended') ctx.resume(); } catch (e) { /* ignore */ } }
 
   function noise(dur) {
     const n = Math.floor(ctx.sampleRate * dur);
@@ -2236,6 +2250,12 @@ PB.Audio = (function () {
 
   function play(kind, power) {
     if (!ctx || muted) return;
+    try {
+      playInner(kind, power);
+    } catch (e) { /* never let a sound break the frame */ }
+  }
+
+  function playInner(kind, power) {
     resume();
     const p = Math.max(0.2, Math.min(1, power || 0.6));
     if (kind === 'hit') {
@@ -2267,7 +2287,7 @@ PB.Audio = (function () {
     }
   }
 
-  function setMuted(v) { muted = v; if (master) master.gain.value = v ? 0 : 0.5; }
+  function setMuted(v) { muted = v; try { if (master) master.gain.value = v ? 0 : 0.5; } catch (e) { /* ignore */ } }
   function isMuted() { return muted; }
 
   return { init, play, setMuted, isMuted, resume };
