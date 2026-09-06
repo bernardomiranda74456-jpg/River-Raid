@@ -29,6 +29,10 @@ PB.Match = (function () {
       tx: 0, tz: C.teamSign(team) * 18,           // AI desired spot
       reach: REACH, hitCd: 0, swingT: 0, swingType: null, swingDir: 1,
       atNet: false, volleyMomentum: 0, react: 0, lunge: 0,
+      // visual state, read by the renderer
+      runPhase: Math.random() * 6.28, speedN: 0, prep: 0, crouch: 0.2,
+      lean: 0, swingKind: 'ground', swingFore: true, swingDur: 0.42,
+      swingHit: null, hop: 0,
       ai: { timer: 0, decided: null },
     };
   }
@@ -227,6 +231,7 @@ PB.Match = (function () {
       if (this.hintT > 0) { this.hintT -= dt; if (this.hintT <= 0) this.hint = null; }
 
       this.updatePrediction();
+      this.updateAnticipation(dt);
 
       // humans
       for (const slot of ['p1', 'p2']) {
@@ -449,9 +454,16 @@ PB.Match = (function () {
       r.netTouch = false;
       r.softCount = (style === 'dink' || style === 'drop') ? r.softCount + 1 : 0;
       p.hitCd = HIT_CD;
-      p.swingT = 0.28;
       p.swingType = style;
+      p.swingKind = (style === 'serve' || style === 'smash') ? 'over'
+        : (style === 'dink' || style === 'drop') ? 'soft' : 'ground';
+      p.swingDur = p.swingKind === 'soft' ? 0.34 : p.swingKind === 'over' ? 0.5 : 0.44;
+      p.swingT = p.swingDur;
       p.swingDir = Math.sign(b.x - p.x) || 1;
+      // remember where the ball actually was, so the paddle meets it
+      p.swingHit = { dx: b.x - p.x, dy: Math.max(0.6, from.y), dz: b.z - p.z };
+      p.swingFore = (b.x - p.x) * (p.team === 0 ? 1 : -1) >= -0.35;
+      p.prep = 0;
       if (volley) p.volleyMomentum = 0.45;
       if (r.shotCount === 2) p.atNet = true;              // returner charges the net
 
@@ -555,6 +567,46 @@ PB.Match = (function () {
       C.clampToPlayArea(p, p.team);
       if (p.hitCd > 0) p.hitCd -= dt;
       if (p.swingT > 0) p.swingT -= dt;
+      this.animate(p, dt);
+    }
+
+    // Visual state only: gait, stance and how loaded the swing looks.
+    animate(p, dt) {
+      const spd = Math.hypot(p.vx, p.vz);
+      p.speedN = Math.min(1, spd / MOVE_SPEED);
+      p.runPhase += dt * (5.2 + p.speedN * 12.5);
+      if (p.runPhase > Math.PI * 2) p.runPhase -= Math.PI * 2;
+      // lean into the run, and square up again when standing
+      const target = -(p.vx / MOVE_SPEED) * 0.22 * (p.team === 0 ? 1 : -1);
+      p.lean += (target - p.lean) * Math.min(1, dt * 6);
+      // waiting between points: a small split-step bounce
+      p.hop = this.state === 'ready' ? (Math.sin(this.stateT * 6.5) * 0.5 + 0.5) * 0.06 : 0;
+      let wantCrouch = 0.16 + p.prep * 0.5 + (Math.abs(p.z) < 10 ? 0.12 : 0);
+      // reaching for a low ball is done with the knees, not just the arm
+      if (p.swingHit) {
+        const low = Math.max(0, Math.min(1, (2.7 - p.swingHit.dy) / 2.0));
+        const active = p.swingT > 0 ? 1 : Math.max(0, p.prep);
+        wantCrouch = Math.max(wantCrouch, (0.22 + low * 0.72) * active);
+      }
+      p.crouch += (wantCrouch - p.crouch) * Math.min(1, dt * 8);
+    }
+
+    // How close is this player to having to hit? Drives the loaded stance.
+    updateAnticipation(dt) {
+      for (const p of this.players) {
+        if (p.swingT > 0) { p.prep = 0; continue; }
+        let t = -1;
+        if (this.pred && this.ball.live) {
+          for (const s of this.pred.trace) {
+            if (C.sideOf(s.z) !== p.team) continue;
+            if (s.y > 8) continue;
+            if (Math.hypot(s.x - p.x, s.z - p.z) < 4.2) { t = s.t; break; }
+          }
+        }
+        const want = t >= 0 ? Math.max(0, 1 - t / 0.62) : 0;
+        const k = Math.min(1, dt * (want > p.prep ? 9 : 5));
+        p.prep += (want - p.prep) * k;
+      }
     }
 
     // ── scoring ────────────────────────────────────────────────────────────

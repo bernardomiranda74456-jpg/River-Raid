@@ -15,9 +15,14 @@ PB.Renderer = (function () {
     line: '#f0f6fa', net: '#0d1420', tape: '#f4f8fb',
     ball: '#d9ff3d', shadow: 'rgba(0,0,0,0.30)',
     team: [
-      { shirt: '#ffd24a', shirt2: '#e8ac1f', skin: '#c98a5a', shorts: '#182231' },
-      { shirt: '#ff5f6d', shirt2: '#d63b53', skin: '#8d5a3b', shorts: '#1d1730' },
+      { shirt: '#ffd24a', shirt2: '#e8ac1f', trim: '#ffeaa0', shorts: '#1b2634', shorts2: '#111a25' },
+      { shirt: '#ff5f6d', shirt2: '#d63b53', trim: '#ffc2c7', shorts: '#221a33', shorts2: '#171126' },
     ],
+    skin: ['#e2b083', '#c68a5c', '#9c6640', '#6f462b'],
+    skinDark: ['#c9955f', '#a86f45', '#7d4e2f', '#573520'],
+    hair: ['#1d150f', '#3b2416', '#7a4a22', '#c9a24a', '#2b2b31', '#8d8d96'],
+    shoe: '#f2f5f8',
+    paddleFace: ['#2b4a6b', '#6b2b3a', '#1f5a4a', '#4a3a6b'],
   };
 
   const FENCE_Z = 34, FENCE_H = 10, FENCE_X = 26;
@@ -52,6 +57,387 @@ PB.Renderer = (function () {
     const cy = dy * this.cos + dz * this.sin;
     const s = this.focal / Math.max(0.8, cz);
     return { x: this.cx + dx * s, y: this.cy - cy * s, s, cz };
+  };
+
+
+  // ── character rig ────────────────────────────────────────────────────────
+  // Everything below works in local feet: x is lateral on screen, y is height
+  // off the court. Joints are solved with two-bone IK, then projected by the
+  // player's depth scale, so a near player and a far one share one rig.
+  const BODY = {
+    ankle: 0.30, knee: 1.62, hip: 2.88, waist: 3.34, shoulder: 4.70,
+    head: 5.42, headR: 0.37,
+    shoulderHalf: 0.66, hipHalf: 0.42,
+    upperArm: 1.06, foreArm: 0.98,
+    thigh: 1.26, shin: 1.32,
+  };
+
+  // Two-bone IK: elbow/knee position for a limb reaching from a to b.
+  function ik(ax, ay, bx, by, l1, l2, bend) {
+    let dx = bx - ax, dy = by - ay;
+    let d = Math.hypot(dx, dy);
+    if (d < 1e-4) { d = 1e-4; dx = 1e-4; }
+    const dd = Math.min(d, l1 + l2 - 0.002);
+    const a = (l1 * l1 - l2 * l2 + dd * dd) / (2 * dd);
+    let h = Math.sqrt(Math.max(0, l1 * l1 - a * a));
+    // a folded limb would throw the joint far out to the side; ease it back in
+    h *= Math.max(0.18, Math.min(1, (dd - 0.45) / 0.9));
+    const ux = dx / d, uy = dy / d;
+    return { x: ax + ux * a - uy * h * bend, y: ay + uy * a + ux * h * bend };
+  }
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function ease(t) { return t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t); }
+  function mix(p1, p2, t) { return { x: lerp(p1.x, p2.x, t), y: lerp(p1.y, p2.y, t) }; }
+
+  // Keep a hand inside the arm's reach, so no pose can stretch a limb.
+  function reachable(sh, target, len) {
+    const dx = target.x - sh.x, dy = target.y - sh.y;
+    const d = Math.hypot(dx, dy);
+    if (d <= len || d < 1e-4) return target;
+    const k = len / d;
+    return { x: sh.x + dx * k, y: sh.y + dy * k };
+  }
+
+  const Char = {
+    // Deterministic look per player: skin, hair and paddle stay put all match.
+    look(p) {
+      if (!p._look) {
+        const i = p.id;
+        p._look = {
+          skin: i % COL.skin.length,
+          hair: COL.hair[(i * 2 + 1) % COL.hair.length],
+          style: i % 4,
+          paddle: COL.paddleFace[i % COL.paddleFace.length],
+        };
+      }
+      return p._look;
+    },
+
+    draw(ctx, cam, p, base, s, isMe) {
+      const look = this.look(p);
+      const kit = COL.team[p.team];
+      const skin = COL.skin[look.skin];
+      const skinDark = COL.skinDark[look.skin];
+      const facing = cam.side === p.team ? 1 : -1;   // 1 = we see their back
+      const hand = facing;                            // right-handed, mirrored on the far side
+      const P = {
+        s,
+        X: v => base.x + v * s,
+        Y: v => base.y - v * s,
+      };
+
+      const crouch = p.crouch || 0;
+      const stride = p.speedN || 0;
+      const ph = p.runPhase || 0;
+      const lean = (p.lean || 0) * (cam.side === 1 ? -1 : 1);
+      const bob = Math.abs(Math.sin(ph)) * 0.10 * stride;
+      const hipY = BODY.hip - crouch * 1.00 - bob + (p.hop || 0);
+      const shY = hipY + (BODY.shoulder - BODY.hip) - crouch * 0.12;
+
+      // how much of the run reads sideways vs into the screen
+      const spd = Math.hypot(p.vx, p.vz) || 0.001;
+      const latFrac = Math.min(1, Math.abs(p.vx) / spd) * stride;
+      const depFrac = Math.min(1, Math.abs(p.vz) / spd) * stride;
+
+      // ── swing phase: -1 loaded, 0 contact, +1 follow through ─────────────
+      const swinging = p.swingT > 0;
+      const prog = swinging ? 1 - p.swingT / (p.swingDur || 0.42) : 0;
+      const coilAmt = swinging ? (prog < 0.32 ? 1 - prog / 0.32 : 0) : (p.prep || 0);
+      const kind = p.swingKind || 'ground';
+      const fore = p.swingFore !== false;
+      const coil = coilAmt * (fore ? 0.55 : -0.42) * hand;
+
+      // shoulders rotate with the coil; a squash sells the turn in 2D
+      const shHalf = BODY.shoulderHalf * (0.74 + 0.26 * Math.cos(coil * 1.4));
+      const shOff = Math.sin(coil) * 0.34 + lean * 0.55;
+      const hipOff = Math.sin(coil) * 0.10 + lean * 0.3;
+      const shL = { x: -shHalf + shOff, y: shY };
+      const shR = { x: shHalf + shOff, y: shY };
+      const hipL = { x: -BODY.hipHalf + hipOff, y: hipY };
+      const hipR = { x: BODY.hipHalf + hipOff, y: hipY };
+
+      // ── legs ─────────────────────────────────────────────────────────────
+      const stanceHalf = BODY.hipHalf + 0.16 + crouch * 0.26;
+      const legs = [];
+      for (let i = 0; i < 2; i++) {
+        const side = i === 0 ? -1 : 1;
+        const phase = ph + (i === 0 ? Math.PI : 0);
+        const sw = Math.sin(phase);
+        const lift = Math.max(0, sw) * stride * 0.62;
+        const hipJ = side < 0 ? hipL : hipR;
+        const footX = side * stanceHalf + sw * latFrac * 1.05 + lean * 0.8;
+        const footY = BODY.ankle + lift * (0.30 + depFrac * 0.75);
+        const knee = ik(hipJ.x, hipJ.y, footX, footY, BODY.thigh, BODY.shin, side);
+        legs.push({ side, hip: hipJ, knee, foot: { x: footX, y: footY }, back: sw < 0 });
+      }
+
+      // ── paddle arm ───────────────────────────────────────────────────────
+      const hitDX = p.swingHit ? p.swingHit.dx * (cam.side === 1 ? -1 : 1) : 0;
+      const hitY = p.swingHit ? p.swingHit.dy : shY - 0.4;
+      const ready = { x: hand * 1.16, y: shY - 0.64 };
+      let load, contact, follow;
+      if (kind === 'over') {
+        load = { x: hand * 0.95, y: shY - 1.45 };
+        contact = { x: Math.max(-1.3, Math.min(1.3, hitDX)), y: Math.max(hitY, shY + 1.25) };
+        follow = { x: -hand * 0.85, y: shY - 1.05 };
+      } else if (kind === 'soft') {
+        load = { x: hand * (fore ? 0.95 : -0.55), y: shY - 1.42 };
+        contact = { x: Math.max(-1.8, Math.min(1.8, hitDX)), y: Math.max(0.85, Math.min(2.9, hitY)) };
+        follow = { x: hand * 0.34, y: shY - 0.52 };
+      } else if (fore) {
+        load = { x: hand * 1.42, y: shY - 1.12 };
+        contact = { x: Math.max(-2.2, Math.min(2.2, hitDX)), y: Math.max(0.95, Math.min(5.2, hitY)) };
+        follow = { x: -hand * 0.88, y: shY + 0.34 };
+      } else {
+        load = { x: -hand * 0.78, y: shY - 0.98 };
+        contact = { x: Math.max(-2.2, Math.min(2.2, hitDX)), y: Math.max(0.95, Math.min(5.2, hitY)) };
+        follow = { x: hand * 1.52, y: shY + 0.42 };
+      }
+
+      let handP;
+      if (swinging) {
+        handP = prog < 0.32
+          ? mix(load, contact, ease(prog / 0.32))
+          : mix(contact, follow, ease((prog - 0.32) / 0.68));
+      } else {
+        handP = mix(ready, load, ease(p.prep || 0));
+      }
+
+      const shPad = hand > 0 ? shR : shL;
+      const shFree = hand > 0 ? shL : shR;
+      const armLen = (BODY.upperArm + BODY.foreArm) * 0.97;
+      handP = reachable(shPad, handP, armLen);
+      const elbow = ik(shPad.x, shPad.y, handP.x, handP.y, BODY.upperArm, BODY.foreArm, -hand);
+
+      // free arm counterbalances the gait
+      const swA = Math.sin(ph + Math.PI) * stride;
+      const freeHand = {
+        x: -hand * (0.98 + Math.abs(swA) * 0.30) + swA * latFrac * 0.6 - Math.sin(coil) * 0.5,
+        y: shY - 1.10 + swA * 0.34 + coilAmt * 0.5,
+      };
+      const freeHandR = reachable(shFree, freeHand, armLen);
+      const freeElbow = ik(shFree.x, shFree.y, freeHandR.x, freeHandR.y,
+                           BODY.upperArm, BODY.foreArm, hand);
+
+      // ── paint, back to front ─────────────────────────────────────────────
+      this.shadow(ctx, P, base, s, stanceHalf, isMe, p);
+
+      const backLeg = legs[0].back ? legs[0] : legs[1];
+      const frontLeg = backLeg === legs[0] ? legs[1] : legs[0];
+      this.leg(ctx, P, backLeg, kit, skinDark, COL.shoe, 0.86);
+      this.arm(ctx, P, shFree, freeElbow, freeHandR, kit, skinDark, 0.9);
+      this.torso(ctx, P, shL, shR, hipL, hipR, kit);
+      this.head(ctx, P, shL, shR, shY, skin, skinDark, look, coil, facing);
+      this.leg(ctx, P, frontLeg, kit, skin, COL.shoe, 1);
+      this.arm(ctx, P, shPad, elbow, handP, kit, skin, 1);
+      this.paddle(ctx, P, elbow, handP, look, hand, swinging, prog);
+    },
+
+    shadow(ctx, P, base, s, stanceHalf, isMe, p) {
+      ctx.save();
+      const g = ctx.createRadialGradient(base.x, base.y, s * 0.1, base.x, base.y, s * 1.5);
+      g.addColorStop(0, 'rgba(0,0,0,0.34)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(base.x, base.y, s * (1.5 + stanceHalf), s * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      if (isMe) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+        ctx.lineWidth = Math.max(1.5, s * 0.06);
+        ctx.beginPath();
+        ctx.ellipse(base.x, base.y, s * 1.25, s * 0.42, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      } else if (p.ctrl === 'human') {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.lineWidth = Math.max(1, s * 0.045);
+        ctx.beginPath();
+        ctx.ellipse(base.x, base.y, s * 1.15, s * 0.38, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    },
+
+    // A tapered capsule: the building block for every limb segment.
+    limb(ctx, P, ax, ay, bx, by, w1, w2, color) {
+      const x1 = P.X(ax), y1 = P.Y(ay), x2 = P.X(bx), y2 = P.Y(by);
+      const r1 = Math.max(0.6, (w1 * P.s) / 2), r2 = Math.max(0.5, (w2 * P.s) / 2);
+      const dx = x2 - x1, dy = y2 - y1;
+      const d = Math.hypot(dx, dy) || 1;
+      const nx = -dy / d, ny = dx / d;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x1 + nx * r1, y1 + ny * r1);
+      ctx.lineTo(x2 + nx * r2, y2 + ny * r2);
+      ctx.lineTo(x2 - nx * r2, y2 - ny * r2);
+      ctx.lineTo(x1 - nx * r1, y1 - ny * r1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x1, y1, r1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x2, y2, r2, 0, Math.PI * 2);
+      ctx.fill();
+    },
+
+    leg(ctx, P, L, kit, skin, shoeCol, shade) {
+      const dim = shade < 1;
+      this.limb(ctx, P, L.hip.x, L.hip.y, L.knee.x, L.knee.y, 0.46, 0.30, dim ? kit.shorts2 : kit.shorts);
+      this.limb(ctx, P, L.knee.x, L.knee.y, L.foot.x, L.foot.y + 0.06, 0.28, 0.19, skin);
+      // sock
+      this.limb(ctx, P, L.foot.x, L.foot.y + 0.34, L.foot.x, L.foot.y + 0.12, 0.22, 0.22, '#eef3f7');
+      // shoe, pointing the way the player leans
+      const toe = L.foot.x + (L.side * 0.06);
+      this.limb(ctx, P, L.foot.x, L.foot.y + 0.05, toe, L.foot.y - 0.02, 0.26, 0.30, shoeCol);
+      ctx.save();
+      ctx.fillStyle = 'rgba(20,30,42,0.55)';
+      ctx.beginPath();
+      ctx.ellipse(P.X(toe), P.Y(L.foot.y - 0.06), P.s * 0.2, P.s * 0.05, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    },
+
+    arm(ctx, P, sh, elbow, hand, kit, skin, shade) {
+      this.limb(ctx, P, sh.x, sh.y, elbow.x, elbow.y, 0.32, 0.24, skin);
+      this.limb(ctx, P, elbow.x, elbow.y, hand.x, hand.y, 0.24, 0.17, skin);
+      // short sleeve capping the upper arm
+      const t = 0.34;
+      this.limb(ctx, P, sh.x * 0.86, sh.y - 0.02,
+                sh.x + (elbow.x - sh.x) * t, sh.y + (elbow.y - sh.y) * t,
+                0.34, 0.27, shade < 1 ? kit.shirt2 : kit.shirt);
+      // hand
+      ctx.beginPath();
+      ctx.arc(P.X(hand.x), P.Y(hand.y), Math.max(1, P.s * 0.115), 0, Math.PI * 2);
+      ctx.fillStyle = skin;
+      ctx.fill();
+    },
+
+    torso(ctx, P, shL, shR, hipL, hipR, kit) {
+      const midY = (shL.y + hipL.y) / 2;
+      ctx.beginPath();
+      ctx.moveTo(P.X(shL.x), P.Y(shL.y - 0.06));
+      ctx.quadraticCurveTo(P.X((shL.x + shR.x) / 2), P.Y(shL.y + 0.20), P.X(shR.x), P.Y(shR.y - 0.06));
+      ctx.quadraticCurveTo(P.X(shR.x + 0.06), P.Y(midY), P.X(hipR.x + 0.14), P.Y(hipR.y + 0.02));
+      ctx.lineTo(P.X(hipL.x - 0.14), P.Y(hipL.y + 0.02));
+      ctx.quadraticCurveTo(P.X(shL.x - 0.06), P.Y(midY), P.X(shL.x), P.Y(shL.y - 0.06));
+      ctx.closePath();
+      ctx.fillStyle = kit.shirt;
+      ctx.fill();
+      // hem and collar catch the light differently
+      ctx.beginPath();
+      ctx.moveTo(P.X(hipL.x - 0.12), P.Y(hipL.y));
+      ctx.lineTo(P.X(hipR.x + 0.12), P.Y(hipR.y));
+      ctx.lineTo(P.X(hipR.x + 0.12), P.Y(hipR.y - 0.16));
+      ctx.lineTo(P.X(hipL.x - 0.12), P.Y(hipL.y - 0.16));
+      ctx.closePath();
+      ctx.fillStyle = kit.shirt2;
+      ctx.fill();
+      // collar
+      ctx.beginPath();
+      ctx.moveTo(P.X(shL.x + 0.14), P.Y(shL.y + 0.02));
+      ctx.quadraticCurveTo(P.X((shL.x + shR.x) / 2), P.Y(shL.y + 0.26), P.X(shR.x - 0.14), P.Y(shR.y + 0.02));
+      ctx.quadraticCurveTo(P.X((shL.x + shR.x) / 2), P.Y(shL.y + 0.10), P.X(shL.x + 0.14), P.Y(shL.y + 0.02));
+      ctx.closePath();
+      ctx.fillStyle = kit.trim;
+      ctx.fill();
+      // shorts: a panel across the hips, not a bar
+      ctx.beginPath();
+      ctx.moveTo(P.X(hipL.x - 0.16), P.Y(hipL.y + 0.30));
+      ctx.lineTo(P.X(hipR.x + 0.16), P.Y(hipR.y + 0.30));
+      ctx.lineTo(P.X(hipR.x + 0.20), P.Y(hipR.y - 0.26));
+      ctx.lineTo(P.X(hipL.x - 0.20), P.Y(hipL.y - 0.26));
+      ctx.closePath();
+      ctx.fillStyle = kit.shorts;
+      ctx.fill();
+    },
+
+    head(ctx, P, shL, shR, shY, skin, skinDark, look, coil, facing) {
+      const cx = (shL.x + shR.x) / 2 + Math.sin(coil) * 0.14;
+      const headY = shY + (BODY.head - BODY.shoulder) - 0.14;
+      const R = BODY.headR;
+      this.limb(ctx, P, cx, shY - 0.06, cx, headY - R * 0.55, 0.30, 0.26, skinDark);
+      ctx.beginPath();
+      ctx.ellipse(P.X(cx), P.Y(headY), P.s * R * 0.92, P.s * R, 0, 0, Math.PI * 2);
+      ctx.fillStyle = skin;
+      ctx.fill();
+
+      // hair: a cap that reads from the front and the back, plus one flourish
+      ctx.save();
+      ctx.fillStyle = look.hair;
+      ctx.beginPath();
+      if (look.style === 3) {
+        // visor cap
+        ctx.ellipse(P.X(cx), P.Y(headY + R * 0.22), P.s * R * 1.0, P.s * R * 0.72, 0, Math.PI, 0);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(P.X(cx), P.Y(headY + R * 0.1), P.s * R * 1.25, P.s * R * 0.2, 0, 0, Math.PI * 2);
+        ctx.fillStyle = look.hair;
+        ctx.fill();
+      } else {
+        ctx.ellipse(P.X(cx), P.Y(headY + R * 0.10), P.s * R * 1.06, P.s * R * 0.98,
+                    0, Math.PI * 0.88, Math.PI * 2.12);
+        ctx.fill();
+        if (look.style === 1) {
+          // ponytail, swinging a touch behind the head
+          const tx = cx - 0.02, ty = headY - R * 0.2;
+          this.limb(ctx, P, tx, ty, tx + Math.sin(coil) * 0.1, ty - 0.45, 0.24, 0.14, look.hair);
+        } else if (look.style === 2) {
+          for (let i = -1; i <= 1; i++) {
+            ctx.beginPath();
+            ctx.arc(P.X(cx + i * R * 0.62), P.Y(headY + R * 0.5), P.s * R * 0.42, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+      ctx.restore();
+
+      // a hint of a face only when we are looking at it, and only as shading
+      if (facing < 0) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(40,25,15,0.45)';
+        const eyeR = Math.max(0.5, P.s * R * 0.11);
+        ctx.beginPath();
+        ctx.arc(P.X(cx - R * 0.32), P.Y(headY - R * 0.08), eyeR, 0, Math.PI * 2);
+        ctx.arc(P.X(cx + R * 0.32), P.Y(headY - R * 0.08), eyeR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    },
+
+    paddle(ctx, P, elbow, hand, look, side, swinging, prog) {
+      const dx = hand.x - elbow.x, dy = hand.y - elbow.y;
+      const len = Math.hypot(dx, dy) || 1;
+      let ux = dx / len, uy = dy / len;
+      // during the strike the face squares up to the ball instead of trailing
+      if (swinging && prog > 0.2 && prog < 0.55) {
+        ux = lerp(ux, side * 0.35, 0.5);
+        uy = lerp(uy, 0.9, 0.5);
+        const n = Math.hypot(ux, uy) || 1;
+        ux /= n; uy /= n;
+      }
+      const gripX = hand.x + ux * 0.16, gripY = hand.y + uy * 0.16;
+      const faceX = hand.x + ux * 0.78, faceY = hand.y + uy * 0.78;
+      this.limb(ctx, P, gripX, gripY, hand.x - ux * 0.12, hand.y - uy * 0.12, 0.16, 0.16, '#1a232f');
+      const ang = Math.atan2(-(P.Y(faceY) - P.Y(gripY)), P.X(faceX) - P.X(gripX));
+      ctx.save();
+      ctx.translate(P.X(faceX), P.Y(faceY));
+      ctx.rotate(-ang + Math.PI / 2);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, P.s * 0.35, P.s * 0.46, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#141d28';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(0, 0, P.s * 0.29, P.s * 0.40, 0, 0, Math.PI * 2);
+      ctx.fillStyle = look.paddle;
+      ctx.fill();
+      ctx.restore();
+    },
   };
 
   class Renderer {
@@ -373,93 +759,12 @@ PB.Renderer = (function () {
       const base = cam.proj(p.x, 0, p.z);
       const s = base.s;
       if (s <= 0 || base.cz <= 1) return;
-      const col = COL.team[p.team];
-      const facing = cam.side === p.team ? 1 : -1;   // 1 = seen from behind
-
-      const hipY = base.y - s * 1.85;
-      const shoulderY = base.y - s * 3.55;
-      const headY = shoulderY - s * 0.42;
-      const bw = s * 0.62;
-
-      // active-player ring
-      if (p === me) {
-        ctx.save();
-        ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-        ctx.lineWidth = Math.max(1.5, s * 0.07);
-        ctx.beginPath();
-        ctx.ellipse(base.x, base.y, s * 1.15, s * 0.4, 0, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
-      } else if (p.ctrl === 'human') {
-        ctx.save();
-        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-        ctx.lineWidth = Math.max(1, s * 0.05);
-        ctx.beginPath();
-        ctx.ellipse(base.x, base.y, s * 1.05, s * 0.36, 0, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      // legs
-      ctx.strokeStyle = col.shorts;
-      ctx.lineWidth = Math.max(2, s * 0.2);
-      ctx.lineCap = 'round';
-      const stride = Math.min(1, Math.hypot(p.vx, p.vz) / 12) * s * 0.42;
-      ctx.beginPath();
-      ctx.moveTo(base.x - s * 0.16, hipY); ctx.lineTo(base.x - s * 0.2 - stride * 0.5, base.y);
-      ctx.moveTo(base.x + s * 0.16, hipY); ctx.lineTo(base.x + s * 0.2 + stride * 0.5, base.y);
-      ctx.stroke();
-
-      // torso
-      ctx.fillStyle = col.shirt;
-      ctx.beginPath();
-      ctx.moveTo(base.x - bw * 0.5, hipY);
-      ctx.lineTo(base.x + bw * 0.5, hipY);
-      ctx.lineTo(base.x + bw * 0.62, shoulderY);
-      ctx.lineTo(base.x - bw * 0.62, shoulderY);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = col.shirt2;
-      ctx.fillRect(base.x - bw * 0.5, hipY - s * 0.18, bw, s * 0.18);
-
-      // neck + head
-      ctx.fillStyle = col.skin;
-      ctx.fillRect(base.x - s * 0.11, shoulderY - s * 0.22, s * 0.22, s * 0.3);
-      ctx.beginPath();
-      ctx.arc(base.x, headY, s * 0.40, 0, Math.PI * 2);
-      ctx.fill();
-
-      // paddle arm
-      const swing = Math.max(0, p.swingT) / 0.28;
-      const side = (p.swingDir || 1) * facing;
-      const ang = -0.5 + swing * 1.9 * side;
-      const ax = base.x + Math.cos(ang) * s * 1.05 * side;
-      const ay = shoulderY + s * 0.25 - Math.sin(Math.abs(ang)) * s * 0.5;
-      ctx.strokeStyle = col.skin;
-      ctx.lineWidth = Math.max(1.5, s * 0.14);
-      ctx.beginPath();
-      ctx.moveTo(base.x + bw * 0.45 * side, shoulderY + s * 0.15);
-      ctx.lineTo(ax, ay);
-      ctx.stroke();
-      ctx.save();
-      ctx.translate(ax, ay);
-      ctx.rotate(ang * 0.6);
-      ctx.fillStyle = '#1d2a3a';
-      ctx.beginPath();
-      ctx.ellipse(s * 0.22 * side, -s * 0.18, s * 0.34, s * 0.44, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#3d5c7a';
-      ctx.beginPath();
-      ctx.ellipse(s * 0.22 * side, -s * 0.18, s * 0.24, s * 0.33, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-
-      // name tag for the far side so you know who is who
+      Char.draw(ctx, cam, p, base, s, p === me);
       if (p.ctrl === 'human' && p !== me) {
-        ctx.fillStyle = 'rgba(255,255,255,0.8)';
-        ctx.font = `${Math.max(9, s * 0.5)}px system-ui, sans-serif`;
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.font = `600 ${Math.max(9, s * 0.5)}px system-ui, sans-serif`;
         ctx.textAlign = 'center';
-        ctx.fillText(p.name, base.x, headY - s * 0.6);
+        ctx.fillText(p.name, base.x, base.y - s * 6.5);
       }
     }
 

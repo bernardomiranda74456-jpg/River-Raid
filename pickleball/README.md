@@ -62,6 +62,29 @@ pontos, sempre com 2 de vantagem.
   *sacador–recebedor–número do sacador*.
 - Bola fora, na rede, dois quiques e ponto de virada de saque implementados.
 
+## Jogadores
+
+Cada jogador é um boneco articulado desenhado por quadro: cabeça com cabelo (quatro
+estilos), tronco com gola e manga, dois braços e duas pernas resolvidos por
+**cinemática inversa de dois ossos**, tênis, meia e raquete na mão dominante.
+Tom de pele, cabelo e cor da raquete são fixos por jogador.
+
+A animação sai do estado do jogo, não de um loop solto:
+
+- **corrida** com passada e balanço de braço proporcionais à velocidade, mais
+  inclinação do tronco na direção do movimento;
+- **preparação**: quando a bola vem na sua direção o jogador arma a raquete
+  (`prep` cresce conforme o tempo até o contato encurta);
+- **golpe em três tempos** — armado, contato e finalização — com o tronco
+  girando, forehand e backhand distintos e movimentos próprios para saque,
+  smash e dink;
+- **contato no ponto certo**: a raquete vai até onde a bola realmente estava no
+  instante da tacada;
+- **agachamento** proporcional à altura da bola: bola baixa se pega dobrando o
+  joelho, e a mão nunca passa do alcance do braço.
+
+Custo medido: 0,66 ms por quadro para a cena inteira (0,31 ms nos quatro jogadores).
+
 ## Física
 
 Bola de plástico de 2,9 pol e 0,8 oz: gravidade, arrasto quadrático (a bola
@@ -79,8 +102,9 @@ por quadro), os menus são SwiftUI e o toque é multitoque nativo — dois dedos
 funcionam ao mesmo tempo, e no modo "um contra o outro" cada metade da tela é
 uma cena com a perspectiva do seu jogador.
 
-Diferenças em relação à web: sem áudio sintetizado (usa vibração/haptics) e sem
-rastro da bola. Abra a pasta no Swift Playgrounds (iPad) ou no Xcode e rode em
+Diferenças em relação à web: sem áudio sintetizado (usa vibração/haptics), sem
+rastro da bola e os jogadores ainda usam o desenho simples anterior — o boneco
+articulado descrito abaixo existe só na versão web por enquanto. Abra a pasta no Swift Playgrounds (iPad) ou no Xcode e rode em
 um dispositivo/simulador iOS 15.2+.
 
 ## Estrutura
