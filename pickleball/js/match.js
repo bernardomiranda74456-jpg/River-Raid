@@ -103,17 +103,16 @@ PB.Match = (function () {
 
     nameEveryone() {
       const twoHumans = this.cfg.humans === 2;
+      const surnames = ['ALVES', 'COSTA', 'DIAS', 'MELO', 'PRADO', 'REIS'];
       for (const p of this.players) {
+        p.role = p.ctrl === 'human' ? 'Humano' : (p.team === 0 ? 'Parceiro' : 'Rival');
         if (p.ctrl === 'human') {
-          p.name = twoHumans ? (p.id === this.slot.p1 ? 'P1' : 'P2') : 'Você';
+          p.name = twoHumans ? (p.id === this.slot.p1 ? 'P1' : 'P2') : 'VOCÊ';
         } else {
-          p.name = p.team === 0 ? 'Parceiro' : 'Rival';
+          p.name = surnames[(p.id * 2 + 1) % surnames.length];
         }
       }
-      if (this.cfg.format === 'doubles' && this.cfg.humans === 2 && this.cfg.arrangement === 'versus') {
-        this.players[1].name = 'Parceiro P1';
-        this.players[3].name = 'Parceiro P2';
-      }
+
     }
 
     // ── helpers ────────────────────────────────────────────────────────────

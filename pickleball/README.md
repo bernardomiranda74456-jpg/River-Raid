@@ -69,13 +69,21 @@ pontos, sempre com 2 de vantagem.
 
 ## Câmera
 
-A câmera fica atrás da linha de fundo e é enquadrada para caber **a quadra
-inteira na largura da linha de fundo** — nas duplas, os dois parceiros precisam
-estar na tela ao mesmo tempo. O retrato usa uma câmera mais alta e mais afastada
-(12,8 m de altura, 17,7 m atrás) porque tem menos largura disponível; a paisagem
-usa uma mais baixa, que preenche melhor o quadro. O enquadramento vertical conta
-o espaço de corrida atrás das duas linhas de fundo, então nenhum jogador é
-cortado no topo nem embaixo.
+Em tela larga (iPad e celular deitado) a câmera copia o ângulo de transmissão:
+**3,8 m de altura, 17 m atrás da linha de fundo, 9° de inclinação**. Os números
+saíram de medir quadros de transmissão da PPA — linha de fundo próxima ocupando
+66% da largura, proporção perto/longe de 2,2 e a quadra deitada e larga. O jogo
+reproduz 66% e 2,22.
+
+Em tela estreita isso não funciona (a quadra viraria uma tira fina), então o
+retrato mantém uma câmera mais alta e enquadra pela largura total da linha de
+fundo — nas duplas os dois parceiros têm que caber juntos na tela. O
+enquadramento vertical conta o espaço de corrida atrás das duas linhas de fundo,
+então nenhum jogador é cortado.
+
+O placar é um painel de transmissão no canto superior: faixa de título, uma
+linha por dupla com nome e caixa de placar na cor do time, indicador de quem
+saca e rodapé com a chamada oficial (sacador-recebedor-número).
 
 ## Torcida
 

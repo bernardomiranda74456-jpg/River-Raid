@@ -11,7 +11,7 @@ PB.Renderer = (function () {
 
   const COL = {
     skyTop: '#101d33', skyMid: '#24466d', skyGlow: '#e08a58',
-    surround: '#0f5c4a', court: '#2b7fbd', kitchen: '#1a5c8e',
+    surround: '#1d5b86', court: '#2f86c4', kitchen: '#b8442c', kitchen2: '#a13a25',
     line: '#f0f6fa', net: '#0d1420', tape: '#f4f8fb',
     ball: '#d9ff3d', shadow: 'rgba(0,0,0,0.30)',
     team: [
@@ -27,41 +27,47 @@ PB.Renderer = (function () {
     crowdSkin: ['#e2b083', '#c68a5c', '#8d5a3b'],
   };
 
-  const FENCE_Z = 34, FENCE_H = 8, FENCE_X = 26;
+  const FENCE_Z = 30, FENCE_H = 8, FENCE_X = 26;
   const BACK_ROOM = 4.5;   // how far behind the baseline a player may run
-  const CROWD_ROWS = 7;
+  const CROWD_ROWS = 16;      // generated; how many are used depends on the camera
+  const ROW_STEP = 1.85;      // real stadium rows, so spectators stay person sized
   const UI = (a, b, c) => `rgb(${Math.round(a*255)},${Math.round(b*255)},${Math.round(c*255)})`;
 
   function Cam(vp, side, focusX) {
-    // Portrait has to show a 20 ft width in a narrow frame, so it uses a higher,
-    // further camera; landscape can afford a lower one and still fit the court.
-    const portrait = vp.h > vp.w * 1.2;
-    const camY = portrait ? 42 : 26;
-    const camZ = portrait ? -58 : -50;
+    // Two rigs. A wide frame gets the television angle: low and far back, which
+    // is what makes a broadcast read — the court lies flat and wide, the near
+    // pair large, the far pair small. A narrow frame cannot afford that (the
+    // court would be a thin strip), so it keeps a higher, closer camera.
+    const wide = vp.w >= vp.h * 1.3;
+    const camY = wide ? 12.5 : 24;
+    const camZ = wide ? -56 : -60;
     const aimY = 2.0, aimZ = 6;
     const pitch = Math.atan2(camY - aimY, aimZ - camZ);
     const sin = Math.sin(pitch), cos = Math.cos(pitch);
     const czOf = z => camY * sin + (z - camZ) * cos;
     const vOf = z => -((-camY) * cos + (z - camZ) * sin) / czOf(z);
 
-    // Fit the full width of the court at the near baseline — that is where the
-    // near pair stands, and both partners have to be on screen at once — then
-    // cap it so the whole length still fits vertically.
     const BACK = C.HALF_L + BACK_ROOM;
     const halfNear = C.HALF_W / czOf(-C.HALF_L);
-    const span = vOf(-BACK) - vOf(BACK);   // both run-back areas, or far players clip the top
+    const span = vOf(-BACK) - vOf(BACK);
+    // width first — both partners must fit — then a cap so the length fits too
     const focal = Math.min(
-      (portrait ? 0.98 : 1.0) * vp.w / (2 * halfNear),
-      (portrait ? 0.86 : 0.80) * vp.h / span
+      (wide ? 0.66 : 0.98) * vp.w / (2 * halfNear),
+      (wide ? 0.74 : 0.86) * vp.h / span
     );
 
     this.side = side; this.sin = sin; this.cos = cos; this.focal = focal;
     this.y = camY; this.z = camZ;
     this.x = (side === 1 ? -1 : 1) * focusX * 0.25;
     this.cx = vp.x + vp.w / 2;
-    this.cy = vp.y + vp.h * 0.99 - focal * vOf(-BACK);
+    // broadcasts put the near baseline around three quarters down the frame and
+    // leave the run-back below it; a narrow frame anchors the run-back instead
+    this.cy = wide
+      ? vp.y + vp.h * 0.76 - focal * vOf(-C.HALF_L)
+      : vp.y + vp.h * 0.99 - focal * vOf(-BACK);
     this.horizonY = this.cy - focal * (sin / cos);
     this.vp = vp;
+    this.wide = wide;
   }
 
   // Inverse of proj at a fixed depth: which world height lands on this screen
@@ -517,6 +523,8 @@ PB.Renderer = (function () {
     },
   };
 
+  function spaced(s) { return s.split('').join('\u2009'); }
+
   class Renderer {
     constructor(canvas) {
       this.canvas = canvas;
@@ -573,7 +581,6 @@ PB.Renderer = (function () {
         ctx.fillStyle = '#0a0f16';
         ctx.fillRect(0, views[1].rect.y - 2, this.w, 4);
       }
-      this.drawHud(ctx, m);
       if (input) this.drawTouch(ctx, input);
     }
 
@@ -616,14 +623,16 @@ PB.Renderer = (function () {
       const vp = cam.vp;
       const baseY = cam.proj(0, 0, FENCE_Z * F).y;
       const band = Math.max(26, baseY - (vp.y + vp.h * 0.015));
-      const standZ = (FENCE_Z + 11) * F;
-      const yLow = cam.yAtScreen(standZ, baseY - band * 0.28);
+      const standZ = (FENCE_Z + 8) * F;
+      const yLow = Math.max(0.4, cam.yAtScreen(standZ, baseY - band * 0.30));
       const yHigh = cam.yAtScreen(standZ, baseY - band * 0.99);
+      // fill the band with more rows, never with taller people
+      const rows = Math.max(3, Math.min(CROWD_ROWS, Math.floor((yHigh - yLow) / ROW_STEP)));
       return {
-        F, baseY, band, standZ,
+        F, baseY, band, standZ, rows, step: ROW_STEP,
         fenceH: Math.max(3, cam.yAtScreen(FENCE_Z * F, baseY - band * 0.34)),
-        standLow: Math.max(0.4, yLow),
-        standHigh: Math.max(yLow + 1.5, yHigh),
+        standLow: yLow,
+        standHigh: yLow + rows * ROW_STEP,
       };
     }
 
@@ -684,8 +693,8 @@ PB.Renderer = (function () {
         ctx.fill();
       };
       poly(lo - 1.5, hi + 1.4, UI(0.08, 0.15, 0.21));
-      const step = (hi - lo) / CROWD_ROWS;
-      for (let i = 0; i < CROWD_ROWS; i++) {
+      const step = V.step;
+      for (let i = 0; i < V.rows; i++) {
         const y0 = lo + i * step;
         poly(y0, y0 + step * 0.72, i % 2 === 0 ? UI(0.09, 0.16, 0.23) : UI(0.115, 0.19, 0.27));
       }
@@ -736,7 +745,7 @@ PB.Renderer = (function () {
 
     drawCrowd(ctx, cam, V) {
       const seats = this.crowdSeats();
-      const step = (V.standHigh - V.standLow) / CROWD_ROWS;
+      const step = V.step;
       const t = performance.now() / 1000;
       const m = this.match;
       const active = m && m.cheerT > 0;
@@ -751,6 +760,7 @@ PB.Renderer = (function () {
       let arms = null;
 
       for (const s of seats) {
+        if (s.row >= V.rows) continue;
         // the celebration travels along the stand like a wave
         const wave = ((s.x + 54) / 108) * 0.75;
         const local = active ? Math.max(0, Math.min(1, (age - wave) * 3.2)) * fade : 0;
@@ -761,7 +771,7 @@ PB.Renderer = (function () {
         const base = cam.proj(s.x, y, V.standZ);
         if (base.x < vp.x - 30 || base.x > vp.x + vp.w + 30) continue;
         if (base.y < vp.y - 30 || base.y > vp.y + vp.h + 30) continue;
-        const u = base.s * Math.min(1.5, step / 1.7);    // people scale with the rows
+        const u = base.s * 1.05;                          // a person, not a row
         const bw = u * 0.95, bh = u * 1.35;
 
         let bp = bodies[s.shirt];
@@ -1008,6 +1018,7 @@ PB.Renderer = (function () {
     // ── overlays ───────────────────────────────────────────────────────────
     drawViewHud(ctx, m, v, me) {
       const r = v.rect;
+      this.drawScoreboard(ctx, m, r);
       if (m.banner) this.drawBanner(ctx, m, r);
       if (m.hint) {
         ctx.save();
@@ -1019,11 +1030,22 @@ PB.Renderer = (function () {
         ctx.fillText(m.hint, r.x + r.w / 2, r.y + r.h - 18);
         ctx.restore();
       }
+      const prompt = (label, sub) => {
+        const cx = r.x + r.w / 2, cy = r.y + r.h * 0.56;
+        ctx.save();
+        ctx.font = `700 15px system-ui, sans-serif`;
+        const wpx = Math.max(ctx.measureText(label).width, sub ? 210 : 0) + 28;
+        ctx.fillStyle = 'rgba(8,14,22,0.62)';
+        this.roundRect(ctx, cx - wpx / 2, cy - 17, wpx, sub ? 44 : 28, 8);
+        ctx.fill();
+        ctx.restore();
+        this.centerText(ctx, r, label, cy, 15, 'rgba(255,255,255,0.95)');
+        if (sub) this.centerText(ctx, r, sub, cy + 18, 11, 'rgba(255,255,255,0.65)');
+      };
       if (m.state === 'ready' && me && m.players[m.serverIdx] === me) {
-        this.centerText(ctx, r, 'DESLIZE PARA SACAR', r.y + r.h * 0.62, 15, 'rgba(255,255,255,0.92)');
-        this.centerText(ctx, r, 'ou toque  •  curto = curto, longo = fundo', r.y + r.h * 0.62 + 18, 11, 'rgba(255,255,255,0.6)');
+        prompt('DESLIZE PARA SACAR', 'ou toque  •  curto = curto, longo = fundo');
       } else if (m.state === 'ready' && me && m.players[m.receiverIdx] === me) {
-        this.centerText(ctx, r, 'DEIXE O SAQUE QUICAR', r.y + r.h * 0.62, 13, 'rgba(255,255,255,0.7)');
+        prompt('DEIXE O SAQUE QUICAR', null);
       }
     }
 
@@ -1038,26 +1060,80 @@ PB.Renderer = (function () {
       ctx.restore();
     }
 
-    drawHud(ctx, m) {
-      const w = this.w;
-      const boxW = 168, boxH = 44;
-      const x = w / 2 - boxW / 2;
-      // in split screen the scoreboard sits on the seam so both players read it
-      const y = m.versus ? Math.round(this.h / 2 - boxH / 2) : 10;
-      ctx.save();
-      ctx.fillStyle = 'rgba(8,14,22,0.78)';
-      this.roundRect(ctx, x, y, boxW, boxH, 10);
-      ctx.fill();
+    // Broadcast-style panel: title strip, one row per team with its score box,
+    // and a footer carrying the serve. Drawn per viewport, so split screen gives
+    // each player their own.
+    drawScoreboard(ctx, m, rect) {
+      const k = Math.max(0.62, Math.min(1.05, rect.w / 900));
+      const pad = 10 * k;
+      const w = Math.min(rect.w - pad * 2, 300 * k);
+      const head = 20 * k, row = 30 * k, foot = 15 * k;
+      const x = rect.x + pad;
+      const y = rect.y + pad;
+      const h = head + row * 2 + foot;
+      const box = 40 * k;
 
-      const s = m.servingTeam;
-      ctx.font = '700 22px system-ui, -apple-system, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#fff';
-      ctx.fillText(m.scoreText(), x + boxW / 2, y + 27);
-      ctx.font = '600 10px system-ui, sans-serif';
-      ctx.fillStyle = COL.team[s].shirt;
-      ctx.fillText('SACA  ' + (s === 0 ? 'TIME 1' : 'TIME 2'), x + boxW / 2, y + 39);
+      ctx.save();
+      ctx.textBaseline = 'middle';
+
+      // title strip
+      ctx.fillStyle = '#0c1622';
+      ctx.fillRect(x, y, w, head);
+      ctx.fillStyle = 'rgba(255,255,255,0.82)';
+      ctx.font = `700 ${9.5 * k}px system-ui, sans-serif`;
+      ctx.textAlign = 'left';
+      const title = (m.isDoubles() ? 'DUPLAS' : 'SIMPLES') + ': ATÉ ' + m.cfg.targetPoints + ' PONTOS';
+      ctx.fillText(spaced(title), x + 8 * k, y + head / 2);
+
+      // one row per team
+      for (let t = 0; t < 2; t++) {
+        const ry = y + head + row * t;
+        ctx.fillStyle = t === 0 ? 'rgba(14,24,36,0.94)' : 'rgba(20,32,46,0.94)';
+        ctx.fillRect(x, ry, w, row);
+        ctx.fillStyle = COL.team[t].shirt;
+        ctx.fillRect(x, ry, 3.5 * k, row);
+
+        const names = m.mates(t).map(p => p.name).join(' / ');
+        ctx.fillStyle = '#eef4f9';
+        ctx.font = `700 ${11.5 * k}px system-ui, sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.fillText(names, x + 12 * k, ry + row / 2);
+
+        // serve indicator, and the server number in doubles
+        if (m.servingTeam === t) {
+          const bx = x + w - box - 12 * k;
+          ctx.fillStyle = COL.ball;
+          ctx.beginPath();
+          ctx.arc(bx, ry + row / 2, 3.2 * k, 0, Math.PI * 2);
+          ctx.fill();
+          if (m.isDoubles()) {
+            ctx.fillStyle = 'rgba(255,255,255,0.55)';
+            ctx.font = `700 ${8.5 * k}px system-ui, sans-serif`;
+            ctx.textAlign = 'right';
+            ctx.fillText(String(m.serverNumber), bx - 5 * k, ry + row / 2);
+          }
+        }
+
+        // score box
+        ctx.fillStyle = t === 0 ? '#1b3552' : '#b4303f';
+        ctx.fillRect(x + w - box, ry + 1, box, row - 2);
+        ctx.fillStyle = '#fff';
+        ctx.font = `800 ${17 * k}px system-ui, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(String(m.score[t]), x + w - box / 2, ry + row / 2);
+      }
+
+      // footer
+      ctx.fillStyle = '#0c1622';
+      ctx.fillRect(x, y + head + row * 2, w, foot);
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = `700 ${8 * k}px system-ui, sans-serif`;
+      ctx.textAlign = 'left';
+      ctx.fillText(spaced('PICKLEBALL'), x + 8 * k, y + head + row * 2 + foot / 2);
+      ctx.textAlign = 'right';
+      ctx.fillText(m.scoreText(), x + w - 8 * k, y + head + row * 2 + foot / 2);
       ctx.restore();
+      return h;
     }
 
     drawBanner(ctx, m, rect) {
