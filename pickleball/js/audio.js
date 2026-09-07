@@ -80,6 +80,32 @@ PB.Audio = (function () {
       g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
       src.connect(f); f.connect(g); g.connect(master);
       src.start();
+    } else if (kind === 'crowd') {
+      // a stand full of people: broadband noise that swells and falls, with
+      // a scatter of claps riding on top
+      const dur = 1.6 + p * 1.2;
+      const src = noise(dur);
+      const f = ctx.createBiquadFilter();
+      f.type = 'bandpass'; f.frequency.value = 900 + p * 500; f.Q.value = 0.7;
+      const g = ctx.createGain();
+      const now = ctx.currentTime;
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.16 * p + 0.02, now + 0.18);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      src.connect(f); f.connect(g); g.connect(master);
+      src.start();
+      const claps = Math.round(4 + p * 10);
+      for (let i = 0; i < claps; i++) {
+        const at = now + 0.1 + Math.random() * dur * 0.7;
+        const c = noise(0.04);
+        const cf = ctx.createBiquadFilter();
+        cf.type = 'highpass'; cf.frequency.value = 1800;
+        const cg = ctx.createGain();
+        cg.gain.setValueAtTime(0.05 * p, at);
+        cg.gain.exponentialRampToValueAtTime(0.0001, at + 0.05);
+        c.connect(cf); cf.connect(cg); cg.connect(master);
+        c.start(at);
+      }
     } else if (kind === 'point') {
       blip(520, 0.12, 'triangle', 0.2);
       setTimeout(() => ctx && blip(780, 0.16, 'triangle', 0.18), 90);

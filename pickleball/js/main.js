@@ -129,7 +129,11 @@
       if (e.type === 'hit') { PB.Audio.play('hit', (e.power || 30) / 60); buzz(6); }
       else if (e.type === 'bounce') PB.Audio.play('bounce', (e.impact || 8) / 20);
       else if (e.type === 'net') PB.Audio.play('net');
-      else if (e.type === 'point') { PB.Audio.play('point'); buzz(28); }
+      else if (e.type === 'point') {
+        PB.Audio.play('point');
+        PB.Audio.play('crowd', e.cheer || 0.6);
+        buzz(28);
+      }
     }
     m.events.length = 0;
   }

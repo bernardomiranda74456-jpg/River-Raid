@@ -77,6 +77,22 @@ usa uma mais baixa, que preenche melhor o quadro. O enquadramento vertical conta
 o espaço de corrida atrás das duas linhas de fundo, então nenhum jogador é
 cortado no topo nem embaixo.
 
+## Torcida
+
+Cerca de 500 torcedores sentados em sete fileiras, cada um com camisa e tom de
+pele próprios, respirando de leve entre os pontos. **A cada ponto eles
+comemoram**: levantam, pulam e erguem os braços numa *ola* que atravessa a
+arquibancada, mais forte quanto mais longo foi o rally, e mais longa ainda no
+fim da partida. O som acompanha — ruído de multidão que cresce e cai, com palmas
+espalhadas por cima.
+
+O estádio se ajusta à câmera por projeção inversa: o jogo calcula quanto de tela
+sobra acima do fundo da quadra e divide essa faixa entre alambrado e
+arquibancada. Sem isso, em paisagem o alambrado encostava no topo e a torcida
+ficava inteira fora do quadro.
+
+Custo: 0,62 ms por quadro para a torcida inteira, desenhada em lote por cor.
+
 ## Jogadores
 
 Cada jogador é um boneco articulado desenhado por quadro: cabeça com cabelo (quatro

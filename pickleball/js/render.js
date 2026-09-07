@@ -23,10 +23,14 @@ PB.Renderer = (function () {
     hair: ['#1d150f', '#3b2416', '#7a4a22', '#c9a24a', '#2b2b31', '#8d8d96'],
     shoe: '#f2f5f8',
     paddleFace: ['#2b4a6b', '#6b2b3a', '#1f5a4a', '#4a3a6b'],
+    crowd: ['#c8d4e0', '#e0d3b8', '#b8c9e0', '#d9b6b6', '#b6d9c4', '#cbc0dd', '#e8d9a8'],
+    crowdSkin: ['#e2b083', '#c68a5c', '#8d5a3b'],
   };
 
   const FENCE_Z = 34, FENCE_H = 8, FENCE_X = 26;
   const BACK_ROOM = 4.5;   // how far behind the baseline a player may run
+  const CROWD_ROWS = 7;
+  const UI = (a, b, c) => `rgb(${Math.round(a*255)},${Math.round(b*255)},${Math.round(c*255)})`;
 
   function Cam(vp, side, focusX) {
     // Portrait has to show a 20 ft width in a narrow frame, so it uses a higher,
@@ -59,6 +63,17 @@ PB.Renderer = (function () {
     this.horizonY = this.cy - focal * (sin / cos);
     this.vp = vp;
   }
+
+  // Inverse of proj at a fixed depth: which world height lands on this screen
+  // row? Lets the stadium fit whatever band the camera leaves above the court.
+  Cam.prototype.yAtScreen = function (z, screenY) {
+    if (this.side === 1) z = -z;
+    const dz = z - this.z;
+    const v = (this.cy - screenY) / this.focal;
+    const den = -v * this.sin - this.cos;
+    if (Math.abs(den) < 1e-6) return this.y;
+    return this.y + (dz * (this.sin - v * this.cos)) / den;
+  };
 
   Cam.prototype.proj = function (x, y, z) {
     if (this.side === 1) { x = -x; z = -z; }
@@ -532,6 +547,7 @@ PB.Renderer = (function () {
     // ── frame ──────────────────────────────────────────────────────────────
     draw(m, input) {
       const ctx = this.ctx;
+      this.match = m;
       ctx.clearRect(0, 0, this.w, this.h);
       const views = this.viewports(m);
 
@@ -592,8 +608,28 @@ PB.Renderer = (function () {
       this.drawBall(ctx, cam, m);
     }
 
-    drawFence(ctx, cam) {
+    // How much screen room is left above the far edge of the ground, and how the
+    // fence and the stand split it. The venue composes itself from this, so it
+    // works in portrait, landscape and split screen alike.
+    venue(cam) {
       const F = cam.side === 1 ? -1 : 1;
+      const vp = cam.vp;
+      const baseY = cam.proj(0, 0, FENCE_Z * F).y;
+      const band = Math.max(26, baseY - (vp.y + vp.h * 0.015));
+      const standZ = (FENCE_Z + 11) * F;
+      const yLow = cam.yAtScreen(standZ, baseY - band * 0.28);
+      const yHigh = cam.yAtScreen(standZ, baseY - band * 0.99);
+      return {
+        F, baseY, band, standZ,
+        fenceH: Math.max(3, cam.yAtScreen(FENCE_Z * F, baseY - band * 0.34)),
+        standLow: Math.max(0.4, yLow),
+        standHigh: Math.max(yLow + 1.5, yHigh),
+      };
+    }
+
+    drawFence(ctx, cam) {
+      const V = this.venue(cam);
+      const F = V.F, H = V.fenceH, FZ = FENCE_Z * F;
       const mesh = (pts, fill) => {
         ctx.beginPath();
         for (let i = 0; i < pts.length; i++) {
@@ -604,85 +640,172 @@ PB.Renderer = (function () {
         ctx.fillStyle = fill;
         ctx.fill();
       };
-      // side fences first, then the back wall
-      const FZ = FENCE_Z * F;
       for (const sx of [-FENCE_X, FENCE_X]) {
-        mesh([[sx, 0, -30 * F], [sx, FENCE_H, -30 * F], [sx, FENCE_H, FZ], [sx, 0, FZ]], 'rgba(16,32,42,0.55)');
+        mesh([[sx, 0, -30 * F], [sx, H, -30 * F], [sx, H, FZ], [sx, 0, FZ]], 'rgba(16,32,42,0.55)');
       }
-      mesh([[-FENCE_X, 0, FZ], [-FENCE_X, FENCE_H, FZ], [FENCE_X, FENCE_H, FZ], [FENCE_X, 0, FZ]], 'rgba(14,28,38,0.72)');
-      // fence mesh lines + a sponsor band, the thing that reads as "a real venue"
+      mesh([[-FENCE_X, 0, FZ], [-FENCE_X, H, FZ], [FENCE_X, H, FZ], [FENCE_X, 0, FZ]], 'rgba(14,28,38,0.72)');
       ctx.strokeStyle = 'rgba(255,255,255,0.07)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       for (let i = -FENCE_X; i <= FENCE_X; i += 3) {
-        const a = cam.proj(i, 0, FZ), b = cam.proj(i, FENCE_H, FZ);
-        ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+        const p1 = cam.proj(i, 0, FZ), p2 = cam.proj(i, H, FZ);
+        ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
       }
-      for (let hgt = 1; hgt < FENCE_H; hgt += 2) {
-        const a = cam.proj(-FENCE_X, hgt, FZ), b = cam.proj(FENCE_X, hgt, FZ);
-        ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+      for (let hgt = H / 4; hgt < H; hgt += H / 4) {
+        const p1 = cam.proj(-FENCE_X, hgt, FZ), p2 = cam.proj(FENCE_X, hgt, FZ);
+        ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
       }
       ctx.stroke();
       const bz = FZ - 0.05 * F;
-      mesh([[-FENCE_X, 2.0, bz], [-FENCE_X, 4.2, bz], [FENCE_X, 4.2, bz], [FENCE_X, 2.0, bz]], 'rgba(20,90,120,0.85)');
-      const a = cam.proj(0, 3.1, bz - 0.01 * F);
+      mesh([[-FENCE_X, H * 0.26, bz], [-FENCE_X, H * 0.58, bz],
+            [FENCE_X, H * 0.58, bz], [FENCE_X, H * 0.26, bz]], 'rgba(20,90,120,0.85)');
+      const anchor = cam.proj(0, H * 0.42, bz - 0.01 * F);
       ctx.save();
-      ctx.font = `700 ${Math.max(7, a.s * 0.9)}px system-ui, sans-serif`;
+      ctx.font = `700 ${Math.max(7, anchor.s * 0.8)}px system-ui, sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(255,255,255,0.55)';
-      ctx.fillText('P I C K L E B A L L', a.x, a.y + a.s * 0.3);
+      ctx.fillText('P I C K L E B A L L', anchor.x, anchor.y + anchor.s * 0.28);
       ctx.restore();
     }
 
-    // Grandstand and light towers, drawn in world space so they sit correctly
-    // behind the fence in every viewport shape.
     drawStands(ctx, cam) {
-      const Z = 45 * (cam.side === 1 ? -1 : 1), X = 56, H = 14;
-      const poly = (pts, fill) => {
+      const V = this.venue(cam);
+      const Z = V.standZ, X = 60;
+      const lo = V.standLow, hi = V.standHigh;
+      const poly = (y0, y1, fill) => {
         ctx.beginPath();
+        const pts = [[-X, y0], [-X, y1], [X, y1], [X, y0]];
         for (let i = 0; i < pts.length; i++) {
-          const p = cam.proj(pts[i][0], pts[i][1], pts[i][2]);
+          const p = cam.proj(pts[i][0], pts[i][1], Z);
           if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
         }
         ctx.closePath();
         ctx.fillStyle = fill;
         ctx.fill();
       };
-      // seating block
-      poly([[-X, 0, Z], [-X, H, Z], [X, H, Z], [X, 0, Z]], '#152535');
-      const rows = 7;
-      for (let i = 0; i < rows; i++) {
-        const y0 = 2 + (i * (H - 3)) / rows;
-        const y1 = y0 + (H - 3) / rows - 0.45;
-        poly([[-X, y0, Z], [-X, y1, Z], [X, y1, Z], [X, y0, Z]], i % 2 ? '#1b2f42' : '#16283a');
-        // crowd
-        const seen = cam.proj(0, y0, Z);
-        ctx.fillStyle = i % 3 === 0 ? 'rgba(216,231,242,0.20)' : 'rgba(255,208,120,0.16)';
-        for (let k = -26; k <= 26; k += 1.6) {
-          const q = cam.proj(k + (i % 2) * 0.7, y0 + 0.55, Z);
-          const rr = Math.max(0.8, q.s * 0.36);
-          ctx.fillRect(q.x - rr / 2, q.y - rr, rr, rr);
-        }
-        void seen;
+      poly(lo - 1.5, hi + 1.4, UI(0.08, 0.15, 0.21));
+      const step = (hi - lo) / CROWD_ROWS;
+      for (let i = 0; i < CROWD_ROWS; i++) {
+        const y0 = lo + i * step;
+        poly(y0, y0 + step * 0.72, i % 2 === 0 ? UI(0.09, 0.16, 0.23) : UI(0.115, 0.19, 0.27));
       }
-      poly([[-X, H, Z], [-X, H + 1.8, Z], [X, H + 1.8, Z], [X, H, Z]], '#0e1a26');
+      poly(hi + 1.4, hi + 2.6, '#0e1a26');
 
-      // floodlights
+      this.drawCrowd(ctx, cam, V);
+
       for (const px of [-23, 23]) {
-        const zz = Z + (Z < 0 ? 4 : -4);
-        const base = cam.proj(px, 0, zz), top = cam.proj(px, 26, zz);
+        const zz = Z - 5 * V.F;
+        const base = cam.proj(px, 0, zz), top = cam.proj(px, hi + 9, zz);
         ctx.strokeStyle = '#1a2a3a';
         ctx.lineWidth = Math.max(2, base.s * 0.5);
         ctx.beginPath(); ctx.moveTo(base.x, base.y); ctx.lineTo(top.x, top.y); ctx.stroke();
-        const lamp = cam.proj(px, 27.5, zz);
-        const r = Math.max(6, lamp.s * 4.5);
-        const glow = ctx.createRadialGradient(lamp.x, lamp.y, 0, lamp.x, lamp.y, r);
+        const lamp = cam.proj(px, hi + 10.5, zz);
+        const rr = Math.max(6, lamp.s * 4.5);
+        const glow = ctx.createRadialGradient(lamp.x, lamp.y, 0, lamp.x, lamp.y, rr);
         glow.addColorStop(0, 'rgba(255,246,214,0.55)');
         glow.addColorStop(1, 'rgba(255,246,214,0)');
         ctx.fillStyle = glow;
-        ctx.beginPath(); ctx.arc(lamp.x, lamp.y, r, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(lamp.x, lamp.y, rr, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#fdf3cd';
-        ctx.fillRect(lamp.x - r * 0.28, lamp.y - r * 0.16, r * 0.56, r * 0.3);
+        ctx.fillRect(lamp.x - rr * 0.28, lamp.y - rr * 0.16, rr * 0.56, rr * 0.3);
+      }
+    }
+
+    // Spectators: built once, projected every frame, and drawn batched by
+    // colour so a full stand costs a handful of fills.
+    crowdSeats() {
+      if (this._crowd) return this._crowd;
+      const seats = [];
+      const rand = i => { const x = Math.sin(i * 12.9898) * 43758.5453; return x - Math.floor(x); };
+      for (let row = 0; row < CROWD_ROWS; row++) {
+        for (let i = 0; i < 80; i++) {
+          const k = row * 149 + i;
+          if (rand(k * 3.1) < 0.10) continue;                 // empty seats
+          seats.push({
+            x: -60 + i * 1.5 + rand(k) * 0.5,
+            row,
+            shirt: Math.floor(rand(k * 1.7) * COL.crowd.length),
+            skin: Math.floor(rand(k * 2.3) * COL.crowdSkin.length),
+            ph: rand(k * 5.9) * 6.283,
+          });
+        }
+      }
+      this._crowd = seats;
+      return seats;
+    }
+
+    drawCrowd(ctx, cam, V) {
+      const seats = this.crowdSeats();
+      const step = (V.standHigh - V.standLow) / CROWD_ROWS;
+      const t = performance.now() / 1000;
+      const m = this.match;
+      const active = m && m.cheerT > 0;
+      const age = active ? (m.cheerDur - m.cheerT) : 0;
+      const fade = active ? Math.min(1, m.cheerT / 0.6) * (m.cheerLevel || 1) : 0;
+
+      const vp = cam.vp;
+      const bodies = [];
+      const heads = [];
+      for (let i = 0; i < COL.crowd.length; i++) bodies.push(null);
+      for (let i = 0; i < COL.crowdSkin.length; i++) heads.push(null);
+      let arms = null;
+
+      for (const s of seats) {
+        // the celebration travels along the stand like a wave
+        const wave = ((s.x + 54) / 108) * 0.75;
+        const local = active ? Math.max(0, Math.min(1, (age - wave) * 3.2)) * fade : 0;
+        const jump = local * Math.abs(Math.sin((age - wave) * 8 + s.ph)) * 0.62;
+        const sway = Math.sin(t * 1.2 + s.ph) * 0.05;
+        const y = V.standLow + s.row * step + step * 0.34 + (jump + sway) * step * 0.85;
+
+        const base = cam.proj(s.x, y, V.standZ);
+        if (base.x < vp.x - 30 || base.x > vp.x + vp.w + 30) continue;
+        if (base.y < vp.y - 30 || base.y > vp.y + vp.h + 30) continue;
+        const u = base.s * Math.min(1.5, step / 1.7);    // people scale with the rows
+        const bw = u * 0.95, bh = u * 1.35;
+
+        let bp = bodies[s.shirt];
+        if (!bp) { bp = bodies[s.shirt] = new Path2D(); }
+        bp.moveTo(base.x - bw / 2, base.y);
+        bp.lineTo(base.x + bw / 2, base.y);
+        bp.lineTo(base.x + bw * 0.40, base.y - bh);
+        bp.lineTo(base.x - bw * 0.40, base.y - bh);
+        bp.closePath();
+
+        let hp = heads[s.skin];
+        if (!hp) { hp = heads[s.skin] = new Path2D(); }
+        const hr = Math.max(0.8, u * 0.34);
+        hp.moveTo(base.x + hr, base.y - bh - hr * 0.75);
+        hp.arc(base.x, base.y - bh - hr * 0.75, hr, 0, Math.PI * 2);
+
+        if (local > 0.25 && u > 3) {
+          if (!arms) arms = new Path2D();
+          const ax = u * 0.55, ay = u * 1.05;
+          arms.moveTo(base.x - bw * 0.35, base.y - bh * 0.85);
+          arms.lineTo(base.x - ax, base.y - bh - ay * local);
+          arms.moveTo(base.x + bw * 0.35, base.y - bh * 0.85);
+          arms.lineTo(base.x + ax, base.y - bh - ay * local);
+        }
+      }
+
+      for (let i = 0; i < bodies.length; i++) {
+        if (!bodies[i]) continue;
+        ctx.fillStyle = COL.crowd[i];
+        ctx.globalAlpha = 0.85;
+        ctx.fill(bodies[i]);
+      }
+      for (let i = 0; i < heads.length; i++) {
+        if (!heads[i]) continue;
+        ctx.fillStyle = COL.crowdSkin[i];
+        ctx.globalAlpha = 0.9;
+        ctx.fill(heads[i]);
+      }
+      ctx.globalAlpha = 1;
+      if (arms) {
+        ctx.strokeStyle = 'rgba(240,225,200,0.85)';
+        ctx.lineWidth = Math.max(1, cam.proj(0, V.standLow, V.standZ).s * 0.16);
+        ctx.lineCap = 'round';
+        ctx.stroke(arms);
       }
     }
 

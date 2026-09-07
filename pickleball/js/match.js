@@ -90,6 +90,9 @@ PB.Match = (function () {
       this.hint = null;
       this.hintT = 0;
       this.events = [];
+      this.cheerT = 0;
+      this.cheerDur = 2.6;
+      this.cheerLevel = 0;
       this.rallyLog = [];
       this.winner = -1;
       this.pred = null;
@@ -251,6 +254,7 @@ PB.Match = (function () {
       dt = Math.min(dt, 1 / 20);
       this.stateT += dt;
       if (this.hintT > 0) { this.hintT -= dt; if (this.hintT <= 0) this.hint = null; }
+      if (this.cheerT > 0) this.cheerT -= dt;
 
       this.updatePrediction();
       this.updateAnticipation(dt);
@@ -662,7 +666,11 @@ PB.Match = (function () {
       this.lastWinner = winner;
       this.state = 'point';
       this.stateT = 0;
-      this.events.push({ type: 'point', winner, reason });
+      // the longer the rally, the louder the stands
+      this.cheerLevel = Math.min(1, 0.45 + this.rally.shotCount * 0.045);
+      this.cheerDur = 2.6;
+      this.cheerT = this.cheerDur;
+      this.events.push({ type: 'point', winner, reason, cheer: this.cheerLevel });
 
       if (winner === this.servingTeam) {
         this.score[winner]++;
@@ -691,6 +699,9 @@ PB.Match = (function () {
       const tp = this.cfg.targetPoints;
       if (this.score[winner] >= tp && this.score[winner] - this.score[1 - winner] >= this.cfg.winBy) {
         this.winner = winner;
+        this.cheerLevel = 1;
+        this.cheerDur = 4.5;
+        this.cheerT = this.cheerDur;
       }
     }
 
