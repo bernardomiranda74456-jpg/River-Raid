@@ -95,13 +95,34 @@ PB.Renderer = (function () {
   // Everything below works in local feet: x is lateral on screen, y is height
   // off the court. Joints are solved with two-bone IK, then projected by the
   // player's depth scale, so a near player and a far one share one rig.
-  const BODY = {
+  const BODY_ATHLETIC = {
     ankle: 0.30, knee: 1.62, hip: 2.88, waist: 3.34, shoulder: 4.70,
     head: 5.42, headR: 0.37,
     shoulderHalf: 0.58, hipHalf: 0.40,
     upperArm: 1.06, foreArm: 0.98,
     thigh: 1.26, shin: 1.32,
   };
+  // Arcade shifts the proportions rather than the drawing: short limbs, big head.
+  const BODY_ARCADE = {
+    ankle: 0.32, knee: 1.45, hip: 2.58, waist: 3.00, shoulder: 4.20,
+    head: 5.00, headR: 0.52,
+    shoulderHalf: 0.68, hipHalf: 0.46,
+    upperArm: 0.88, foreArm: 0.80,
+    thigh: 1.12, shin: 1.16,
+  };
+
+  const CHAR_STYLES = {
+    // 1. jogador atlético: proporções reais, volume cilíndrico, sem contorno
+    atletico: { body: BODY_ATHLETIC, limb: 1.00, shade: true, outline: 0, detail: true },
+    // 2. vetor esportivo: formas cheias com contorno escuro, cor chapada
+    vetor:    { body: BODY_ATHLETIC, limb: 1.32, shade: false, outline: 0.075, detail: false },
+    // 3. arcade: cabeçudo, membros curtos e grossos, contorno leve
+    arcade:   { body: BODY_ARCADE,   limb: 1.55, shade: false, outline: 0.05, detail: false },
+  };
+
+  let BODY = BODY_ATHLETIC;
+  let STYLE = CHAR_STYLES.atletico;
+  const OUTLINE_COL = '#101a26';
 
   // Two-bone IK: elbow/knee position for a limb reaching from a to b.
   function ik(ax, ay, bx, by, l1, l2, bend) {
@@ -146,6 +167,8 @@ PB.Renderer = (function () {
     },
 
     draw(ctx, cam, p, base, s, isMe) {
+      STYLE = CHAR_STYLES[Renderer.charStyle] || CHAR_STYLES.atletico;
+      BODY = STYLE.body;
       const look = this.look(p);
       const kit = COL.team[p.team];
       const skin = COL.skin[look.skin];
@@ -314,10 +337,15 @@ PB.Renderer = (function () {
     // `round` fills it, then two thin strips give it a cylindrical read.
     limb(ctx, P, ax, ay, bx, by, w1, w2, color, volume) {
       const x1 = P.X(ax), y1 = P.Y(ay), x2 = P.X(bx), y2 = P.Y(by);
-      const r1 = Math.max(0.6, (w1 * P.s) / 2), r2 = Math.max(0.5, (w2 * P.s) / 2);
+      const k = STYLE.limb;
+      const r1 = Math.max(0.6, (w1 * k * P.s) / 2), r2 = Math.max(0.5, (w2 * k * P.s) / 2);
       const dx = x2 - x1, dy = y2 - y1;
       const d = Math.hypot(dx, dy) || 1;
       const nx = -dy / d, ny = dx / d;
+      if (STYLE.outline > 0) {
+        const o = Math.max(1, STYLE.outline * P.s);
+        this.capsule(ctx, x1, y1, x2, y2, r1 + o, r2 + o, nx, ny, OUTLINE_COL);
+      }
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.moveTo(x1 + nx * r1, y1 + ny * r1);
@@ -332,7 +360,7 @@ PB.Renderer = (function () {
       ctx.beginPath();
       ctx.arc(x2, y2, r2, 0, Math.PI * 2);
       ctx.fill();
-      if (volume === false || r1 < 2.2) return;
+      if (!STYLE.shade || volume === false || r1 < 2.2) return;
       // light comes from the upper left
       const lightSide = (nx * -0.7 + ny * -0.7) >= 0 ? 1 : -1;
       const strip = (off, wf, col) => {
@@ -350,17 +378,34 @@ PB.Renderer = (function () {
       strip(-r1 * 0.52, 0.30, 'rgba(0,0,0,0.16)');
     },
 
+    capsule(ctx, x1, y1, x2, y2, r1, r2, nx, ny, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x1 + nx * r1, y1 + ny * r1);
+      ctx.lineTo(x2 + nx * r2, y2 + ny * r2);
+      ctx.lineTo(x2 - nx * r2, y2 - ny * r2);
+      ctx.lineTo(x1 - nx * r1, y1 - ny * r1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath(); ctx.arc(x1, y1, r1, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x2, y2, r2, 0, Math.PI * 2); ctx.fill();
+    },
+
     leg(ctx, P, L, kit, skin, shoeCol, shade) {
       const dim = shade < 1;
       this.limb(ctx, P, L.hip.x, L.hip.y, L.knee.x, L.knee.y, 0.46, 0.30, dim ? kit.shorts2 : kit.shorts);
       this.limb(ctx, P, L.knee.x, L.knee.y, L.foot.x, L.foot.y + 0.06, 0.28, 0.19, skin);
       // sock
-      this.limb(ctx, P, L.foot.x, L.foot.y + 0.34, L.foot.x, L.foot.y + 0.12, 0.22, 0.22, '#eef3f7');
+      if (STYLE.detail) {
+        this.limb(ctx, P, L.foot.x, L.foot.y + 0.34, L.foot.x, L.foot.y + 0.12, 0.22, 0.22, '#eef3f7');
+      }
       // shoe: upper, stripe and sole
       const toe = L.foot.x + (L.side * 0.06);
       this.limb(ctx, P, L.foot.x, L.foot.y + 0.05, toe, L.foot.y - 0.02, 0.26, 0.30, shoeCol);
-      this.limb(ctx, P, L.foot.x, L.foot.y + 0.02, toe, L.foot.y + 0.01, 0.07, 0.07,
-                kit.shirt2, false);
+      if (STYLE.detail) {
+        this.limb(ctx, P, L.foot.x, L.foot.y + 0.02, toe, L.foot.y + 0.01, 0.07, 0.07,
+                  kit.shirt2, false);
+      }
       ctx.save();
       ctx.fillStyle = 'rgba(16,26,38,0.65)';
       ctx.beginPath();
@@ -379,8 +424,10 @@ PB.Renderer = (function () {
                 sh.x + (elbow.x - sh.x) * t, sh.y + (elbow.y - sh.y) * t,
                 0.30, 0.26, shade < 1 ? kit.shirt2 : kit.shirt, false);
       // wristband and hand
-      const wx = elbow.x + (hand.x - elbow.x) * 0.86, wy = elbow.y + (hand.y - elbow.y) * 0.86;
-      this.limb(ctx, P, wx, wy, hand.x, hand.y, 0.21, 0.19, kit.trim, false);
+      if (STYLE.detail) {
+        const wx = elbow.x + (hand.x - elbow.x) * 0.86, wy = elbow.y + (hand.y - elbow.y) * 0.86;
+        this.limb(ctx, P, wx, wy, hand.x, hand.y, 0.21, 0.19, kit.trim, false);
+      }
       ctx.beginPath();
       ctx.arc(P.X(hand.x), P.Y(hand.y), Math.max(1, P.s * 0.12), 0, Math.PI * 2);
       ctx.fillStyle = skin;
@@ -396,8 +443,15 @@ PB.Renderer = (function () {
       ctx.lineTo(P.X(hipL.x - 0.14), P.Y(hipL.y + 0.02));
       ctx.quadraticCurveTo(P.X(shL.x - 0.06), P.Y(midY), P.X(shL.x), P.Y(shL.y - 0.06));
       ctx.closePath();
+      if (STYLE.outline > 0) {
+        ctx.strokeStyle = OUTLINE_COL;
+        ctx.lineWidth = Math.max(2, STYLE.outline * P.s * 2);
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+      }
       ctx.fillStyle = kit.shirt;
       ctx.fill();
+      if (!STYLE.shade) { this.torsoFlat(ctx, P, shL, shR, hipL, hipR, kit); return; }
       // round the shirt out with light across the chest
       const gx0 = P.X(Math.min(shL.x, hipL.x) - 0.2), gx1 = P.X(Math.max(shR.x, hipR.x) + 0.2);
       const grad = ctx.createLinearGradient(gx0, 0, gx1, 0);
@@ -434,15 +488,42 @@ PB.Renderer = (function () {
       ctx.fill();
     },
 
+    // collar and hem only, for the flat styles
+    torsoFlat(ctx, P, shL, shR, hipL, hipR, kit) {
+      ctx.beginPath();
+      ctx.moveTo(P.X(shL.x + 0.14), P.Y(shL.y + 0.02));
+      ctx.quadraticCurveTo(P.X((shL.x + shR.x) / 2), P.Y(shL.y + 0.26), P.X(shR.x - 0.14), P.Y(shR.y + 0.02));
+      ctx.quadraticCurveTo(P.X((shL.x + shR.x) / 2), P.Y(shL.y + 0.10), P.X(shL.x + 0.14), P.Y(shL.y + 0.02));
+      ctx.closePath();
+      ctx.fillStyle = kit.trim;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(P.X(hipL.x - 0.16), P.Y(hipL.y + 0.30));
+      ctx.lineTo(P.X(hipR.x + 0.16), P.Y(hipR.y + 0.30));
+      ctx.lineTo(P.X(hipR.x + 0.20), P.Y(hipR.y - 0.26));
+      ctx.lineTo(P.X(hipL.x - 0.20), P.Y(hipL.y - 0.26));
+      ctx.closePath();
+      ctx.fillStyle = kit.shorts;
+      ctx.fill();
+    },
+
     head(ctx, P, shL, shR, shY, skin, skinDark, look, coil, facing) {
       const cx = (shL.x + shR.x) / 2 + Math.sin(coil) * 0.14;
       const headY = shY + (BODY.head - BODY.shoulder) + 0.06;
       const R = BODY.headR;
       this.limb(ctx, P, cx, shY - 0.04, cx, headY - R * 0.62, 0.27, 0.24, skinDark, false);
+      if (STYLE.outline > 0) {
+        const o = Math.max(1, STYLE.outline * P.s);
+        ctx.beginPath();
+        ctx.ellipse(P.X(cx), P.Y(headY), P.s * R * 0.92 + o, P.s * R + o, 0, 0, Math.PI * 2);
+        ctx.fillStyle = OUTLINE_COL;
+        ctx.fill();
+      }
       ctx.beginPath();
       ctx.ellipse(P.X(cx), P.Y(headY), P.s * R * 0.92, P.s * R, 0, 0, Math.PI * 2);
       ctx.fillStyle = skin;
       ctx.fill();
+      if (!STYLE.shade) { this.hair(ctx, P, cx, headY, R, look, coil, facing); return; }
       const hg = ctx.createLinearGradient(P.X(cx - R), 0, P.X(cx + R), 0);
       hg.addColorStop(0, 'rgba(255,255,255,0.12)');
       hg.addColorStop(0.55, 'rgba(0,0,0,0)');
@@ -450,7 +531,10 @@ PB.Renderer = (function () {
       ctx.fillStyle = hg;
       ctx.fill();
 
-      // hair: a cap that reads from the front and the back, plus one flourish
+      this.hair(ctx, P, cx, headY, R, look, coil, facing);
+    },
+
+    hair(ctx, P, cx, headY, R, look, coil, facing) {
       ctx.save();
       ctx.fillStyle = look.hair;
       ctx.beginPath();
@@ -1193,6 +1277,7 @@ PB.Renderer = (function () {
     }
   }
 
+  Renderer.charStyle = 'atletico';
   Renderer.COL = COL;
   Renderer.Cam = Cam;
   return Renderer;

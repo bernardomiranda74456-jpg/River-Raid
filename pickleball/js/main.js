@@ -6,7 +6,7 @@
   const renderer = new PB.Renderer(canvas);
   const input = new PB.Input(canvas);
 
-  const DEFAULTS = { format: 'singles', humans: '1', arrangement: 'coop', difficulty: 'normal', targetPoints: '11' };
+  const DEFAULTS = { format: 'singles', humans: '1', arrangement: 'coop', difficulty: 'normal', targetPoints: '11', charStyle: 'atletico' };
   // Storage can throw outright (private mode, sandboxed frame, site data blocked),
   // so every read and write goes through here.
   const store = {
@@ -41,6 +41,7 @@
       const b = e.target.closest('.opt');
       if (!b) return;
       cfg[grp.dataset.group] = b.dataset.val;
+      if (grp.dataset.group === 'charStyle') PB.Renderer.charStyle = cfg.charStyle;
       syncOpts();
       save();
       buzz(8);
@@ -79,6 +80,7 @@
   $('btn-menu').onclick = () => { match = null; show('scr-title'); };
 
   function start() {
+    PB.Renderer.charStyle = cfg.charStyle;
     PB.Audio.init();
     PB.Audio.setMuted(!sound);
     match = new PB.Match({
