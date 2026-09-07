@@ -81,8 +81,11 @@ Tom de pele, cabelo e cor da raquete são fixos por jogador.
 
 A animação sai do estado do jogo, não de um loop solto:
 
-- **corrida** com passada e balanço de braço proporcionais à velocidade, mais
-  inclinação do tronco na direção do movimento;
+- **corrida com o corpo virado**: o jogador gira até 66° na direção em que
+  corre, e a passada é decomposta entre o que sobra de deslocamento lateral e o
+  que vira profundidade — é isso que separa uma corrida de um andar de lado;
+- ombros giram mais que o quadril, e o braço livre bombeia contra as pernas,
+  passando à frente do corpo na ida e atrás na volta;
 - **preparação**: quando a bola vem na sua direção o jogador arma a raquete
   (`prep` cresce conforme o tempo até o contato encurta);
 - **golpe em três tempos** — armado, contato e finalização — com o tronco
@@ -93,7 +96,10 @@ A animação sai do estado do jogo, não de um loop solto:
 - **agachamento** proporcional à altura da bola: bola baixa se pega dobrando o
   joelho, e a mão nunca passa do alcance do braço.
 
-Custo medido: 0,66 ms por quadro para a cena inteira (0,31 ms nos quatro jogadores).
+Cada segmento é uma cápsula com faixa de luz e de sombra, o que dá volume
+cilíndrico aos membros; camisa, cabeça e ombros têm gradiente próprio.
+
+Custo medido: 0,83 ms por quadro para a cena inteira (0,49 ms nos quatro jogadores).
 
 ## Física
 

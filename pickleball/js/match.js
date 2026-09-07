@@ -31,7 +31,7 @@ PB.Match = (function () {
       atNet: false, volleyMomentum: 0, react: 0, lunge: 0,
       // visual state, read by the renderer
       runPhase: Math.random() * 6.28, speedN: 0, prep: 0, crouch: 0.2,
-      lean: 0, swingKind: 'ground', swingFore: true, swingDur: 0.42,
+      lean: 0, yaw: 0, runAngle: 0, swingKind: 'ground', swingFore: true, swingDur: 0.42,
       swingHit: null, hop: 0,
       ai: { timer: 0, decided: null },
     };
@@ -589,9 +589,18 @@ PB.Match = (function () {
       // lean into the run, and square up again when standing
       const target = -(p.vx / MOVE_SPEED) * 0.22 * (p.team === 0 ? 1 : -1);
       p.lean += (target - p.lean) * Math.min(1, dt * 6);
+      // turn the body toward where it is running: a player who never turns
+      // reads as a crab shuffling sideways
+      const fwd = Math.abs(p.vz);
+      // runAngle is where the body is actually travelling; yaw is how far it
+      // manages to turn toward it. What is left over is the sideways shuffle.
+      p.runAngle = spd > 1.4 ? Math.atan2(p.vx, fwd + 2.2) : 0;
+      let yawWant = Math.max(-1.15, Math.min(1.15, p.runAngle)) * Math.min(1, spd / 4.5);
+      if (p.prep > 0.25 || p.swingT > 0) yawWant *= 0.35;   // squaring up to hit
+      p.yaw += (yawWant - p.yaw) * Math.min(1, dt * 7);
       // waiting between points: a small split-step bounce
       p.hop = this.state === 'ready' ? (Math.sin(this.stateT * 6.5) * 0.5 + 0.5) * 0.06 : 0;
-      let wantCrouch = 0.16 + p.prep * 0.5 + (Math.abs(p.z) < 10 ? 0.12 : 0);
+      let wantCrouch = 0.30 + p.prep * 0.42 + (Math.abs(p.z) < 10 ? 0.10 : 0);
       // reaching for a low ball is done with the knees, not just the arm
       if (p.swingHit) {
         const low = Math.max(0, Math.min(1, (2.7 - p.swingHit.dy) / 2.0));
