@@ -898,7 +898,7 @@ PB.Renderer = (function () {
       }
       if (m.state === 'ready' && me && m.players[m.serverIdx] === me) {
         this.centerText(ctx, r, 'DESLIZE PARA SACAR', r.y + r.h * 0.62, 15, 'rgba(255,255,255,0.92)');
-        this.centerText(ctx, r, 'curto = curto  •  longo = fundo', r.y + r.h * 0.62 + 18, 11, 'rgba(255,255,255,0.6)');
+        this.centerText(ctx, r, 'ou toque  •  curto = curto, longo = fundo', r.y + r.h * 0.62 + 18, 11, 'rgba(255,255,255,0.6)');
       } else if (m.state === 'ready' && me && m.players[m.receiverIdx] === me) {
         this.centerText(ctx, r, 'DEIXE O SAQUE QUICAR', r.y + r.h * 0.62, 13, 'rgba(255,255,255,0.7)');
       }

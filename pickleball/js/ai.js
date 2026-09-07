@@ -24,7 +24,7 @@ PB.AI = (function () {
       for (const s of tr) {
         if (s.bounced) break;
         if (C.sideOf(s.z) !== p.team) continue;
-        if (Math.abs(s.z) < C.KITCHEN + 0.5) continue;   // would be a kitchen volley
+        if (Math.abs(s.z) < C.KITCHEN + 1.3) continue;   // no legal volley from there
         if (s.y < 0.9 || s.y > 6.5) continue;
         if (Math.abs(s.z) > 15) continue;
         return { x: s.x, z: s.z, t: s.t, volley: true };

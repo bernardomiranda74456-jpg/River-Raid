@@ -191,6 +191,26 @@ PB.Match = (function () {
 
     doServe(aim, power) {
       const server = this.players[this.serverIdx];
+      const sSign = this.serveXSign;
+      const behind = Math.abs(server.z) >= C.HALF_L + 0.05;
+      const rightHalf = Math.sign(server.x) === sSign || Math.abs(server.x) < 0.2;
+      if (!behind || !rightHalf) {
+        if (this.assistRules) {
+          // step them back to a legal spot instead of calling it
+          if (!behind) server.z = C.teamSign(server.team) * (C.HALF_L + 0.9);
+          if (!rightHalf) server.x = sSign * Math.max(0.9, Math.abs(server.x));
+          server.vx = 0; server.vz = 0;
+          this.ball.x = server.x + sSign * 0.9;
+          this.ball.z = server.z + C.teamSign(server.team) * 0.35;
+          this.say(behind ? 'Saque sai da sua metade da quadra' : 'Fique atrás da linha de fundo para sacar', 1.4);
+        } else {
+          this.state = 'live';
+          this.rally.shotCount = 1;
+          this.rally.lastHitter = server.id;
+          this.endRally(server.team, 'pe_no_saque');
+          return;
+        }
+      }
       const rTeam = 1 - server.team;
       const rSign = C.teamSign(rTeam);
       const from = { x: this.ball.x, y: 1.95, z: this.ball.z };
@@ -361,12 +381,14 @@ PB.Match = (function () {
 
     legality(p) {
       const r = this.rally;
+      // only the diagonal receiver may return the serve
+      if (r.shotCount === 1 && p.id !== this.receiverIdx) return 'recebedor';
       const volley = r.bounces === 0;
       // serve (shot 1) and return (shot 2) must both bounce, so anything up to
       // and including the third shot is played off the ground
       const mustBounce = r.shotCount <= 2;
       if (volley && mustBounce) return 'dois_quiques_regra';
-      if (volley && C.inKitchen(p.x, p.z, p.team)) return 'cozinha';
+      if (volley && C.playerInKitchen(p)) return 'cozinha';
       return null;
     }
 
@@ -395,7 +417,9 @@ PB.Match = (function () {
         if (!swing) return;
         if (bad && swing.auto) return;                    // the assist swing never fouls
         if (bad && this.assistRules) {
-          this.say(bad === 'cozinha' ? 'Saia da cozinha para dar voleio!' : 'Deixe quicar (regra dos dois quiques)!');
+          this.say(bad === 'cozinha' ? 'Saia da cozinha para dar voleio!'
+            : bad === 'recebedor' ? 'O saque é do seu parceiro!'
+            : 'Deixe quicar (regra dos dois quiques)!');
           return;
         }
       } else {
@@ -415,7 +439,8 @@ PB.Match = (function () {
       this.pendingSwing[p.id] = null;
       this.executeHit(p, swing);
       if (bad && !this.assistRules) {
-        this.endRally(p.team, bad === 'cozinha' ? 'cozinha' : 'voleio_saque');
+        this.endRally(p.team,
+          bad === 'cozinha' ? 'cozinha' : bad === 'recebedor' ? 'recebedor' : 'voleio_saque');
       }
     }
 
@@ -563,10 +588,10 @@ PB.Match = (function () {
 
       if (p.volleyMomentum > 0) {
         p.volleyMomentum -= dt;
-        const inK = C.inKitchen(p.x, p.z, p.team);
+        const inK = C.playerInKitchen(p);
         if (inK) {
           if (this.assistRules || p.ctrl === 'cpu') {
-            p.z = C.teamSign(p.team) * (C.KITCHEN + 0.12);   // held out of the kitchen
+            p.z = C.teamSign(p.team) * (C.KITCHEN + C.footprint(p) + 0.05);  // held out
             p.vz = 0;
             if (p.ctrl === 'human') this.say('Impulso: não entre na cozinha após o voleio!', 1.2);
           } else if (this.state === 'live') {
@@ -686,7 +711,9 @@ PB.Match = (function () {
       dois_quiques: 'Dois quiques',
       cozinha: 'Voleio na cozinha',
       voleio_saque: 'Voleio antes do quique',
+      recebedor: 'Recebedor errado',
       impulso: 'Impulso na cozinha',
+      pe_no_saque: 'Pé na linha no saque',
     };
     const label = map[reason] || 'Ponto';
     return { label, team: m.lastWinner, sideOut: m.sideOut, w };

@@ -19,6 +19,7 @@ PB.Input = (function () {
       this.split = false;
       this.coop = false;
       this.coopFlip = false;
+      this.serveSlots = { p1: false, p2: false };
       this.state = {
         p1: { mx: 0, mz: 0, swipe: null },
         p2: { mx: 0, mz: 0, swipe: null },
@@ -101,7 +102,24 @@ PB.Input = (function () {
 
     up(e) {
       const pt = this.pointers[e.pointerId];
-      if (pt) { this.detectSwipe(pt, performance.now(), true); delete this.pointers[e.pointerId]; }
+      if (!pt) return;
+      this.detectSwipe(pt, performance.now(), true);
+      // The serve is not a timed shot, so it must not demand a fast flick: any
+      // deliberate upward stroke sends it, and a plain tap serves down the middle.
+      if (this.serveSlots[pt.slot] && !this.state[pt.slot].swipe) {
+        const dx = pt.x - pt.x0, dy = pt.y - pt.y0;
+        const H = this.canvas.clientHeight * (this.split ? 0.5 : 1);
+        const len = Math.hypot(dx, dy);
+        if (-dy > H * 0.02 || len < 16) {
+          const reach = Math.max(len, H * 0.18);
+          this.state[pt.slot].swipe = {
+            lateral: Math.max(-1, Math.min(1, dx / Math.max(Math.abs(dy), 1) / 1.4)),
+            depth: Math.max(0, Math.min(1, (reach / H - 0.05) / 0.30)),
+            fast: false, long: true, power: 0.7,
+          };
+        }
+      }
+      delete this.pointers[e.pointerId];
     }
 
     detectSwipe(pt, now, release) {

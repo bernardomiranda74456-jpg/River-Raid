@@ -106,6 +106,14 @@
         const a = match.players[match.slot.p1], b = match.players[match.slot.p2];
         input.coopFlip = a.x < b.x;
       }
+      // let the input layer know who is waiting to serve
+      if (match.state === 'ready') {
+        input.serveSlots.p1 = match.slot.p1 === match.serverIdx;
+        input.serveSlots.p2 = match.slot.p2 === match.serverIdx;
+      } else {
+        input.serveSlots.p1 = false;
+        input.serveSlots.p2 = false;
+      }
       const state = input.sample(dt);
       match.update(dt, state);
       drain(match);

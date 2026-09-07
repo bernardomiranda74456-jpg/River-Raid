@@ -55,8 +55,13 @@ pontos, sempre com 2 de vantagem.
 - Saque por baixo, na diagonal, para a caixa de saque correta; cair na cozinha
   ou na linha da cozinha é falta. Saque na fita que cai bom continua em jogo.
 - **Regra dos dois quiques:** o saque tem que quicar e a devolução também.
-- **Cozinha (zona de não-voleio):** proibido voleio com o pé dentro ou na linha,
-  incluindo a regra do impulso (entrar na cozinha logo após o voleio).
+- **Cozinha (zona de não-voleio):** proibido voleio com **qualquer parte do
+  jogador** dentro ou na linha. O jogador não é um ponto: a pegada considera a
+  base dos pés e cresce com a corrida e com o esticão, então voleiar rente à
+  linha é falta como na quadra. A zona termina nas linhas laterais, e a regra do
+  impulso (entrar logo após o voleio) também vale.
+- **Saque com os pés no lugar:** atrás da linha de fundo e na metade correta.
+- **Só o recebedor da diagonal devolve o saque**; se o parceiro devolver, é falta.
 - **Pontuação por saque:** só quem saca pontua; nas duplas os dois parceiros
   sacam antes do rodízio e o jogo começa em 0-0-2. Placar dito
   *sacador–recebedor–número do sacador*.
@@ -129,10 +134,22 @@ um dispositivo/simulador iOS 15.2+.
 node test/rules.test.js
 ```
 
-29 testes sem dependência nenhuma cobrindo o regulamento: geometria e faltas do
-saque, regra dos dois quiques (incluindo o terceiro golpe), cozinha e regra do
-impulso, pontuação por saque, rodízio 0-0-2 das duplas, troca de lado dos
+38 testes sem dependência nenhuma cobrindo o regulamento: geometria e faltas do
+saque (incluindo pé na linha e metade errada), regra dos dois quiques (incluindo
+o terceiro golpe), cozinha com pegada dos pés e regra do impulso, recebedor
+correto, pontuação por saque, rodízio 0-0-2 das duplas, troca de lado dos
 parceiros, vitória com 2 de vantagem, bola dentro/fora e sanidade da física.
+
+Há também uma auditoria que roda partidas inteiras e conta violações reais
+(voleios na cozinha, golpes duplos, saques irregulares): hoje zero em ~530
+voleios por rodada.
+
+### O que não é modelado
+
+Bola que acerta o corpo do jogador (hoje ela atravessa), contato do jogador com
+a rede (é impedido, não vira falta) e as exigências de empunhadura do saque
+(contato abaixo da cintura e cabeça da raquete abaixo do punho), que são
+garantidas pela construção do golpe.
 
 ## Estrutura
 

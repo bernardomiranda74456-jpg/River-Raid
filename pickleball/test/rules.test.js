@@ -173,6 +173,37 @@ test('uma partida recém-criada já aceita um golpe', () => {
   eq(m.rally.shotCount, 3, 'sem swipe, sem golpe');
 });
 
+test('só o recebedor da diagonal pode devolver o saque', () => {
+  const m = mk({ format: 'doubles', difficulty: 'dificil' });
+  m.servingTeam = 0;
+  m.prepareServe();
+  const receiver = m.players[m.receiverIdx];
+  const partner = m.mates(receiver.team).find(p => p.id !== receiver.id);
+  partner.ctrl = 'human';                       // para poder forçar o golpe
+  m.slot.p2 = partner.id;
+  midRally(m, m.serverIdx, 1, 1);               // saque quicou
+  m.ball.x = partner.x; m.ball.z = partner.z; m.ball.y = 2.4;
+  m.pendingSwing[partner.id] = { lateral: 0, depth: 0.5, fast: true, long: true, quality: 1 };
+  m.attemptHit(partner);
+  eq(m.lastReason, 'recebedor');
+  eq(m.lastWinner, 0, 'ponto para quem sacou');
+});
+
+test('o recebedor correto devolve normalmente', () => {
+  const m = mk({ format: 'doubles', difficulty: 'dificil' });
+  m.servingTeam = 0;
+  m.prepareServe();
+  const receiver = m.players[m.receiverIdx];
+  receiver.ctrl = 'human';
+  m.slot.p2 = receiver.id;
+  midRally(m, m.serverIdx, 1, 1);
+  m.ball.x = receiver.x; m.ball.z = receiver.z; m.ball.y = 2.4;
+  m.pendingSwing[receiver.id] = { lateral: 0, depth: 0.5, fast: true, long: true, quality: 1 };
+  m.attemptHit(receiver);
+  eq(m.rally.over, false, 'sem falta');
+  eq(m.rally.shotCount, 2, 'devolução contou');
+});
+
 test('segundo quique do mesmo lado perde o rally', () => {
   const m = mk({});
   midRally(m, m.serverIdx, 1, 1);
@@ -205,6 +236,52 @@ test('voleio fora da cozinha é legal', () => {
   eq(m.rally.shotCount, 4, 'golpe contabilizado');
 });
 
+test('voleio com o pé da frente sobre a linha é falta, mesmo com o centro fora', () => {
+  const m = mk({ difficulty: 'dificil' });
+  const human = m.players[m.slot.p1];
+  midRally(m, 1, 3, 0);
+  human.x = 2;
+  human.speedN = 0; human.lunge = 0;
+  human.z = C.teamSign(0) * (C.KITCHEN + 0.3);      // centro fora, pé dentro
+  ok(!C.inKitchen(human.x, human.z, 0), 'o centro está fora da cozinha');
+  ok(C.playerInKitchen(human), 'mas o jogador ocupa a linha');
+  m.ball.x = human.x; m.ball.z = human.z; m.ball.y = 3.0;
+  m.pendingSwing[human.id] = { lateral: 0, depth: 0.5, fast: true, long: true, quality: 1 };
+  m.attemptHit(human);
+  eq(m.lastReason, 'cozinha');
+});
+
+test('voleio com um passo de folga da linha é legal', () => {
+  const m = mk({ difficulty: 'dificil' });
+  const human = m.players[m.slot.p1];
+  midRally(m, 1, 3, 0);
+  human.x = 2; human.speedN = 0; human.lunge = 0;
+  human.z = C.teamSign(0) * (C.KITCHEN + 1.0);
+  m.ball.x = human.x; m.ball.z = human.z; m.ball.y = 3.0;
+  m.pendingSwing[human.id] = { lateral: 0, depth: 0.5, fast: true, long: true, quality: 1 };
+  m.attemptHit(human);
+  eq(m.rally.over, false, 'sem falta');
+  eq(m.rally.shotCount, 4, 'voleio contou');
+});
+
+test('correndo, a pegada aumenta e a folga exigida também', () => {
+  const m = mk({ difficulty: 'dificil' });
+  const p = m.players[m.slot.p1];
+  p.z = C.teamSign(0) * (C.KITCHEN + 0.7);
+  p.speedN = 0; p.lunge = 0;
+  ok(!C.playerInKitchen(p), 'parado a essa distância está legal');
+  p.speedN = 1;                                     // em corrida
+  ok(C.playerInKitchen(p), 'em velocidade o pé da frente invade a zona');
+});
+
+test('a zona de não-voleio termina na linha lateral', () => {
+  const m = mk({});
+  const p = m.players[m.slot.p1];
+  p.x = C.HALF_W + 2; p.z = C.teamSign(0) * 3;      // fora da lateral, junto à rede
+  p.speedN = 0; p.lunge = 0;
+  ok(!C.playerInKitchen(p), 'fora da lateral pode voleiar junto à rede');
+});
+
 test('entrar na cozinha por impulso após o voleio é falta', () => {
   const m = mk({ difficulty: 'dificil' });
   const human = m.players[m.slot.p1];
@@ -227,6 +304,33 @@ test('a CPU é segurada fora da cozinha em vez de cometer a falta', () => {
 });
 
 // ── scoring ───────────────────────────────────────────────────────────────
+test('sacar com o pé dentro da quadra é falta no modo estrito', () => {
+  const m = mk({ difficulty: 'dificil' });
+  const server = m.players[m.serverIdx];
+  server.z = C.teamSign(server.team) * (C.HALF_L - 1.5);   // pisou dentro
+  m.doServe({ x: -m.serveXSign * 4, z: C.teamSign(1) * 17 }, 1);
+  eq(m.lastReason, 'pe_no_saque');
+  eq(m.lastWinner, 1, 'ponto para quem recebe');
+});
+
+test('no modo assistido o sacador é reposicionado em vez de perder o ponto', () => {
+  const m = mk({ difficulty: 'normal' });
+  const server = m.players[m.serverIdx];
+  server.z = C.teamSign(server.team) * (C.HALF_L - 1.5);
+  m.doServe({ x: -m.serveXSign * 4, z: C.teamSign(1) * 17 }, 1);
+  eq(m.rally.over, false, 'sem falta');
+  ok(Math.abs(server.z) >= C.HALF_L, 'sacador voltou para trás da linha');
+  eq(m.state, 'live', 'o saque saiu');
+});
+
+test('sacar da metade errada é corrigido ou é falta', () => {
+  const m = mk({ difficulty: 'dificil' });
+  const server = m.players[m.serverIdx];
+  server.x = -m.serveXSign * 4;                     // metade errada
+  m.doServe({ x: -m.serveXSign * 4, z: C.teamSign(1) * 17 }, 1);
+  eq(m.lastReason, 'pe_no_saque');
+});
+
 test('só quem saca pontua', () => {
   const m = mk({});
   m.endRally(1, 'fora');                    // time 1 perde o rally, time 0 sacava

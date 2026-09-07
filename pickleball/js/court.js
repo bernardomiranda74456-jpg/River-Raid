@@ -44,6 +44,24 @@ PB.Court = {
     return Math.abs(x) <= this.HALF_W && Math.abs(z) <= this.KITCHEN;
   },
 
+  // A player is not a point. Feet straddle a stance and the lead foot lands
+  // ahead of centre, further the faster they move or the wider they stretch —
+  // and the rule is about ANY part of them touching the zone or its line.
+  footprint(p) {
+    return 0.45 + (p.lunge || 0) * 0.45 + (p.speedN || 0) * 0.40;
+  },
+
+  // Frontmost point of the player, measured from the net.
+  frontEdge(p) {
+    return Math.abs(p.z) - this.footprint(p);
+  },
+
+  playerInKitchen(p) {
+    if (this.sideOf(p.z) !== p.team) return false;
+    if (Math.abs(p.x) > this.HALF_W + 0.6) return false;   // NVZ ends at the sidelines
+    return this.frontEdge(p) <= this.KITCHEN;
+  },
+
   // Service box on `team`'s side of the net, on the half whose x has sign xSign.
   // A serve landing on (or short of) the kitchen line is a fault.
   inServiceBox(x, z, team, xSign) {

@@ -154,7 +154,7 @@
         • lento e longo = <b>lob</b> por cima<br>
         • lento e curto = <b>dink</b> na cozinha<br>
         A direção do flick define para onde a bola vai.</div>
-      <div><b>Sacar:</b> deslize para cima. O saque é por baixo, na diagonal, e precisa passar da cozinha.</div>
+      <div><b>Sacar:</b> deslize para cima — no saque não precisa ser rápido, e um toque simples também saca. O saque é por baixo, na diagonal, e precisa passar da cozinha.</div>
       <div><b>Regra dos dois quiques:</b> o saque tem que quicar, e a devolução também. Só depois vale voleio.</div>
       <div><b>Cozinha (zona de não-voleio):</b> os 2,13 m junto à rede. Não dá para bater na bola antes do quique estando lá dentro — nem entrar por impulso logo depois do voleio.</div>
       <div><b>Pontuação:</b> só quem saca pontua. Nas duplas, os dois parceiros sacam antes de passar o saque (o jogo começa em 0-0-2). Partida com 2 de vantagem.</div>
@@ -230,6 +230,24 @@ PB.Court = {
   inKitchen(x, z, team) {
     if (team !== undefined && this.sideOf(z) !== team) return false;
     return Math.abs(x) <= this.HALF_W && Math.abs(z) <= this.KITCHEN;
+  },
+
+  // A player is not a point. Feet straddle a stance and the lead foot lands
+  // ahead of centre, further the faster they move or the wider they stretch —
+  // and the rule is about ANY part of them touching the zone or its line.
+  footprint(p) {
+    return 0.45 + (p.lunge || 0) * 0.45 + (p.speedN || 0) * 0.40;
+  },
+
+  // Frontmost point of the player, measured from the net.
+  frontEdge(p) {
+    return Math.abs(p.z) - this.footprint(p);
+  },
+
+  playerInKitchen(p) {
+    if (this.sideOf(p.z) !== p.team) return false;
+    if (Math.abs(p.x) > this.HALF_W + 0.6) return false;   // NVZ ends at the sidelines
+    return this.frontEdge(p) <= this.KITCHEN;
   },
 
   // Service box on `team`'s side of the net, on the half whose x has sign xSign.
@@ -521,7 +539,7 @@ PB.AI = (function () {
       for (const s of tr) {
         if (s.bounced) break;
         if (C.sideOf(s.z) !== p.team) continue;
-        if (Math.abs(s.z) < C.KITCHEN + 0.5) continue;   // would be a kitchen volley
+        if (Math.abs(s.z) < C.KITCHEN + 1.3) continue;   // no legal volley from there
         if (s.y < 0.9 || s.y > 6.5) continue;
         if (Math.abs(s.z) > 15) continue;
         return { x: s.x, z: s.z, t: s.t, volley: true };
@@ -943,6 +961,26 @@ PB.Match = (function () {
 
     doServe(aim, power) {
       const server = this.players[this.serverIdx];
+      const sSign = this.serveXSign;
+      const behind = Math.abs(server.z) >= C.HALF_L + 0.05;
+      const rightHalf = Math.sign(server.x) === sSign || Math.abs(server.x) < 0.2;
+      if (!behind || !rightHalf) {
+        if (this.assistRules) {
+          // step them back to a legal spot instead of calling it
+          if (!behind) server.z = C.teamSign(server.team) * (C.HALF_L + 0.9);
+          if (!rightHalf) server.x = sSign * Math.max(0.9, Math.abs(server.x));
+          server.vx = 0; server.vz = 0;
+          this.ball.x = server.x + sSign * 0.9;
+          this.ball.z = server.z + C.teamSign(server.team) * 0.35;
+          this.say(behind ? 'Saque sai da sua metade da quadra' : 'Fique atrás da linha de fundo para sacar', 1.4);
+        } else {
+          this.state = 'live';
+          this.rally.shotCount = 1;
+          this.rally.lastHitter = server.id;
+          this.endRally(server.team, 'pe_no_saque');
+          return;
+        }
+      }
       const rTeam = 1 - server.team;
       const rSign = C.teamSign(rTeam);
       const from = { x: this.ball.x, y: 1.95, z: this.ball.z };
@@ -1113,12 +1151,14 @@ PB.Match = (function () {
 
     legality(p) {
       const r = this.rally;
+      // only the diagonal receiver may return the serve
+      if (r.shotCount === 1 && p.id !== this.receiverIdx) return 'recebedor';
       const volley = r.bounces === 0;
       // serve (shot 1) and return (shot 2) must both bounce, so anything up to
       // and including the third shot is played off the ground
       const mustBounce = r.shotCount <= 2;
       if (volley && mustBounce) return 'dois_quiques_regra';
-      if (volley && C.inKitchen(p.x, p.z, p.team)) return 'cozinha';
+      if (volley && C.playerInKitchen(p)) return 'cozinha';
       return null;
     }
 
@@ -1147,7 +1187,9 @@ PB.Match = (function () {
         if (!swing) return;
         if (bad && swing.auto) return;                    // the assist swing never fouls
         if (bad && this.assistRules) {
-          this.say(bad === 'cozinha' ? 'Saia da cozinha para dar voleio!' : 'Deixe quicar (regra dos dois quiques)!');
+          this.say(bad === 'cozinha' ? 'Saia da cozinha para dar voleio!'
+            : bad === 'recebedor' ? 'O saque é do seu parceiro!'
+            : 'Deixe quicar (regra dos dois quiques)!');
           return;
         }
       } else {
@@ -1167,7 +1209,8 @@ PB.Match = (function () {
       this.pendingSwing[p.id] = null;
       this.executeHit(p, swing);
       if (bad && !this.assistRules) {
-        this.endRally(p.team, bad === 'cozinha' ? 'cozinha' : 'voleio_saque');
+        this.endRally(p.team,
+          bad === 'cozinha' ? 'cozinha' : bad === 'recebedor' ? 'recebedor' : 'voleio_saque');
       }
     }
 
@@ -1315,10 +1358,10 @@ PB.Match = (function () {
 
       if (p.volleyMomentum > 0) {
         p.volleyMomentum -= dt;
-        const inK = C.inKitchen(p.x, p.z, p.team);
+        const inK = C.playerInKitchen(p);
         if (inK) {
           if (this.assistRules || p.ctrl === 'cpu') {
-            p.z = C.teamSign(p.team) * (C.KITCHEN + 0.12);   // held out of the kitchen
+            p.z = C.teamSign(p.team) * (C.KITCHEN + C.footprint(p) + 0.05);  // held out
             p.vz = 0;
             if (p.ctrl === 'human') this.say('Impulso: não entre na cozinha após o voleio!', 1.2);
           } else if (this.state === 'live') {
@@ -1438,7 +1481,9 @@ PB.Match = (function () {
       dois_quiques: 'Dois quiques',
       cozinha: 'Voleio na cozinha',
       voleio_saque: 'Voleio antes do quique',
+      recebedor: 'Recebedor errado',
       impulso: 'Impulso na cozinha',
+      pe_no_saque: 'Pé na linha no saque',
     };
     const label = map[reason] || 'Ponto';
     return { label, team: m.lastWinner, sideOut: m.sideOut, w };
@@ -2351,7 +2396,7 @@ PB.Renderer = (function () {
       }
       if (m.state === 'ready' && me && m.players[m.serverIdx] === me) {
         this.centerText(ctx, r, 'DESLIZE PARA SACAR', r.y + r.h * 0.62, 15, 'rgba(255,255,255,0.92)');
-        this.centerText(ctx, r, 'curto = curto  •  longo = fundo', r.y + r.h * 0.62 + 18, 11, 'rgba(255,255,255,0.6)');
+        this.centerText(ctx, r, 'ou toque  •  curto = curto, longo = fundo', r.y + r.h * 0.62 + 18, 11, 'rgba(255,255,255,0.6)');
       } else if (m.state === 'ready' && me && m.players[m.receiverIdx] === me) {
         this.centerText(ctx, r, 'DEIXE O SAQUE QUICAR', r.y + r.h * 0.62, 13, 'rgba(255,255,255,0.7)');
       }
@@ -2475,6 +2520,7 @@ PB.Input = (function () {
       this.split = false;
       this.coop = false;
       this.coopFlip = false;
+      this.serveSlots = { p1: false, p2: false };
       this.state = {
         p1: { mx: 0, mz: 0, swipe: null },
         p2: { mx: 0, mz: 0, swipe: null },
@@ -2557,7 +2603,24 @@ PB.Input = (function () {
 
     up(e) {
       const pt = this.pointers[e.pointerId];
-      if (pt) { this.detectSwipe(pt, performance.now(), true); delete this.pointers[e.pointerId]; }
+      if (!pt) return;
+      this.detectSwipe(pt, performance.now(), true);
+      // The serve is not a timed shot, so it must not demand a fast flick: any
+      // deliberate upward stroke sends it, and a plain tap serves down the middle.
+      if (this.serveSlots[pt.slot] && !this.state[pt.slot].swipe) {
+        const dx = pt.x - pt.x0, dy = pt.y - pt.y0;
+        const H = this.canvas.clientHeight * (this.split ? 0.5 : 1);
+        const len = Math.hypot(dx, dy);
+        if (-dy > H * 0.02 || len < 16) {
+          const reach = Math.max(len, H * 0.18);
+          this.state[pt.slot].swipe = {
+            lateral: Math.max(-1, Math.min(1, dx / Math.max(Math.abs(dy), 1) / 1.4)),
+            depth: Math.max(0, Math.min(1, (reach / H - 0.05) / 0.30)),
+            fast: false, long: true, power: 0.7,
+          };
+        }
+      }
+      delete this.pointers[e.pointerId];
     }
 
     detectSwipe(pt, now, release) {
@@ -2836,6 +2899,14 @@ PB.Audio = (function () {
       if (input.coop) {
         const a = match.players[match.slot.p1], b = match.players[match.slot.p2];
         input.coopFlip = a.x < b.x;
+      }
+      // let the input layer know who is waiting to serve
+      if (match.state === 'ready') {
+        input.serveSlots.p1 = match.slot.p1 === match.serverIdx;
+        input.serveSlots.p2 = match.slot.p2 === match.serverIdx;
+      } else {
+        input.serveSlots.p1 = false;
+        input.serveSlots.p2 = false;
       }
       const state = input.sample(dt);
       match.update(dt, state);
