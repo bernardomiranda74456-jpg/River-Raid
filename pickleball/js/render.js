@@ -33,14 +33,29 @@ PB.Renderer = (function () {
   const ROW_STEP = 1.85;      // real stadium rows, so spectators stay person sized
   const UI = (a, b, c) => `rgb(${Math.round(a*255)},${Math.round(b*255)},${Math.round(c*255)})`;
 
+  // Scale and height of the broadcast scoreboard panel. The camera needs both so
+  // it never frames a player underneath the panel, so they live outside the
+  // renderer and the drawing code reads the same numbers.
+  function hudScale(rect) {
+    return Math.max(0.55, Math.min(1.05, Math.min(rect.w / 900, rect.h / 520)));
+  }
+  function hudBand(rect) {
+    const k = hudScale(rect);
+    return Math.min(0.24, (10 * k + 20 * k + 30 * k * 2 + 15 * k + 6) / rect.h);
+  }
+
   function Cam(vp, side, focusX) {
     // Two rigs. A wide frame gets the television angle: low and far back, which
     // is what makes a broadcast read — the court lies flat and wide, the near
     // pair large, the far pair small. A narrow frame cannot afford that (the
     // court would be a thin strip), so it keeps a higher, closer camera.
     const wide = vp.w >= vp.h * 1.3;
-    const camY = wide ? 12.5 : 24;
-    const camZ = wide ? -56 : -60;
+    // Between a broadcast angle and Super Tennis: higher and further back than
+    // television, so more of the court reads from above without going top-down.
+    // The narrow rig sits higher still, otherwise the court is a thin strip and
+    // the stands eat most of a portrait frame.
+    const camY = wide ? 20 : 40;
+    const camZ = wide ? -75 : -50;
     const aimY = 2.0, aimZ = 6;
     const pitch = Math.atan2(camY - aimY, aimZ - camZ);
     const sin = Math.sin(pitch), cos = Math.cos(pitch);
@@ -49,23 +64,35 @@ PB.Renderer = (function () {
 
     const BACK = C.HALF_L + BACK_ROOM;
     const halfNear = C.HALF_W / czOf(-C.HALF_L);
-    const span = vOf(-BACK) - vOf(BACK);
-    // width first — both partners must fit — then a cap so the length fits too
-    const focal = Math.min(
+    // Vertical extent measured between what actually has to be on screen: the
+    // feet of the deepest near player and the HEAD of the deepest far one.
+    const czAt = (y, z) => (y - camY) * -sin + (z - camZ) * cos;
+    const vAt = (y, z) => -((y - camY) * cos + (z - camZ) * sin) / czAt(y, z);
+    const topV = vAt(6.4, BACK);
+    const botV = vAt(0, -BACK);
+    // Room the scoreboard needs at the top of this viewport; nothing that must
+    // stay legible is framed under it.
+    const top = hudBand(vp) + 0.005;
+    let focal = Math.min(
       (wide ? 0.66 : 0.98) * vp.w / (2 * halfNear),
-      (wide ? 0.74 : 0.86) * vp.h / span
+      (0.995 - top) * vp.h / (botV - topV)
     );
 
     this.side = side; this.sin = sin; this.cos = cos; this.focal = focal;
     this.y = camY; this.z = camZ;
     this.x = (side === 1 ? -1 : 1) * focusX * 0.25;
     this.cx = vp.x + vp.w / 2;
-    // broadcasts put the near baseline around three quarters down the frame and
-    // leave the run-back below it; a narrow frame anchors the run-back instead
-    this.cy = wide
-      ? vp.y + vp.h * 0.76 - focal * vOf(-C.HALF_L)
+    // Preferred framing: the near baseline low in a wide frame, the run-back at
+    // the bottom for a narrow one — then slid until nobody is cut off at either
+    // edge. Sitting the baseline low keeps the raised camera from leaving a band
+    // of empty floor under the near pair.
+    let cy = wide
+      ? vp.y + vp.h * 0.88 - focal * vOf(-C.HALF_L)
       : vp.y + vp.h * 0.99 - focal * vOf(-BACK);
-    this.horizonY = this.cy - focal * (sin / cos);
+    cy = Math.max(cy, vp.y + vp.h * top - focal * topV);
+    cy = Math.min(cy, vp.y + vp.h * 0.995 - focal * botV);
+    this.cy = cy;
+    this.horizonY = cy - focal * (sin / cos);
     this.vp = vp;
     this.wide = wide;
   }
@@ -1408,7 +1435,7 @@ PB.Renderer = (function () {
     // and a footer carrying the serve. Drawn per viewport, so split screen gives
     // each player their own.
     drawScoreboard(ctx, m, rect) {
-      const k = Math.max(0.62, Math.min(1.05, rect.w / 900));
+      const k = hudScale(rect);
       const pad = 10 * k;
       const w = Math.min(rect.w - pad * 2, 300 * k);
       const head = 20 * k, row = 30 * k, foot = 15 * k;
