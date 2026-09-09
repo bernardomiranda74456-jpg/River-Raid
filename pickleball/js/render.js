@@ -364,12 +364,12 @@ PB.Renderer = (function () {
       // of the chest near the midline, tip toward the sky, both hands together,
       // elbows bent down and out. Never hanging at the side.
       const ready = {
-        x: hand * (0.34 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.30 - swA * 0.10,
-        y: shY - 0.66 + swA * 0.10,
+        x: hand * (0.30 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.30 - swA * 0.10,
+        y: shY - 0.62 + swA * 0.10,
       };
       const readyElbow = {
-        x: hand * (0.80 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.20,
-        y: shY - 1.06 + swA * 0.06,
+        x: hand * (1.02 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.20,
+        y: shY - 0.60 + swA * 0.06,
       };
       let load, contact, follow;
       if (kind === 'over') {
@@ -406,12 +406,12 @@ PB.Renderer = (function () {
       };
       // The free hand supports the paddle throat rather than dangling.
       const freeReady = {
-        x: hand * 0.08 + Math.sin(turn) * 0.26 - swA * 0.10,
-        y: shY - 0.76 + swA * 0.08,
+        x: -hand * 0.20 + Math.sin(turn) * 0.26 - swA * 0.10,
+        y: shY - 0.74 + swA * 0.08,
       };
       const freeReadyElbow = {
-        x: -hand * (0.74 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.16,
-        y: shY - 1.08,
+        x: -hand * (0.96 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.16,
+        y: shY - 0.66,
       };
       const freeHand = mix(freeSwing, freeReady, readyAmt);
       const freeHandR = reachable(shFree, freeHand, armLen);
@@ -493,16 +493,23 @@ PB.Renderer = (function () {
       ctx.fillStyle = bg;
       ctx.fill(body);
 
-      // arms: thin tubes with mitten hands
+      // arms: thin tubes with mitten hands. Rounded caps at the shoulder and the
+      // elbow hide the seam where two bones meet at a sharp angle — and in the
+      // ready pose the elbows are bent hard, so the seam would show.
       const armPair = [[shFree, freeElbow, freeHandR, swA <= 0], [shPad, elbow, handP, false]];
+      const joint = (x, y, r, c) => {
+        ctx.beginPath();
+        ctx.ellipse(X(x), Y(y), P.s * r, P.s * r, 0, 0, Math.PI * 2);
+        ctx.fillStyle = c;
+        ctx.fill();
+      };
       for (const [sh, el, hd, far] of armPair) {
         const dim = far ? -0.10 : 0;
         this.bone(ctx, P, sh.x, sh.y - 0.05, el.x, el.y, PROFILE_MII.arm, soft(skin, dim));
+        joint(el.x, el.y, 0.145, soft(skin, dim));
         this.bone(ctx, P, el.x, el.y, hd.x, hd.y, PROFILE_MII.arm, soft(skin, dim));
-        ctx.beginPath();
-        ctx.ellipse(X(hd.x), Y(hd.y), P.s * 0.17, P.s * 0.155, 0, 0, Math.PI * 2);
-        ctx.fillStyle = soft(skin, dim + 0.04);
-        ctx.fill();
+        joint(sh.x, sh.y - 0.05, 0.145, soft(skin, dim));
+        joint(hd.x, hd.y, 0.165, soft(skin, dim + 0.04));
       }
 
       // head: the whole character lives here
