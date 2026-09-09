@@ -125,7 +125,8 @@
       <div class="group">
         <div class="label">Desenho dos jogadores</div>
         <div class="opts" data-group="charStyle">
-          <button class="opt" data-val="atletico">Atlético<small>proporção real, volume</small></button>
+          <button class="opt" data-val="boneco">Boneco<small>estilo Wii, com rosto</small></button>
+          <button class="opt" data-val="atletico">Atlético<small>proporção real</small></button>
           <button class="opt" data-val="vetor">Vetor<small>contorno, cor chapada</small></button>
           <button class="opt" data-val="arcade">Arcade<small>cabeçudo, traço grosso</small></button>
         </div>
@@ -1628,6 +1629,11 @@ PB.Renderer = (function () {
   };
 
   // half-widths in feet along each bone, start joint to end joint
+  const PROFILE_MII = {
+    arm:   [[0, 0.145], [0.5, 0.15], [1, 0.13]],
+    leg:   [[0, 0.195], [0.5, 0.20], [1, 0.17]],
+  };
+
   const PROFILE = {
     thigh:   [[0, 0.30], [0.28, 0.315], [0.68, 0.235], [1, 0.165]],
     shin:    [[0, 0.165], [0.22, 0.205], [0.58, 0.135], [1, 0.088]],
@@ -1636,7 +1642,18 @@ PB.Renderer = (function () {
     neck:    [[0, 0.135], [1, 0.125]],
   };
 
+  // Wii Sports proportions: about three and a half heads tall, thin limbs,
+  // no neck, and all the character in the face.
+  const BODY_MII = {
+    ankle: 0.30, knee: 1.32, hip: 2.42, waist: 2.90, shoulder: 3.94,
+    head: 4.92, headR: 0.70,
+    shoulderHalf: 0.62, hipHalf: 0.52,
+    upperArm: 0.78, foreArm: 0.72,
+    thigh: 1.06, shin: 1.02,
+  };
+
   const CHAR_STYLES = {
+    boneco:   { body: BODY_MII, limb: 1.00, shade: true, outline: 0, detail: false, kind: 'mii' },
     atletico: { body: BODY_ATHLETIC, limb: 1.00, shade: true, outline: 0.014, detail: true },
     vetor:    { body: BODY_ATHLETIC, limb: 1.22, shade: false, outline: 0.075, detail: false },
     arcade:   { body: BODY_ARCADE,   limb: 1.42, shade: false, outline: 0.055, detail: false },
@@ -1873,6 +1890,14 @@ PB.Renderer = (function () {
       const elbow = ik(shPad.x, shPad.y, handP.x, handP.y, BODY.upperArm, BODY.foreArm, -hand * 0.8);
 
       this.shadow(ctx, P, base, s, stanceHalf, isMe, p);
+      if (STYLE.kind === 'mii') {
+        this.mii(ctx, P, {
+          legs, shL, shR, hipL, hipR, shY, hipY, shPad, shFree,
+          elbow, handP, freeElbow, freeHandR, swA,
+        }, kit, skin, look, facing, turn);
+        this.paddle(ctx, P, elbow, handP, look, hand, swinging, prog);
+        return;
+      }
       const backLeg = legs[0].depth <= legs[1].depth ? legs[0] : legs[1];
       const frontLeg = backLeg === legs[0] ? legs[1] : legs[0];
       const freeInFront = swA > 0;
@@ -1886,6 +1911,139 @@ PB.Renderer = (function () {
       if (freeInFront) this.arm(ctx, P, shFree, freeElbow, freeHandR, kit, skin, false);
       this.arm(ctx, P, shPad, elbow, handP, kit, skin, false);
       this.paddle(ctx, P, elbow, handP, look, hand, swinging, prog);
+    },
+
+    // ── Wii-style figure ───────────────────────────────────────────────────
+    mii(ctx, P, parts, kit, skin, look, facing, turn) {
+      const { legs, shL, shR, hipL, hipR, shY, hipY, shPad, shFree,
+              elbow, handP, freeElbow, freeHandR, swA } = parts;
+      const X = P.X, Y = P.Y;
+      const soft = (c, a) => tint(c, a);
+
+      // legs, then a small pair of shorts, then the rounded body
+      for (const L of [legs[0], legs[1]].sort((a, b) => a.depth - b.depth)) {
+        const dim = L === legs[0] && legs[0].depth < legs[1].depth ? -0.10 : 0;
+        this.bone(ctx, P, L.hip.x, L.hip.y, L.knee.x, L.knee.y, PROFILE_MII.leg, soft(skin, dim));
+        this.bone(ctx, P, L.knee.x, L.knee.y, L.foot.x, L.foot.y + 0.14, PROFILE_MII.leg, soft(skin, dim));
+        // shoe: a rounded block, no laces at this scale
+        ctx.beginPath();
+        ctx.ellipse(X(L.foot.x + L.side * 0.06), Y(L.foot.y + 0.10),
+                    P.s * 0.30, P.s * 0.21, 0, 0, Math.PI * 2);
+        ctx.fillStyle = soft('#f4f7fa', dim);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(X(L.foot.x + L.side * 0.06), Y(L.foot.y + 0.03),
+                    P.s * 0.30, P.s * 0.09, 0, 0, Math.PI * 2);
+        ctx.fillStyle = soft(kit.shirt2, dim - 0.1);
+        ctx.fill();
+      }
+
+      const bodyTop = shY + 0.10, bodyBot = hipY - 0.30;
+      const halfTop = BODY.shoulderHalf, halfBot = BODY.hipHalf + 0.20;
+      const body = new Path2D();
+      body.moveTo(X(-halfTop + (shL.x + shR.x) / 2), Y(bodyTop));
+      body.bezierCurveTo(X(-halfTop - 0.20 + (shL.x + shR.x) / 2), Y(bodyTop - 0.5),
+                         X(-halfBot - 0.10 + (hipL.x + hipR.x) / 2), Y(bodyBot + 0.5),
+                         X(-halfBot + (hipL.x + hipR.x) / 2), Y(bodyBot));
+      body.quadraticCurveTo(X((hipL.x + hipR.x) / 2), Y(bodyBot - 0.24),
+                            X(halfBot + (hipL.x + hipR.x) / 2), Y(bodyBot));
+      body.bezierCurveTo(X(halfBot + 0.10 + (hipL.x + hipR.x) / 2), Y(bodyBot + 0.5),
+                         X(halfTop + 0.20 + (shL.x + shR.x) / 2), Y(bodyTop - 0.5),
+                         X(halfTop + (shL.x + shR.x) / 2), Y(bodyTop));
+      body.quadraticCurveTo(X((shL.x + shR.x) / 2), Y(bodyTop + 0.22),
+                            X(-halfTop + (shL.x + shR.x) / 2), Y(bodyTop));
+      body.closePath();
+      const bg = ctx.createLinearGradient(X(-halfTop - 0.4), 0, X(halfTop + 0.4), 0);
+      bg.addColorStop(0, tint(kit.shirt, 0.20));
+      bg.addColorStop(0.5, kit.shirt);
+      bg.addColorStop(1, tint(kit.shirt, -0.24));
+      ctx.fillStyle = bg;
+      ctx.fill(body);
+
+      // arms: thin tubes with mitten hands
+      const armPair = [[shFree, freeElbow, freeHandR, swA <= 0], [shPad, elbow, handP, false]];
+      for (const [sh, el, hd, far] of armPair) {
+        const dim = far ? -0.10 : 0;
+        this.bone(ctx, P, sh.x, sh.y - 0.05, el.x, el.y, PROFILE_MII.arm, soft(skin, dim));
+        this.bone(ctx, P, el.x, el.y, hd.x, hd.y, PROFILE_MII.arm, soft(skin, dim));
+        ctx.beginPath();
+        ctx.ellipse(X(hd.x), Y(hd.y), P.s * 0.17, P.s * 0.155, 0, 0, Math.PI * 2);
+        ctx.fillStyle = soft(skin, dim + 0.04);
+        ctx.fill();
+      }
+
+      // head: the whole character lives here
+      const cx = (shL.x + shR.x) / 2 + Math.sin(turn) * 0.10;
+      const R = BODY.headR;
+      const cy = shY + (BODY.head - BODY.shoulder);
+      const hg = ctx.createRadialGradient(X(cx - R * 0.4), Y(cy + R * 0.4), P.s * R * 0.1,
+                                          X(cx), Y(cy), P.s * R * 1.15);
+      hg.addColorStop(0, tint(skin, 0.16));
+      hg.addColorStop(0.72, skin);
+      hg.addColorStop(1, tint(skin, -0.22));
+      ctx.beginPath();
+      ctx.ellipse(X(cx), Y(cy), P.s * R * 0.92, P.s * R, 0, 0, Math.PI * 2);
+      ctx.fillStyle = hg;
+      ctx.fill();
+      // ears
+      for (const es of [-1, 1]) {
+        ctx.beginPath();
+        ctx.ellipse(X(cx + es * R * 0.90), Y(cy - R * 0.05), P.s * R * 0.13, P.s * R * 0.22, 0, 0, Math.PI * 2);
+        ctx.fillStyle = tint(skin, -0.12);
+        ctx.fill();
+      }
+      // hair
+      const cap = new Path2D();
+      cap.moveTo(X(cx - R * 0.95), Y(cy + R * 0.12));
+      cap.quadraticCurveTo(X(cx - R * 1.0), Y(cy + R * 1.10), X(cx), Y(cy + R * 1.12));
+      cap.quadraticCurveTo(X(cx + R * 1.0), Y(cy + R * 1.10), X(cx + R * 0.95), Y(cy + R * 0.12));
+      if (facing < 0) {
+        // seen from the front: a fringe across the brow
+        cap.quadraticCurveTo(X(cx + R * 0.5), Y(cy + R * 0.30), X(cx + R * 0.05), Y(cy + R * 0.44));
+        cap.quadraticCurveTo(X(cx - R * 0.5), Y(cy + R * 0.58), X(cx - R * 0.95), Y(cy + R * 0.12));
+      } else {
+        // seen from behind: hair covers the whole skull
+        cap.quadraticCurveTo(X(cx), Y(cy - R * 0.55), X(cx - R * 0.95), Y(cy + R * 0.12));
+      }
+      cap.closePath();
+      ctx.fillStyle = look.hair;
+      ctx.fill(cap);
+      if (look.style === 1) {
+        this.bone(ctx, P, cx - R * 0.1, cy + R * 0.7, cx - R * 0.1 + Math.sin(turn) * 0.2, cy - R * 0.2,
+                  [[0, 0.2], [0.5, 0.24], [1, 0.08]], look.hair, { raw: true });
+      }
+      if (facing < 0) this.face(ctx, P, cx, cy, R, look);
+    },
+
+    // Two eyes, two brows, one mouth — the Mii formula.
+    face(ctx, P, cx, cy, R, look) {
+      const X = P.X, Y = P.Y;
+      const eyeDX = R * 0.36, eyeY = cy + R * 0.10;
+      for (const s of [-1, 1]) {
+        ctx.beginPath();
+        ctx.ellipse(X(cx + s * eyeDX), Y(eyeY), P.s * R * 0.15, P.s * R * 0.19, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#fdfdfd';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(X(cx + s * eyeDX), Y(eyeY - R * 0.02), P.s * R * 0.085, P.s * R * 0.115, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#231a15';
+        ctx.fill();
+      }
+      ctx.strokeStyle = tint(look.hair, -0.1);
+      ctx.lineWidth = Math.max(1, P.s * R * 0.09);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (const s of [-1, 1]) {
+        ctx.moveTo(X(cx + s * eyeDX - R * 0.17), Y(eyeY + R * 0.34));
+        ctx.lineTo(X(cx + s * eyeDX + R * 0.17), Y(eyeY + R * 0.36));
+      }
+      ctx.stroke();
+      ctx.strokeStyle = '#7d4436';
+      ctx.lineWidth = Math.max(1, P.s * R * 0.075);
+      ctx.beginPath();
+      ctx.moveTo(X(cx - R * 0.17), Y(cy - R * 0.34));
+      ctx.quadraticCurveTo(X(cx), Y(cy - R * 0.46), X(cx + R * 0.17), Y(cy - R * 0.34));
+      ctx.stroke();
     },
 
     shadow(ctx, P, base, s, stanceHalf, isMe, p) {
@@ -2896,7 +3054,7 @@ PB.Renderer = (function () {
     }
   }
 
-  Renderer.charStyle = 'atletico';
+  Renderer.charStyle = 'boneco';
   Renderer.COL = COL;
   Renderer.Cam = Cam;
   return Renderer;
@@ -3231,7 +3389,7 @@ PB.Audio = (function () {
   const renderer = new PB.Renderer(canvas);
   const input = new PB.Input(canvas);
 
-  const DEFAULTS = { format: 'singles', humans: '1', arrangement: 'coop', difficulty: 'normal', targetPoints: '11', charStyle: 'atletico' };
+  const DEFAULTS = { format: 'singles', humans: '1', arrangement: 'coop', difficulty: 'normal', targetPoints: '11', charStyle: 'boneco' };
   // Storage can throw outright (private mode, sandboxed frame, site data blocked),
   // so every read and write goes through here.
   const store = {

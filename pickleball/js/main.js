@@ -6,7 +6,7 @@
   const renderer = new PB.Renderer(canvas);
   const input = new PB.Input(canvas);
 
-  const DEFAULTS = { format: 'singles', humans: '1', arrangement: 'coop', difficulty: 'normal', targetPoints: '11', charStyle: 'atletico' };
+  const DEFAULTS = { format: 'singles', humans: '1', arrangement: 'coop', difficulty: 'normal', targetPoints: '11', charStyle: 'boneco' };
   // Storage can throw outright (private mode, sandboxed frame, site data blocked),
   // so every read and write goes through here.
   const store = {
