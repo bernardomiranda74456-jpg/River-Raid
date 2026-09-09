@@ -628,7 +628,9 @@ PB.Match = (function () {
       p.yaw += (yawWant - p.yaw) * Math.min(1, dt * 7);
       // waiting between points: a small split-step bounce
       p.hop = this.state === 'ready' ? (Math.sin(this.stateT * 6.5) * 0.5 + 0.5) * 0.06 : 0;
-      let wantCrouch = 0.30 + p.prep * 0.42 + (Math.abs(p.z) < 10 ? 0.10 : 0);
+      // Ready position is a real athletic stance: knees bent and weight forward
+      // even before the ball comes, deeper still at the kitchen line.
+      let wantCrouch = 0.46 + p.prep * 0.36 + (Math.abs(p.z) < 10 ? 0.12 : 0);
       // reaching for a low ball is done with the knees, not just the arm
       if (p.swingHit) {
         const low = Math.max(0, Math.min(1, (2.7 - p.swingHit.dy) / 2.0));

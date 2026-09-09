@@ -341,7 +341,8 @@ PB.Renderer = (function () {
       const resid = (p.runAngle || 0) - (p.yaw || 0);
       const strideLat = Math.sin(resid) * stride * mir;
       const strideDep = Math.cos(resid) * stride;
-      const stanceHalf = BODY.hipHalf + 0.08 + crouch * 0.20;
+      // Athletic base: feet wider than the hips, wider still as the knees bend.
+      const stanceHalf = BODY.hipHalf + 0.26 + crouch * 0.34;
       const legs = [];
       for (let i = 0; i < 2; i++) {
         const side = i === 0 ? -1 : 1;
@@ -359,9 +360,16 @@ PB.Renderer = (function () {
       const hitDX = p.swingHit ? p.swingHit.dx * mir : 0;
       const hitY = p.swingHit ? p.swingHit.dy : shY - 0.4;
       const swA = Math.sin(ph + Math.PI) * stride;
+      // Ready position, the way the sport is actually played: paddle up in front
+      // of the chest near the midline, tip toward the sky, both hands together,
+      // elbows bent down and out. Never hanging at the side.
       const ready = {
-        x: hand * (0.62 + 0.12 * Math.cos(turn)) + Math.sin(turn) * 0.3 - swA * 0.18,
-        y: shY - 0.86 + swA * 0.12,
+        x: hand * (0.34 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.30 - swA * 0.10,
+        y: shY - 0.66 + swA * 0.10,
+      };
+      const readyElbow = {
+        x: hand * (0.80 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.20,
+        y: shY - 1.06 + swA * 0.06,
       };
       let load, contact, follow;
       if (kind === 'over') {
@@ -390,14 +398,29 @@ PB.Renderer = (function () {
       const shFree = hand > 0 ? shL : shR;
       const armLen = (BODY.upperArm + BODY.foreArm) * 0.97;
       handP = reachable(shPad, handP, armLen);
-      const freeHand = {
+      // How much of the pose is the waiting stance rather than a loaded swing.
+      const readyAmt = swinging ? 0 : 1 - ease(p.prep || 0);
+      const freeSwing = {
         x: -hand * (0.86 + Math.abs(swA) * 0.26) + Math.sin(turn) * 0.42 - swA * 0.26,
         y: shY - 1.06 + swA * 0.34 + coilAmt * 0.42,
       };
+      // The free hand supports the paddle throat rather than dangling.
+      const freeReady = {
+        x: hand * 0.08 + Math.sin(turn) * 0.26 - swA * 0.10,
+        y: shY - 0.76 + swA * 0.08,
+      };
+      const freeReadyElbow = {
+        x: -hand * (0.74 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.16,
+        y: shY - 1.08,
+      };
+      const freeHand = mix(freeSwing, freeReady, readyAmt);
       const freeHandR = reachable(shFree, freeHand, armLen);
-      const freeElbow = ik(shFree.x, shFree.y, freeHandR.x, freeHandR.y,
-                           BODY.upperArm, BODY.foreArm, hand * 0.75);
-      const elbow = ik(shPad.x, shPad.y, handP.x, handP.y, BODY.upperArm, BODY.foreArm, -hand * 0.8);
+      const freeElbow = mix(
+        ik(shFree.x, shFree.y, freeHandR.x, freeHandR.y, BODY.upperArm, BODY.foreArm, hand * 0.75),
+        freeReadyElbow, readyAmt);
+      const elbow = mix(
+        ik(shPad.x, shPad.y, handP.x, handP.y, BODY.upperArm, BODY.foreArm, -hand * 0.8),
+        readyElbow, readyAmt);
 
       this.shadow(ctx, P, base, s, stanceHalf, isMe, p);
       if (STYLE.kind === 'mii') {
@@ -405,7 +428,7 @@ PB.Renderer = (function () {
           legs, shL, shR, hipL, hipR, shY, hipY, shPad, shFree,
           elbow, handP, freeElbow, freeHandR, swA,
         }, kit, skin, look, facing, turn);
-        this.paddle(ctx, P, elbow, handP, look, hand, swinging, prog);
+        this.paddle(ctx, P, elbow, handP, look, hand, swinging, prog, readyAmt);
         return;
       }
       const backLeg = legs[0].depth <= legs[1].depth ? legs[0] : legs[1];
@@ -420,7 +443,7 @@ PB.Renderer = (function () {
       this.leg(ctx, P, frontLeg, kit, skin, false);
       if (freeInFront) this.arm(ctx, P, shFree, freeElbow, freeHandR, kit, skin, false);
       this.arm(ctx, P, shPad, elbow, handP, kit, skin, false);
-      this.paddle(ctx, P, elbow, handP, look, hand, swinging, prog);
+      this.paddle(ctx, P, elbow, handP, look, hand, swinging, prog, readyAmt);
     },
 
     // ── Wii-style figure ───────────────────────────────────────────────────
@@ -840,10 +863,17 @@ PB.Renderer = (function () {
     },
 
     // A pickleball paddle: rounded face, throat, grip with a butt cap.
-    paddle(ctx, P, elbow, hand, look, side, swinging, prog) {
+    paddle(ctx, P, elbow, hand, look, side, swinging, prog, readyAmt) {
       const dx = hand.x - elbow.x, dy = hand.y - elbow.y;
       const len = Math.hypot(dx, dy) || 1;
       let ux = dx / len, uy = dy / len;
+      // Waiting: the face points at the sky, barely tilted off vertical.
+      if (readyAmt > 0.001) {
+        ux = lerp(ux, side * 0.16, readyAmt);
+        uy = lerp(uy, 0.99, readyAmt);
+        const n = Math.hypot(ux, uy) || 1;
+        ux /= n; uy /= n;
+      }
       if (swinging && prog > 0.2 && prog < 0.55) {
         ux = lerp(ux, side * 0.35, 0.5);
         uy = lerp(uy, 0.9, 0.5);
