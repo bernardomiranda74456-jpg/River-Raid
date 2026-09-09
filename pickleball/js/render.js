@@ -364,8 +364,8 @@ PB.Renderer = (function () {
       // of the chest near the midline, tip toward the sky, both hands together,
       // elbows bent down and out. Never hanging at the side.
       const ready = {
-        x: hand * (0.30 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.30 - swA * 0.10,
-        y: shY - 0.62 + swA * 0.10,
+        x: hand * (0.48 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.30 - swA * 0.10,
+        y: shY - 0.18 + swA * 0.10,
       };
       const readyElbow = {
         x: hand * (1.02 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.20,
@@ -406,12 +406,12 @@ PB.Renderer = (function () {
       };
       // The free hand supports the paddle throat rather than dangling.
       const freeReady = {
-        x: -hand * 0.20 + Math.sin(turn) * 0.26 - swA * 0.10,
-        y: shY - 0.74 + swA * 0.08,
+        x: -hand * 0.14 + Math.sin(turn) * 0.26 - swA * 0.10,
+        y: shY - 0.36 + swA * 0.08,
       };
       const freeReadyElbow = {
-        x: -hand * (0.96 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.16,
-        y: shY - 0.66,
+        x: -hand * (0.80 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.16,
+        y: shY - 0.58,
       };
       const freeHand = mix(freeSwing, freeReady, readyAmt);
       const freeHandR = reachable(shFree, freeHand, armLen);
@@ -422,32 +422,47 @@ PB.Renderer = (function () {
         ik(shPad.x, shPad.y, handP.x, handP.y, BODY.upperArm, BODY.foreArm, -hand * 0.8),
         readyElbow, readyAmt);
 
+      // Seen from behind, everything the player holds in front of their chest is
+      // behind their back — arms and paddle go under the torso, and only what
+      // sticks out past the silhouette shows. Facing the camera, they go on top.
+      const fromBehind = facing > 0;
+      const drawPaddle = () =>
+        this.paddle(ctx, P, elbow, handP, look, hand, swinging, prog, readyAmt);
+
       this.shadow(ctx, P, base, s, stanceHalf, isMe, p);
       if (STYLE.kind === 'mii') {
         this.mii(ctx, P, {
           legs, shL, shR, hipL, hipR, shY, hipY, shPad, shFree,
           elbow, handP, freeElbow, freeHandR, swA,
-        }, kit, skin, look, facing, turn);
-        this.paddle(ctx, P, elbow, handP, look, hand, swinging, prog, readyAmt);
+        }, kit, skin, look, facing, turn, drawPaddle);
         return;
       }
       const backLeg = legs[0].depth <= legs[1].depth ? legs[0] : legs[1];
       const frontLeg = backLeg === legs[0] ? legs[1] : legs[0];
-      const freeInFront = swA > 0;
+      const freeInFront = swA > 0 && !fromBehind;
+      const arms = () => {
+        this.arm(ctx, P, shFree, freeElbow, freeHandR, kit, skin, false);
+        this.arm(ctx, P, shPad, elbow, handP, kit, skin, false);
+      };
 
       this.leg(ctx, P, backLeg, kit, skin, true);
-      if (!freeInFront) this.arm(ctx, P, shFree, freeElbow, freeHandR, kit, skin, true);
+      if (!freeInFront && !fromBehind) {
+        this.arm(ctx, P, shFree, freeElbow, freeHandR, kit, skin, true);
+      }
       this.shorts(ctx, P, legs[0], legs[1], hipL, hipR, kit);
+      if (fromBehind) { arms(); drawPaddle(); }
       this.torso(ctx, P, shL, shR, hipL, hipR, kit, skin, shY, hipY);
       this.head(ctx, P, shL, shR, shY, skin, look, turn, facing);
       this.leg(ctx, P, frontLeg, kit, skin, false);
-      if (freeInFront) this.arm(ctx, P, shFree, freeElbow, freeHandR, kit, skin, false);
-      this.arm(ctx, P, shPad, elbow, handP, kit, skin, false);
-      this.paddle(ctx, P, elbow, handP, look, hand, swinging, prog, readyAmt);
+      if (!fromBehind) {
+        if (freeInFront) this.arm(ctx, P, shFree, freeElbow, freeHandR, kit, skin, false);
+        this.arm(ctx, P, shPad, elbow, handP, kit, skin, false);
+        drawPaddle();
+      }
     },
 
     // ── Wii-style figure ───────────────────────────────────────────────────
-    mii(ctx, P, parts, kit, skin, look, facing, turn) {
+    mii(ctx, P, parts, kit, skin, look, facing, turn, drawPaddle) {
       const { legs, shL, shR, hipL, hipR, shY, hipY, shPad, shFree,
               elbow, handP, freeElbow, freeHandR, swA } = parts;
       const X = P.X, Y = P.Y;
@@ -471,6 +486,30 @@ PB.Renderer = (function () {
         ctx.fill();
       }
 
+      // arms: thin tubes with mitten hands. Rounded caps at the shoulder and the
+      // elbow hide the seam where two bones meet at a sharp angle — and in the
+      // ready pose the elbows are bent hard, so the seam would show.
+      const joint = (x, y, r, c) => {
+        ctx.beginPath();
+        ctx.ellipse(X(x), Y(y), P.s * r, P.s * r, 0, 0, Math.PI * 2);
+        ctx.fillStyle = c;
+        ctx.fill();
+      };
+      const arms = () => {
+        const armPair = [[shFree, freeElbow, freeHandR, swA <= 0], [shPad, elbow, handP, false]];
+        for (const [sh, el, hd, far] of armPair) {
+          const dim = far ? -0.10 : 0;
+          this.bone(ctx, P, sh.x, sh.y - 0.05, el.x, el.y, PROFILE_MII.arm, soft(skin, dim));
+          joint(el.x, el.y, 0.145, soft(skin, dim));
+          this.bone(ctx, P, el.x, el.y, hd.x, hd.y, PROFILE_MII.arm, soft(skin, dim));
+          joint(sh.x, sh.y - 0.05, 0.145, soft(skin, dim));
+          joint(hd.x, hd.y, 0.165, soft(skin, dim + 0.04));
+        }
+      };
+      // From behind, the arms and the paddle are on the far side of the chest.
+      const fromBehind = facing > 0;
+      if (fromBehind) { arms(); drawPaddle(); }
+
       const bodyTop = shY + 0.10, bodyBot = hipY - 0.30;
       const halfTop = BODY.shoulderHalf, halfBot = BODY.hipHalf + 0.20;
       const body = new Path2D();
@@ -493,24 +532,7 @@ PB.Renderer = (function () {
       ctx.fillStyle = bg;
       ctx.fill(body);
 
-      // arms: thin tubes with mitten hands. Rounded caps at the shoulder and the
-      // elbow hide the seam where two bones meet at a sharp angle — and in the
-      // ready pose the elbows are bent hard, so the seam would show.
-      const armPair = [[shFree, freeElbow, freeHandR, swA <= 0], [shPad, elbow, handP, false]];
-      const joint = (x, y, r, c) => {
-        ctx.beginPath();
-        ctx.ellipse(X(x), Y(y), P.s * r, P.s * r, 0, 0, Math.PI * 2);
-        ctx.fillStyle = c;
-        ctx.fill();
-      };
-      for (const [sh, el, hd, far] of armPair) {
-        const dim = far ? -0.10 : 0;
-        this.bone(ctx, P, sh.x, sh.y - 0.05, el.x, el.y, PROFILE_MII.arm, soft(skin, dim));
-        joint(el.x, el.y, 0.145, soft(skin, dim));
-        this.bone(ctx, P, el.x, el.y, hd.x, hd.y, PROFILE_MII.arm, soft(skin, dim));
-        joint(sh.x, sh.y - 0.05, 0.145, soft(skin, dim));
-        joint(hd.x, hd.y, 0.165, soft(skin, dim + 0.04));
-      }
+      if (!fromBehind) arms();
 
       // head: the whole character lives here
       const cx = (shL.x + shR.x) / 2 + Math.sin(turn) * 0.10;
@@ -553,6 +575,7 @@ PB.Renderer = (function () {
                   [[0, 0.2], [0.5, 0.24], [1, 0.08]], look.hair, { raw: true });
       }
       if (facing < 0) this.face(ctx, P, cx, cy, R, look);
+      if (!fromBehind) drawPaddle();
     },
 
     // Two eyes, two brows, one mouth — the Mii formula.
@@ -876,7 +899,7 @@ PB.Renderer = (function () {
       let ux = dx / len, uy = dy / len;
       // Waiting: the face points at the sky, barely tilted off vertical.
       if (readyAmt > 0.001) {
-        ux = lerp(ux, side * 0.16, readyAmt);
+        ux = lerp(ux, side * 0.28, readyAmt);
         uy = lerp(uy, 0.99, readyAmt);
         const n = Math.hypot(ux, uy) || 1;
         ux /= n; uy /= n;
