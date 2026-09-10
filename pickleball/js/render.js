@@ -1366,6 +1366,24 @@ PB.Renderer = (function () {
         ctx.fill();
         ctx.restore();
       }
+      // where the ball actually landed: a solid white disc that fades out over two
+      // seconds, so the mark you see is the bounce that already happened, never
+      // the one still coming
+      if (m.marks && m.marks.length) {
+        ctx.save();
+        ctx.fillStyle = '#fff';
+        for (const k of m.marks) {
+          const q = cam.proj(k.x, 0.015, k.z);
+          if (q.s <= 0 || q.cz <= 1) continue;
+          // solid white for a beat so the bounce reads, then a clean fade out
+          ctx.globalAlpha = k.t > 1.75 ? 1 : k.t / 1.75;
+          ctx.beginPath();
+          ctx.ellipse(q.x, q.y, q.s * 0.85, q.s * 0.3, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
       // predicted bounce marker
       const pr = m.pred && m.pred.landing;
       if (pr && m.ball.live) {

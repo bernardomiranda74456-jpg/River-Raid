@@ -19,6 +19,7 @@ PB.Match = (function () {
   const MOVE_SPEED = 13.2;   // ft/s, roughly a quick club player
   const REACH      = 3.05;   // paddle + arm
   const HIT_CD     = 0.22;
+  const MARK_FADE  = 2.0;    // seconds a bounce mark takes to fade off the court
 
   let nextId = 0;
 
@@ -98,6 +99,8 @@ PB.Match = (function () {
       this.pred = null;
       this.paused = false;
       this.pendingSwing = {};
+      // where the ball actually landed, newest last, each fading on its own clock
+      this.marks = [];
       this.prepareServe();
     }
 
@@ -255,6 +258,10 @@ PB.Match = (function () {
       if (this.hintT > 0) { this.hintT -= dt; if (this.hintT <= 0) this.hint = null; }
       if (this.cheerT > 0) this.cheerT -= dt;
 
+      for (let i = this.marks.length - 1; i >= 0; i--) {
+        if ((this.marks[i].t -= dt) <= 0) this.marks.splice(i, 1);
+      }
+
       this.updatePrediction();
       this.updateAnticipation(dt);
 
@@ -311,6 +318,8 @@ PB.Match = (function () {
         }
         if (ev.bounce) {
           this.events.push({ type: 'bounce', x: ev.bx, z: ev.bz, impact: ev.impact });
+          this.marks.push({ x: ev.bx, z: ev.bz, t: MARK_FADE });
+          if (this.marks.length > 12) this.marks.shift();
           if (!deadBall) this.onBounce(ev.bx, ev.bz);
         }
         if (this.rally.over || this.state !== 'live') break;
