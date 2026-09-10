@@ -2894,6 +2894,10 @@ PB.Renderer = (function () {
         ctx.fill();
         ctx.restore();
       }
+      // Both bounce marks are the same circle on the ground, so they read as a
+      // pair: MARK_R across, flattened by the camera's own foreshortening.
+      const MARK_R = 0.42, MARK_FLAT = 0.353;
+
       // where the ball actually landed: a solid white disc that fades out over two
       // seconds, so the mark you see is the bounce that already happened, never
       // the one still coming
@@ -2906,7 +2910,7 @@ PB.Renderer = (function () {
           // solid white for a beat so the bounce reads, then a clean fade out
           ctx.globalAlpha = k.t > 1.75 ? 1 : k.t / 1.75;
           ctx.beginPath();
-          ctx.ellipse(q.x, q.y, q.s * 0.85, q.s * 0.3, 0, 0, Math.PI * 2);
+          ctx.ellipse(q.x, q.y, q.s * MARK_R, q.s * MARK_R * MARK_FLAT, 0, 0, Math.PI * 2);
           ctx.fill();
         }
         ctx.restore();
@@ -2919,9 +2923,9 @@ PB.Renderer = (function () {
         const inb = C.inBounds(pr.x, pr.z);
         ctx.save();
         ctx.strokeStyle = inb ? 'rgba(255,255,255,0.75)' : 'rgba(255,120,110,0.85)';
-        ctx.lineWidth = Math.max(1.5, q.s * 0.06);
+        ctx.lineWidth = Math.max(1.2, q.s * 0.045);
         ctx.beginPath();
-        ctx.ellipse(q.x, q.y, q.s * 0.85, q.s * 0.3, 0, 0, Math.PI * 2);
+        ctx.ellipse(q.x, q.y, q.s * MARK_R, q.s * MARK_R * MARK_FLAT, 0, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
       }
