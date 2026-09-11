@@ -1,0 +1,32 @@
+diff --git a/pickleball/js/match.js b/pickleball/js/match.js
+index f02d9e6..7971c21 100644
+--- a/pickleball/js/match.js
++++ b/pickleball/js/match.js
+@@ -20,6 +20,7 @@ PB.Match = (function () {
+   const REACH      = 3.05;   // paddle + arm
+   const HIT_CD     = 0.22;
+   const MARK_FADE  = 2.0;    // seconds a bounce mark takes to fade off the court
++  const RISE_H     = 1.50;   // ft the ball must climb after a bounce to be playable
+ 
+   let nextId = 0;
+ 
+@@ -372,9 +373,19 @@ PB.Match = (function () {
+     }
+ 
+     // ── contact ────────────────────────────────────────────────────────────
++    // A ball that has just landed is still on the floor. Nobody may play it until
++    // it has climbed off the court or at least topped out, which is what makes
++    // the bounce readable instead of a ball that is struck as it touches down.
++    bounceIsPlayable() {
++      const b = this.ball;
++      if (this.rally.bounces === 0) return true;          // a volley, no bounce yet
++      return b.vy <= 0 || b.y >= RISE_H;
++    }
++
+     checkHits() {
+       const b = this.ball;
+       if (!b.live || this.rally.over) return;
++      if (!this.bounceIsPlayable()) return;
+       const side = C.sideOf(b.z);
+       let best = null, bestD = 1e9;
+       for (const p of this.players) {

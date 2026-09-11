@@ -1,0 +1,3698 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d1622">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Jogo de pickleball para celular com simples, duplas, 1 ou 2 jogadores e regras oficiais.">
+<title>Pickleball — SOLUÇÃO 1: regra de contato</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; overflow: hidden; background: #0b131d; color: #eaf2f8;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overscroll-behavior: none; user-select: none; -webkit-user-select: none;
+  }
+  #app { position: fixed; top: 0; right: 0; bottom: 0; left: 0; inset: 0; }
+  canvas {
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0;
+    width: 100%; height: 100%; display: block; touch-action: none;
+  }
+
+  .screen {
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0;
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px;
+    padding: calc(18px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom));
+    background: radial-gradient(120% 90% at 50% 0%, #1d3a56 0%, #0b131d 62%);
+    overflow-y: auto; z-index: 10;
+  }
+  .screen.on { display: flex; }
+  .screen.sheet {
+    background: rgba(6, 11, 18, 0.88);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  }
+
+  h1 { font-size: clamp(30px, 10vw, 52px); letter-spacing: 2px; font-weight: 800; }
+  h1 span { color: #d9ff3d; }
+  h2 { font-size: 19px; font-weight: 700; margin-bottom: 2px; }
+  .tag { color: #8fa7bb; font-size: 13px; text-align: center; max-width: 320px; line-height: 1.45; }
+
+  .card { width: min(400px, 100%); display: flex; flex-direction: column; gap: 16px; }
+  .group { display: flex; flex-direction: column; gap: 7px; }
+  .label { font-size: 11px; letter-spacing: 1.4px; color: #7f9ab1; font-weight: 700; text-transform: uppercase; }
+  .opts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .opt {
+    flex: 1 1 0; min-width: 92px; padding: 12px 8px; border-radius: 12px; border: 1.5px solid #24384c;
+    background: #131f2c; color: #cfe0ee; font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: transform .06s ease, background .15s, border-color .15s;
+  }
+  .opt small { display: block; font-weight: 500; font-size: 11px; color: #7f9ab1; margin-top: 3px; }
+  .opt[aria-pressed="true"] { background: #1d4f74; border-color: #4fd0ff; color: #fff; }
+  .opt[aria-pressed="true"] small { color: #b9e6ff; }
+  .opt:active { transform: scale(.97); }
+  .opt[hidden] { display: none; }
+
+  .btn {
+    padding: 15px 22px; border-radius: 14px; border: none; font-size: 16px; font-weight: 800;
+    background: #d9ff3d; color: #12202c; cursor: pointer; letter-spacing: .5px; width: 100%;
+  }
+  .btn.ghost { background: transparent; border: 1.5px solid #2c4258; color: #cfe0ee; font-weight: 600; }
+  .btn:active { transform: scale(.98); }
+  .row { display: flex; gap: 10px; width: min(400px, 100%); }
+
+  #pauseBtn {
+    position: absolute; z-index: 6; top: calc(10px + env(safe-area-inset-top)); right: 12px;
+    width: 42px; height: 42px; border-radius: 12px; border: none;
+    background: rgba(9,16,24,.72); color: #eaf2f8; font-size: 15px; cursor: pointer; display: none;
+  }
+  #pauseBtn.on { display: block; }
+
+  .how { width: min(420px, 100%); display: flex; flex-direction: column; gap: 11px; }
+  .how div { background: #101c28; border: 1px solid #1e3346; border-radius: 12px; padding: 11px 13px; font-size: 13.5px; line-height: 1.5; color: #cfe0ee; }
+  .how b { color: #d9ff3d; }
+  .final { font-size: 46px; font-weight: 800; letter-spacing: 2px; }
+  .muted { color: #7f9ab1; font-size: 13px; }
+  .foot { position: absolute; bottom: calc(10px + env(safe-area-inset-bottom)); font-size: 11px; color: #4d6478; }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+  <button id="pauseBtn" aria-label="Pausar">⏸</button>
+
+  <!-- título -->
+  <section id="scr-title" class="screen on">
+    <h1>PICKLE<span>BALL</span></h1>
+    <p style="font-size:12px;letter-spacing:1.5px;font-weight:800;color:#12202c;background:#d9ff3d;padding:6px 12px;border-radius:999px">SOLUÇÃO 1 &middot; REGRA DE CONTATO</p>
+    <p class="tag">Simples ou duplas, sozinho ou com um amigo no mesmo aparelho. Regras oficiais, cozinha e tudo.</p>
+    <div class="card">
+      <button class="btn" id="btn-play">JOGAR</button>
+      <div class="row">
+        <button class="btn ghost" id="btn-how">Como jogar</button>
+        <button class="btn ghost" id="btn-sound">🔊 Som</button>
+      </div>
+    </div>
+    <div class="foot">Dica: vire o celular na horizontal para uma visão mais ampla</div>
+  </section>
+
+  <!-- configuração -->
+  <section id="scr-setup" class="screen">
+    <div class="card">
+      <h2>Configurar partida</h2>
+      <div class="group">
+        <div class="label">Formato</div>
+        <div class="opts" data-group="format">
+          <button class="opt" data-val="singles">Simples<small>1 contra 1</small></button>
+          <button class="opt" data-val="doubles">Duplas<small>2 contra 2</small></button>
+        </div>
+      </div>
+      <div class="group">
+        <div class="label">Jogadores</div>
+        <div class="opts" data-group="humans">
+          <button class="opt" data-val="1">Sozinho<small>contra a CPU</small></button>
+          <button class="opt" data-val="2">Dois jogadores<small>mesmo aparelho</small></button>
+        </div>
+      </div>
+      <div class="group" id="grp-arrangement">
+        <div class="label">Vocês dois vão…</div>
+        <div class="opts" data-group="arrangement">
+          <button class="opt" data-val="coop">Jogar juntos<small>dupla contra a CPU</small></button>
+          <button class="opt" data-val="versus">Um contra o outro<small>cada um com um parceiro CPU</small></button>
+        </div>
+      </div>
+      <div class="group">
+        <div class="label">Desenho dos jogadores</div>
+        <div class="opts" data-group="charStyle">
+          <button class="opt" data-val="boneco">Boneco<small>estilo Wii, com rosto</small></button>
+          <button class="opt" data-val="atletico">Atlético<small>proporção real</small></button>
+          <button class="opt" data-val="vetor">Vetor<small>contorno, cor chapada</small></button>
+          <button class="opt" data-val="arcade">Arcade<small>cabeçudo, traço grosso</small></button>
+        </div>
+      </div>
+      <div class="group">
+        <div class="label">Dificuldade</div>
+        <div class="opts" data-group="difficulty">
+          <button class="opt" data-val="facil">Fácil<small>golpe automático</small></button>
+          <button class="opt" data-val="normal">Normal<small>faltas assistidas</small></button>
+          <button class="opt" data-val="dificil">Difícil<small>regras sem perdão</small></button>
+        </div>
+      </div>
+      <div class="group">
+        <div class="label">Partida até</div>
+        <div class="opts" data-group="targetPoints">
+          <button class="opt" data-val="7">7 pontos</button>
+          <button class="opt" data-val="11">11 pontos</button>
+          <button class="opt" data-val="15">15 pontos</button>
+        </div>
+      </div>
+      <button class="btn" id="btn-start">COMEÇAR</button>
+      <button class="btn ghost" id="btn-back">Voltar</button>
+    </div>
+  </section>
+
+  <!-- como jogar -->
+  <section id="scr-how" class="screen">
+    <div class="how">
+      <h2>Como jogar</h2>
+      <div><b>Mover:</b> arraste o dedo em qualquer lugar da sua metade da tela. O jogador acompanha o dedo.</div>
+      <div><b>Golpear:</b> dê um <b>flick</b> (deslize rápido) para cima na hora da bola.<br>
+        • rápido e longo = <b>drive</b> no fundo<br>
+        • rápido e curto = <b>voleio</b> firme<br>
+        • lento e longo = <b>lob</b> por cima<br>
+        • lento e curto = <b>dink</b> na cozinha<br>
+        A direção do flick define para onde a bola vai.</div>
+      <div><b>Sacar:</b> deslize para cima — no saque não precisa ser rápido, e um toque simples também saca. O saque é por baixo, na diagonal, e precisa passar da cozinha.</div>
+      <div><b>Regra dos dois quiques:</b> o saque tem que quicar, e a devolução também. Só depois vale voleio.</div>
+      <div><b>Cozinha (zona de não-voleio):</b> os 2,13 m junto à rede. Não dá para bater na bola antes do quique estando lá dentro — nem entrar por impulso logo depois do voleio.</div>
+      <div><b>Pontuação:</b> só quem saca pontua. Nas duplas, os dois parceiros sacam antes de passar o saque (o jogo começa em 0-0-2). Partida com 2 de vantagem.</div>
+      <div class="muted">Dois jogadores no mesmo aparelho: no modo “um contra o outro” a tela divide em duas, cada um com a sua visão. No modo “juntos”, quem toca a metade esquerda controla o jogador da esquerda.</div>
+      <button class="btn ghost" id="btn-how-back">Voltar</button>
+    </div>
+  </section>
+
+  <!-- pausa -->
+  <section id="scr-pause" class="screen sheet">
+    <div class="card">
+      <h2>Pausa</h2>
+      <button class="btn" id="btn-resume">Continuar</button>
+      <button class="btn ghost" id="btn-restart">Reiniciar partida</button>
+      <button class="btn ghost" id="btn-quit">Sair para o menu</button>
+    </div>
+  </section>
+
+  <!-- fim -->
+  <section id="scr-over" class="screen sheet">
+    <div class="card" style="align-items:center;text-align:center">
+      <h2 id="over-title">Fim de jogo</h2>
+      <div class="final" id="over-score">11 - 5</div>
+      <p class="muted" id="over-sub"></p>
+      <button class="btn" id="btn-rematch">Revanche</button>
+      <button class="btn ghost" id="btn-menu">Menu</button>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+// Court geometry and the official dimensions of a pickleball court.
+// All world units are FEET. Origin is the centre of the net.
+//   x : across the court, sidelines at +/-10
+//   y : height above the ground
+//   z : along the court, baselines at +/-22. Team 0 owns z<0 (near/camera side),
+//       team 1 owns z>0 (far side).
+var PB = (function () {
+  var g = typeof window !== 'undefined' ? window : globalThis;
+  return g.PB || (g.PB = {});
+})();
+
+PB.Court = {
+  HALF_W: 10,          // 20 ft wide
+  HALF_L: 22,          // 44 ft long
+  KITCHEN: 7,          // non-volley zone depth from the net
+  NET_HALF_W: 11,      // posts sit 1 ft outside each sideline
+  NET_H_CENTER: 2.833, // 34 in
+  NET_H_POST: 3.0,     // 36 in
+  BALL_R: 0.121,       // 2.9 in diameter
+  LINE_W: 0.166,       // 2 in lines
+  OUT_TOL: 0.06,       // friendly sliver so pixel-perfect lines are not brutal
+
+  netHeightAt(x) {
+    const t = Math.min(1, Math.abs(x) / this.NET_HALF_W);
+    return this.NET_H_CENTER + (this.NET_H_POST - this.NET_H_CENTER) * t * t;
+  },
+
+  // team 0 lives on negative z, team 1 on positive z
+  teamSign(team) { return team === 0 ? -1 : 1; },
+  sideOf(z) { return z < 0 ? 0 : 1; },
+
+  // A player facing the net sees "their right" on +x for team 0 and -x for team 1.
+  rightSignFor(team) { return team === 0 ? 1 : -1; },
+
+  inBounds(x, z) {
+    const t = this.OUT_TOL;
+    return Math.abs(x) <= this.HALF_W + t && Math.abs(z) <= this.HALF_L + t;
+  },
+
+  // The NVZ line belongs to the kitchen.
+  inKitchen(x, z, team) {
+    if (team !== undefined && this.sideOf(z) !== team) return false;
+    return Math.abs(x) <= this.HALF_W && Math.abs(z) <= this.KITCHEN;
+  },
+
+  // A player is not a point. Feet straddle a stance and the lead foot lands
+  // ahead of centre, further the faster they move or the wider they stretch —
+  // and the rule is about ANY part of them touching the zone or its line.
+  footprint(p) {
+    return 0.45 + (p.lunge || 0) * 0.45 + (p.speedN || 0) * 0.40;
+  },
+
+  // Frontmost point of the player, measured from the net.
+  frontEdge(p) {
+    return Math.abs(p.z) - this.footprint(p);
+  },
+
+  playerInKitchen(p) {
+    if (this.sideOf(p.z) !== p.team) return false;
+    if (Math.abs(p.x) > this.HALF_W + 0.6) return false;   // NVZ ends at the sidelines
+    return this.frontEdge(p) <= this.KITCHEN;
+  },
+
+  // Service box on `team`'s side of the net, on the half whose x has sign xSign.
+  // A serve landing on (or short of) the kitchen line is a fault.
+  inServiceBox(x, z, team, xSign) {
+    const t = this.OUT_TOL;
+    if (this.sideOf(z) !== team) return false;
+    const az = Math.abs(z), ax = Math.abs(x);
+    if (az <= this.KITCHEN || az > this.HALF_L + t) return false;
+    if (ax > this.HALF_W + t) return false;
+    return Math.sign(x) === xSign || ax < 0.15; // centre line is a fault in theory, be kind
+  },
+
+  // Players stay inside what the camera can show: 5 ft wide of the sideline and
+  // 4.5 ft behind the baseline, and never across the net plane.
+  BACK_ROOM: 4.5,
+  clampToPlayArea(p, team) {
+    const s = this.teamSign(team);
+    p.x = Math.max(-this.HALF_W - 5, Math.min(this.HALF_W + 5, p.x));
+    if (s < 0) p.z = Math.max(-this.HALF_L - this.BACK_ROOM, Math.min(-0.7, p.z));
+    else       p.z = Math.min(this.HALF_L + this.BACK_ROOM, Math.max(0.7, p.z));
+    return p;
+  },
+};
+
+</script>
+<script>
+'use strict';
+// Ball flight for a hollow plastic pickleball: gravity + quadratic drag + a light
+// Magnus term, plus court bounce and net interaction.
+var PB = (function () {
+  var g = typeof window !== 'undefined' ? window : globalThis;
+  return g.PB || (g.PB = {});
+})();
+
+PB.Physics = (function () {
+  const C = PB.Court;
+
+  const G        = 32.174;  // ft/s^2
+  const DRAG     = 0.0134;  // 1/ft — measured-ish for a 2.9 in, 0.8 oz ball
+  const MAGNUS   = 0.0060;  // spin -> lateral/vertical acceleration
+  const SPIN_DEC = 0.55;    // spin decay per second
+  const REST     = 0.58;    // vertical restitution on the court
+  const FRICTION = 0.76;    // horizontal loss on bounce
+
+  function newBall() {
+    return { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, spin: 0, live: false, resting: false };
+  }
+
+  function speed(b) { return Math.hypot(b.vx, b.vy, b.vz); }
+
+  // One integration step. `ev` collects what happened so callers can react.
+  function step(b, dt, ev) {
+    const v = speed(b);
+    const k = DRAG * v;
+    // topspin (spin>0) presses the ball down, backspin floats it
+    const ax = -k * b.vx;
+    const ay = -k * b.vy - G - MAGNUS * b.spin * v;
+    const az = -k * b.vz;
+
+    const px = b.x, py = b.y, pz = b.z;
+    b.vx += ax * dt; b.vy += ay * dt; b.vz += az * dt;
+    b.x  += b.vx * dt; b.y += b.vy * dt; b.z += b.vz * dt;
+    b.spin -= b.spin * SPIN_DEC * dt;
+
+    // ── net ────────────────────────────────────────────────────────────────
+    if (pz !== b.z && Math.sign(pz) !== Math.sign(b.z)) {
+      const t = Math.abs(pz) / Math.abs(pz - b.z);
+      const cx = px + (b.x - px) * t;
+      const cy = py + (b.y - py) * t;
+      if (Math.abs(cx) <= C.NET_HALF_W) {
+        const top = C.netHeightAt(cx);
+        if (cy < top + C.BALL_R) {
+          const tape = cy > top - 0.25;   // clipped the tape: it can still trickle over
+          b.x = cx; b.y = cy; b.z = Math.sign(pz) * 0.02;
+          if (tape) {
+            b.vz *= 0.22; b.vy = b.vy * 0.3 + 0.4; b.vx *= 0.5;
+          } else {
+            b.vz *= -0.16; b.vy = b.vy * 0.28 - 0.6; b.vx *= 0.45;
+          }
+          b.spin *= 0.2;
+          if (ev) { ev.net = true; ev.netTape = tape; }
+        }
+      }
+    }
+
+    // ── court ──────────────────────────────────────────────────────────────
+    if (b.y <= C.BALL_R && b.vy < 0) {
+      const t = (py - C.BALL_R) / Math.max(1e-6, py - b.y);
+      const bx = px + (b.x - px) * t;
+      const bz = pz + (b.z - pz) * t;
+      b.x = bx; b.z = bz; b.y = C.BALL_R;
+      const impact = -b.vy;
+      b.vy = impact * REST;
+      const spinKick = 1 + Math.max(-0.35, Math.min(0.35, b.spin * 0.05));
+      b.vx *= FRICTION * spinKick;
+      b.vz *= FRICTION * spinKick;
+      b.spin *= 0.45;
+      if (ev) { ev.bounce = true; ev.bx = bx; ev.bz = bz; ev.impact = impact; }
+      if (impact < 1.6 && Math.hypot(b.vx, b.vz) < 2.2) { b.resting = true; b.vy = 0; }
+    }
+    return b;
+  }
+
+  function advance(b, dt, substeps, ev) {
+    const h = dt / substeps;
+    for (let i = 0; i < substeps; i++) step(b, h, ev);
+    return b;
+  }
+
+  function copy(b) { return Object.assign({}, b); }
+
+  // Where does this ball first touch the ground? Returns null if it never does
+  // inside `maxT`.
+  function predictLanding(b, maxT) {
+    const s = copy(b);
+    const dt = 1 / 240;
+    const ev = {};
+    for (let t = 0; t < (maxT || 5); t += dt) {
+      ev.bounce = false;
+      step(s, dt, ev);
+      if (ev.bounce) return { x: ev.bx, z: ev.bz, t: t + dt };
+    }
+    return null;
+  }
+
+  // Position at which the ball crosses `height` on the way down (a strike point).
+  function predictAtHeight(b, height, maxT) {
+    const s = copy(b);
+    const dt = 1 / 240;
+    for (let t = 0; t < (maxT || 5); t += dt) {
+      const py = s.y;
+      step(s, dt, {});
+      if (s.vy < 0 && py >= height && s.y <= height) {
+        return { x: s.x, y: s.y, z: s.z, t: t + dt };
+      }
+      if (s.resting) break;
+    }
+    return null;
+  }
+
+  // Sample the trajectory so an AI can pick an interception point.
+  function trace(b, maxT, dt) {
+    const s = copy(b); const out = []; const ev = {};
+    dt = dt || 1 / 90;
+    for (let t = 0; t < (maxT || 3); t += dt) {
+      ev.bounce = false;
+      step(s, dt, ev);
+      out.push({ x: s.x, y: s.y, z: s.z, t: t + dt, bounced: !!ev.bounce });
+      if (s.resting) break;
+    }
+    return out;
+  }
+
+  return { G, DRAG, newBall, step, advance, copy, speed, predictLanding, predictAtHeight, trace };
+})();
+
+</script>
+<script>
+'use strict';
+// Shot solver: given a contact point and a target on the court, find the launch
+// velocity that actually gets there *with* drag, and make sure it clears the net.
+var PB = (function () {
+  var g = typeof window !== 'undefined' ? window : globalThis;
+  return g.PB || (g.PB = {});
+})();
+
+PB.Shots = (function () {
+  const C = PB.Court, P = PB.Physics;
+
+  // Flight-time and spin profile per shot family.
+  const STYLES = {
+    serve:  { time: 1.05, spin:  0.8, clear: 0.85, power: 1.0 },
+    drive:  { time: 0.72, spin:  2.6, clear: 0.55, power: 1.0 },
+    ret:    { time: 0.95, spin:  1.6, clear: 0.80, power: 0.9 },
+    drop:   { time: 1.15, spin:  0.4, clear: 0.75, power: 0.7 },
+    dink:   { time: 0.85, spin:  0.2, clear: 0.42, power: 0.5 },
+    lob:    { time: 1.95, spin: -0.6, clear: 4.50, power: 0.8 },
+    punch:  { time: 0.55, spin:  1.4, clear: 0.40, power: 0.9 },
+    smash:  { time: 0.42, spin:  3.2, clear: 0.30, power: 1.0 },
+  };
+
+  const MAX_SPEED = 78; // ft/s — nobody hits a plastic ball much harder than this
+
+  // Fly a candidate launch and report where/when it first reaches `endY`
+  // descending, plus how much room it had over the net.
+  function fly(from, v, endY) {
+    const b = P.newBall();
+    b.x = from.x; b.y = from.y; b.z = from.z;
+    b.vx = v.vx; b.vy = v.vy; b.vz = v.vz; b.spin = v.spin || 0;
+    const dt = 1 / 240;
+    const ev = {};
+    let clear = Infinity, crossed = false;
+    const wantsHeight = endY > C.BALL_R + 0.005;
+    for (let t = dt; t < 6; t += dt) {
+      const py = b.y, pz = b.z, pvy = b.vy;
+      ev.bounce = false;
+      P.step(b, dt, ev);
+      if (!crossed && pz !== b.z && Math.sign(pz) !== Math.sign(b.z)) {
+        crossed = true;
+        clear = b.y - C.netHeightAt(b.x);
+      }
+      if (wantsHeight && pvy < 0 && py > endY && b.y <= endY) {
+        return { x: b.x, z: b.z, t, dist: Math.hypot(b.x - from.x, b.z - from.z), clear, crossed };
+      }
+      if (ev.bounce) {
+        return { x: ev.bx, z: ev.bz, t, dist: Math.hypot(ev.bx - from.x, ev.bz - from.z), clear, crossed };
+      }
+      if (b.resting) break;
+    }
+    return { x: b.x, z: b.z, t: 6, dist: Math.hypot(b.x - from.x, b.z - from.z), clear, crossed };
+  }
+
+  // Solve for a launch that lands on `to` after roughly `time` seconds.
+  function solve(from, to, time, spin) {
+    const dx = to.x - from.x, dz = to.z - from.z;
+    const d = Math.max(0.4, Math.hypot(dx, dz));
+    const ux = dx / d, uz = dz / d;
+    let vh = d / time;
+    let vy = (to.y - from.y + 0.5 * P.G * time * time) / time;
+    let res = null;
+    for (let i = 0; i < 6; i++) {
+      res = fly(from, { vx: ux * vh, vy, vz: uz * vh, spin: spin || 0 }, to.y);
+      const dErr = d - res.dist;
+      const tErr = time - res.t;
+      if (Math.abs(dErr) < 0.15 && Math.abs(tErr) < 0.02) break;
+      vh += dErr / Math.max(0.2, res.t);
+      vy += tErr * P.G * 0.5;
+      vh = Math.max(1, Math.min(MAX_SPEED, vh));
+      vy = Math.max(-45, Math.min(60, vy));
+    }
+    return { vx: ux * vh, vy, vz: uz * vh, spin: spin || 0, res };
+  }
+
+  // Full shot: pick the style, then raise the arc until the net is safely cleared.
+  // `power` (0..1) scales how hard the player can actually strike.
+  function plan(from, to, styleName, power) {
+    const st = STYLES[styleName] || STYLES.drive;
+    const want = st.clear + C.BALL_R;
+    let time = st.time;
+    let best = null;
+    for (let i = 0; i < 5; i++) {
+      const v = solve(from, to, time, st.spin);
+      const sp = Math.hypot(v.vx, v.vy, v.vz);
+      if (!best) best = v;
+      if (v.res && v.res.crossed && v.res.clear >= want && sp <= MAX_SPEED) { best = v; break; }
+      best = v;
+      time *= 1.16;                     // higher, slower arc
+    }
+    // A weak/off-balance contact simply cannot generate the solved speed.
+    const cap = MAX_SPEED * st.power * (0.55 + 0.45 * (power === undefined ? 1 : power));
+    const sp = Math.hypot(best.vx, best.vy, best.vz);
+    if (sp > cap) {
+      const k = cap / sp;
+      best.vx *= k; best.vy *= k; best.vz *= k;
+    }
+    best.style = styleName;
+    return best;
+  }
+
+  return { STYLES, MAX_SPEED, solve, plan, fly };
+})();
+
+</script>
+<script>
+'use strict';
+// CPU brain: court positioning that follows real doubles strategy (get to the
+// kitchen line, third-shot drop, dink battles) plus a skill-driven error model.
+var PB = (function () {
+  var g = typeof window !== 'undefined' ? window : globalThis;
+  return g.PB || (g.PB = {});
+})();
+
+PB.AI = (function () {
+  const C = PB.Court;
+
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+  // Where should this player meet the ball?
+  function contactPoint(m, p) {
+    if (!m.pred || !m.pred.trace.length) return null;
+    const sign = C.teamSign(p.team);
+    const mustBounce = m.rally.shotCount <= 2;
+    const tr = m.pred.trace;
+    const land = m.pred.landing;
+
+    if (!mustBounce && p.atNet) {
+      for (const s of tr) {
+        if (s.bounced) break;
+        if (C.sideOf(s.z) !== p.team) continue;
+        if (Math.abs(s.z) < C.KITCHEN + 1.3) continue;   // no legal volley from there
+        if (s.y < 0.9 || s.y > 6.5) continue;
+        if (Math.abs(s.z) > 15) continue;
+        return { x: s.x, z: s.z, t: s.t, volley: true };
+      }
+    }
+    if (!land || C.sideOf(land.z) !== p.team) return null;
+    for (const s of tr) {
+      if (s.t <= land.t + 0.1) continue;
+      if (s.y <= 3.1 && s.y >= 1.0) return { x: s.x, z: s.z, t: s.t, volley: false };
+      if (s.bounced && s.t > land.t + 0.05) break;
+    }
+    return { x: land.x, z: land.z + sign * 1.8, t: land.t + 0.3, volley: false };
+  }
+
+  function isResponsible(m, p, cp) {
+    const mates = m.mates(p.team);
+    if (mates.length === 1) return true;
+    const other = mates.find(q => q.id !== p.id);
+    const cost = q => {
+      let c = Math.hypot(cp.x - q.x, cp.z - q.z);
+      if (Math.sign(cp.x) === m.sideXSign(q)) c -= 1.6;   // your half of the court
+      if (q.ctrl === 'human') c += 1.2;                   // let the human take theirs
+      return c;
+    };
+    return cost(p) <= cost(other);
+  }
+
+  function homeSpot(m, p) {
+    const sign = C.teamSign(p.team);
+    const b = m.ball;
+    const doubles = m.isDoubles();
+    const half = doubles ? m.sideXSign(p) * 4.4 : 0;
+    const shade = clamp((b.live ? b.x : 0) * 0.42, -6.5, 6.5);
+    let x = doubles ? half * 0.72 + shade * 0.55 : shade * 0.9;
+    let z = p.atNet ? sign * (C.KITCHEN + 0.85) : sign * 19.0;
+    return { x: clamp(x, -9.5, 9.5), z };
+  }
+
+  function update(m, p, dt) {
+    const a = p.ai;
+    if (a.lastShot !== m.rally.shotCount) {
+      a.lastShot = m.rally.shotCount;
+      a.timer = rnd(0.10, 0.42) * (1.25 - p.skill);
+      a.target = null;
+    }
+    a.timer -= dt;
+
+    // Judgement call: a ball heading out should be let go instead of volleyed.
+    if (a.letGoShot !== m.rally.shotCount && m.pred && m.pred.landing) {
+      a.letGoShot = m.rally.shotCount;
+      const L = m.pred.landing;
+      const margin = Math.max(Math.abs(L.x) - C.HALF_W, Math.abs(L.z) - C.HALF_L);
+      const readable = clamp((margin - 0.15) / 1.6, 0, 1);
+      a.letGo = margin > 0.15 && Math.random() < readable * (0.25 + 0.65 * p.skill);
+    }
+
+    if (m.state !== 'live') {
+      p.tx = p.x; p.tz = p.z;                 // hold still between points
+      return;
+    }
+    const sign = C.teamSign(p.team);
+    let spot = null;
+    if (m.ball.live && a.timer <= 0) {
+      const cp = contactPoint(m, p);
+      if (cp && isResponsible(m, p, cp)) {
+        let z = cp.z;
+        if (!cp.volley) z += sign * 0.6;                    // stand behind the bounce
+        // never park inside the kitchen unless the ball actually died there
+        if (Math.abs(z) < C.KITCHEN + 0.2 && !cp.volley && Math.abs(cp.z) > C.KITCHEN - 1.5) {
+          z = sign * (C.KITCHEN + 0.25);
+        }
+        spot = { x: clamp(cp.x, -11.5, 11.5), z: clamp(Math.abs(z), 1.4, 24.5) * sign };
+        a.target = spot;
+      }
+    }
+    if (!spot) spot = a.target && a.timer > 0 ? a.target : homeSpot(m, p);
+    // after a volley the momentum rule still applies: stay out of the kitchen
+    if (p.volleyMomentum > 0 && Math.abs(spot.z) < C.KITCHEN + 0.6) {
+      spot = { x: spot.x, z: sign * (C.KITCHEN + 0.7) };
+    }
+    p.tx = spot.x; p.tz = spot.z;
+  }
+
+  // Pick the widest gap in the opponents' coverage.
+  function bestGap(m, p, deep) {
+    const opp = m.mates(1 - p.team);
+    const cand = [-8.2, -5.5, -2.5, 0, 2.5, 5.5, 8.2];
+    let best = 0, bestScore = -1e9;
+    for (const x of cand) {
+      let s = 1e9;
+      for (const o of opp) s = Math.min(s, Math.abs(o.x - x) + (deep ? Math.abs(o.z) * 0.12 : 0));
+      s += (Math.random() - 0.5) * (1 - p.skill) * 7;
+      if (s > bestScore) { bestScore = s; best = x; }
+    }
+    return best;
+  }
+
+  function swing(m, p) {
+    const r = m.rally;
+    const b = m.ball;
+    const oSign = C.teamSign(1 - p.team);
+    const opp = m.mates(1 - p.team);
+    const oppNet = opp.some(o => Math.abs(o.z) < 11.5);
+    const myZ = Math.abs(p.z);
+    const volley = r.bounces === 0;
+
+    let style, tx, tz, riskyShot = false;
+    if (r.shotCount === 1) {
+      style = 'ret';
+      tx = bestGap(m, p, true) * 0.85;
+      tz = oSign * rnd(16.5, 20.2);
+    } else if (r.shotCount === 2) {
+      const dropIt = oppNet && Math.random() < 0.28 + p.skill * 0.5;
+      if (dropIt) { style = 'drop'; tx = clamp(-Math.sign(b.x || 1) * rnd(2, 5.5), -8, 8); tz = oSign * rnd(3.4, 6.2); }
+      else { style = 'drive'; tx = bestGap(m, p, true); tz = oSign * rnd(15.5, 20); }
+    } else if (volley && b.y > 3.1 && myZ < 13) {
+      style = 'smash';
+      tx = bestGap(m, p, false);
+      tz = oSign * rnd(8, 16);
+    } else if (myZ < 10.8 && b.y < 3.0) {
+      // dink battles escalate: the longer the soft exchange, the more likely
+      // somebody speeds the ball up, exactly like a real kitchen fight
+      const attackable = b.y > 2.25 || Math.abs(b.z) > C.KITCHEN + 1.2;
+      const heat = Math.min(0.6, Math.max(0, r.softCount - 3) * 0.13 + (b.y - 2.0) * 0.28);
+      const risky = Math.max(0, r.softCount - 4) * 0.09;
+      if (attackable && Math.random() < heat * (0.55 + p.skill * 0.6)) {
+        style = 'punch';
+        tx = bestGap(m, p, false);
+        tz = oSign * rnd(8.5, 15);
+      } else if (Math.random() < risky) {
+        // speeding up a low ball: the classic way a dink battle finally breaks
+        style = 'punch';
+        tx = bestGap(m, p, false);
+        tz = oSign * rnd(9, 15);
+        riskyShot = true;
+      } else if (oppNet && Math.random() < 0.05 + (1 - p.skill) * 0.05) {
+        style = 'lob'; tx = bestGap(m, p, true); tz = oSign * rnd(18.5, 20.8);
+      } else {
+        style = 'dink';
+        tx = clamp(-Math.sign(p.x || 1) * rnd(2.5, 6.0), -8.5, 8.5);
+        // a loose dink drifts past the kitchen line and invites an attack
+        const loose = (1 - p.skill) * 0.30 + r.softCount * 0.025;
+        tz = Math.random() < loose ? oSign * rnd(7.3, 9.6) : oSign * rnd(2.8, 6.4);
+      }
+    } else if (myZ < 10.8) {
+      style = 'punch';
+      tx = bestGap(m, p, false);
+      tz = oSign * rnd(9, 16);
+    } else if (oppNet && Math.random() < 0.22 + p.skill * 0.35) {
+      style = 'drop';
+      tx = clamp(-Math.sign(b.x || 1) * rnd(1.5, 5.5), -8, 8);
+      tz = oSign * rnd(3.4, 6.4);
+    } else {
+      style = 'drive';
+      tx = bestGap(m, p, true);
+      tz = oSign * rnd(14.5, 20);
+    }
+
+    // unforced errors — the single biggest lever on how long rallies run
+    let errP = 0.045 + (1 - p.skill) * 0.27;
+    if (style === 'dink' || style === 'drop') errP *= 0.8 + m.rally.softCount * 0.05;
+    if (style === 'smash' || style === 'drive') errP *= 1.15;
+    let netError = false;
+    const soft = style === 'dink' || style === 'drop';
+    if (Math.random() < errP) {
+      const kind = Math.random();
+      if (soft) {
+        // soft shots die in the net or sit up to be attacked; they rarely fly long
+        if (kind < 0.45) netError = true;
+        else tz = oSign * rnd(7.6, 10.2);
+      } else if (kind < 0.18) {
+        netError = true;
+      } else if (kind < 0.64) {
+        tz = oSign * (C.HALF_L + rnd(0.6, 3.0));                               // long
+      } else {
+        tx = Math.sign(tx || 1) * (C.HALF_W + rnd(0.5, 2.2));                  // wide
+      }
+    }
+
+    return {
+      style, target: { x: tx, z: tz }, netError,
+      quality: (0.6 + 0.4 * p.skill) * (riskyShot ? 0.72 : 1),
+    };
+  }
+
+  function serve(m, server) {
+    const skill = server.skill;
+    const rTeam = 1 - server.team;
+    const rSign = C.teamSign(rTeam);
+    const xs = -m.serveXSign;
+    let x = xs * rnd(1.6, 8.4);
+    let z = rSign * rnd(15.5, 20.6);
+    x += (Math.random() * 2 - 1) * (1 - skill) * 2.6;
+    z += (Math.random() * 2 - 1) * (1 - skill) * 2.6 * rSign;
+    if (Math.random() < (1 - skill) * 0.07) z = rSign * rnd(22.6, 24);        // long serve fault
+    m.doServe({ x, z }, 0.8 + 0.2 * skill);
+  }
+
+  // The assist swing used when a human never flicks: competent, never reckless.
+  function neutralSwing(m, p) {
+    const b = m.ball;
+    const oSign = C.teamSign(1 - p.team);
+    const myZ = Math.abs(p.z);
+    let style, tx, tz;
+    if (m.rally.shotCount === 1) { style = 'ret'; tx = bestGap(m, p, true) * 0.8; tz = oSign * rnd(16, 19.5); }
+    else if (myZ < 10.8 && b.y < 3.0) { style = 'dink'; tx = clamp(-Math.sign(p.x || 1) * rnd(2.5, 5.5), -8, 8); tz = oSign * rnd(3.0, 6.0); }
+    else if (myZ < 10.8) { style = 'punch'; tx = bestGap(m, p, false); tz = oSign * rnd(9, 15); }
+    else { style = 'drive'; tx = bestGap(m, p, true) * 0.85; tz = oSign * rnd(14, 18.5); }
+    // the assist is competent but not perfect, otherwise rallies never end
+    let netError = false;
+    if (Math.random() < 0.07) {
+      if (style === 'dink' || style === 'drop') netError = Math.random() < 0.6;
+      else if (Math.random() < 0.5) tz = oSign * (C.HALF_L + rnd(0.5, 2.2));
+      else netError = true;
+    }
+    return { auto: true, style, target: { x: tx, z: tz }, netError, quality: 0.62 };
+  }
+
+  // Should this player deliberately leave the ball alone?
+  function letsItGo(m, p) {
+    return !!(p.ai.letGo && m.rally.bounces === 0);
+  }
+
+  return { update, swing, serve, neutralSwing, bestGap, contactPoint, letsItGo };
+})();
+
+</script>
+<script>
+'use strict';
+// Match engine: players, rally state machine and the official rule set
+// (two-bounce rule, non-volley zone, diagonal underhand serve, side-out scoring,
+// doubles serve rotation starting at 0-0-2).
+var PB = (function () {
+  var g = typeof window !== 'undefined' ? window : globalThis;
+  return g.PB || (g.PB = {});
+})();
+
+PB.Match = (function () {
+  const C = PB.Court, P = PB.Physics, S = PB.Shots;
+
+  const SKILL = {
+    facil:   { opp: 0.40, mate: 0.56, assist: true,  autoSwing: true  },
+    normal:  { opp: 0.63, mate: 0.68, assist: true,  autoSwing: false },
+    dificil: { opp: 0.86, mate: 0.80, assist: false, autoSwing: false },
+  };
+
+  const MOVE_SPEED = 13.2;   // ft/s, roughly a quick club player
+  const REACH      = 3.05;   // paddle + arm
+  const HIT_CD     = 0.22;
+  const MARK_FADE  = 2.0;    // seconds a bounce mark takes to fade off the court
+  const RISE_H     = 1.50;   // ft the ball must climb after a bounce to be playable
+
+  let nextId = 0;
+
+  function mkPlayer(team, ctrl, courtSide, skill, name) {
+    return {
+      id: nextId++, team, ctrl, courtSide, skill, name,
+      x: 0, z: C.teamSign(team) * 18, vx: 0, vz: 0,
+      tx: 0, tz: C.teamSign(team) * 18,           // AI desired spot
+      reach: REACH, hitCd: 0, swingT: 0, swingType: null, swingDir: 1,
+      atNet: false, volleyMomentum: 0, react: 0, lunge: 0,
+      // visual state, read by the renderer
+      runPhase: Math.random() * 6.28, speedN: 0, prep: 0, crouch: 0.2,
+      lean: 0, yaw: 0, runAngle: 0, swingKind: 'ground', swingFore: true, swingDur: 0.42,
+      swingHit: null, hop: 0,
+      ai: { timer: 0, decided: null },
+    };
+  }
+
+  class Match {
+    constructor(cfg) {
+      this.cfg = Object.assign({
+        format: 'singles',      // 'singles' | 'doubles'
+        humans: 1,              // 1 | 2
+        arrangement: 'coop',    // doubles with 2 humans: 'coop' | 'versus'
+        difficulty: 'normal',
+        targetPoints: 11,
+        winBy: 2,
+      }, cfg || {});
+
+      const d = SKILL[this.cfg.difficulty] || SKILL.normal;
+      this.assistRules = d.assist;
+      this.autoSwing = d.autoSwing;
+      nextId = 0;
+
+      const doubles = this.cfg.format === 'doubles';
+      const versus = this.cfg.humans === 2 && (!doubles || this.cfg.arrangement === 'versus');
+      this.versus = versus;
+      this.players = [];
+      this.slot = {};
+
+      if (doubles) {
+        const humanIds = versus ? [0, 2] : [0, 1];
+        for (let t = 0; t < 2; t++) {
+          for (let k = 0; k < 2; k++) {
+            const id = t * 2 + k;
+            const isHuman = this.cfg.humans === 2 ? humanIds.indexOf(id) >= 0 : id === 0;
+            const skill = t === 0 ? d.mate : d.opp;
+            this.players.push(mkPlayer(t, isHuman ? 'human' : 'cpu', k === 0 ? 'R' : 'L', skill, ''));
+          }
+        }
+        if (this.cfg.humans === 2) { this.slot.p1 = humanIds[0]; this.slot.p2 = humanIds[1]; }
+        else this.slot.p1 = 0;
+      } else {
+        this.players.push(mkPlayer(0, 'human', 'R', d.mate, ''));
+        this.players.push(mkPlayer(1, this.cfg.humans === 2 ? 'human' : 'cpu', 'R', d.opp, ''));
+        this.slot.p1 = 0;
+        if (this.cfg.humans === 2) this.slot.p2 = 1;
+      }
+      this.nameEveryone();
+
+      this.ball = P.newBall();
+      this.score = [0, 0];
+      this.servingTeam = 0;
+      this.serverNumber = doubles ? 2 : 1;      // 0-0-2 start
+      this.serverIdx = 0;
+      this.state = 'ready';
+      this.stateT = 0;
+      this.banner = null;
+      this.hint = null;
+      this.hintT = 0;
+      this.events = [];
+      this.cheerT = 0;
+      this.cheerDur = 2.6;
+      this.cheerLevel = 0;
+      this.rallyLog = [];
+      this.winner = -1;
+      this.pred = null;
+      this.paused = false;
+      this.pendingSwing = {};
+      // where the ball actually landed, newest last, each fading on its own clock
+      this.marks = [];
+      this.prepareServe();
+    }
+
+    nameEveryone() {
+      const twoHumans = this.cfg.humans === 2;
+      const surnames = ['ALVES', 'COSTA', 'DIAS', 'MELO', 'PRADO', 'REIS'];
+      for (const p of this.players) {
+        p.role = p.ctrl === 'human' ? 'Humano' : (p.team === 0 ? 'Parceiro' : 'Rival');
+        if (p.ctrl === 'human') {
+          p.name = twoHumans ? (p.id === this.slot.p1 ? 'P1' : 'P2') : 'VOCÊ';
+        } else {
+          p.name = surnames[(p.id * 2 + 1) % surnames.length];
+        }
+      }
+
+    }
+
+    // ── helpers ────────────────────────────────────────────────────────────
+    teamOf(id) { return this.players[id].team; }
+    mates(team) { return this.players.filter(p => p.team === team); }
+    sideXSign(p) { return C.rightSignFor(p.team) * (p.courtSide === 'R' ? 1 : -1); }
+    isDoubles() { return this.cfg.format === 'doubles'; }
+    scoreText() {
+      const s = this.servingTeam, r = 1 - s;
+      return this.isDoubles()
+        ? `${this.score[s]} - ${this.score[r]} - ${this.serverNumber}`
+        : `${this.score[s]} - ${this.score[r]}`;
+    }
+
+    say(text, secs) { this.hint = text; this.hintT = secs || 1.6; }
+
+    // ── serving ────────────────────────────────────────────────────────────
+    prepareServe() {
+      const st = this.servingTeam;
+      const team = this.mates(st);
+
+      if (!this.isDoubles()) {
+        // singles: the server stands right when their score is even
+        const want = this.score[st] % 2 === 0 ? 'R' : 'L';
+        team[0].courtSide = want;
+        this.serverIdx = team[0].id;
+      } else if (this.serverIdx === undefined || this.players[this.serverIdx].team !== st) {
+        this.serverIdx = team[0].id;
+      }
+
+      const server = this.players[this.serverIdx];
+      const sSign = this.sideXSign(server);
+      const rTeam = 1 - st;
+      const rSign = C.teamSign(rTeam);
+      const serveSign = C.teamSign(st);
+
+      server.x = sSign * 4.6;
+      server.z = serveSign * 23.2;
+
+      // receiver is the opponent standing diagonally across
+      let receiver;
+      const opp = this.mates(rTeam);
+      if (this.isDoubles()) {
+        receiver = opp.find(p => this.sideXSign(p) === -sSign) || opp[0];
+        const partner = opp.find(p => p !== receiver);
+        partner.x = sSign * 4.6; partner.z = rSign * 8.2; partner.atNet = true;
+        const sMate = team.find(p => p !== server);
+        if (sMate) { sMate.x = -sSign * 4.6; sMate.z = serveSign * 17.5; sMate.atNet = false; }
+      } else {
+        receiver = opp[0];
+        receiver.courtSide = this.score[st] % 2 === 0 ? 'R' : 'L';
+      }
+      receiver.x = -sSign * 4.6;
+      receiver.z = rSign * 20.5;
+      receiver.atNet = false;
+      server.atNet = false;
+
+      for (const p of this.players) {
+        p.vx = 0; p.vz = 0; p.tx = p.x; p.tz = p.z; p.hitCd = 0;
+        p.volleyMomentum = 0; p.swingT = 0; p.ai.timer = 0; p.lunge = 0;
+      }
+
+      this.serveXSign = sSign;
+      this.receiverIdx = receiver.id;
+      this.rally = {
+        shotCount: 0, lastHitter: -1, bounces: 0, over: false, softCount: 0,
+        serveXSign: sSign, servedBy: server.id, netTouch: false,
+      };
+
+      const b = this.ball;
+      b.x = server.x + sSign * 0.9; b.y = 1.95; b.z = server.z + C.teamSign(st) * 0.35;
+      b.vx = b.vy = b.vz = 0; b.spin = 0; b.live = false; b.resting = false;
+
+      this.state = 'ready';
+      this.stateT = 0;
+      this.pred = null;
+    }
+
+    doServe(aim, power) {
+      const server = this.players[this.serverIdx];
+      const sSign = this.serveXSign;
+      const behind = Math.abs(server.z) >= C.HALF_L + 0.05;
+      const rightHalf = Math.sign(server.x) === sSign || Math.abs(server.x) < 0.2;
+      if (!behind || !rightHalf) {
+        if (this.assistRules) {
+          // step them back to a legal spot instead of calling it
+          if (!behind) server.z = C.teamSign(server.team) * (C.HALF_L + 0.9);
+          if (!rightHalf) server.x = sSign * Math.max(0.9, Math.abs(server.x));
+          server.vx = 0; server.vz = 0;
+          this.ball.x = server.x + sSign * 0.9;
+          this.ball.z = server.z + C.teamSign(server.team) * 0.35;
+          this.say(behind ? 'Saque sai da sua metade da quadra' : 'Fique atrás da linha de fundo para sacar', 1.4);
+        } else {
+          this.state = 'live';
+          this.rally.shotCount = 1;
+          this.rally.lastHitter = server.id;
+          this.endRally(server.team, 'pe_no_saque');
+          return;
+        }
+      }
+      const rTeam = 1 - server.team;
+      const rSign = C.teamSign(rTeam);
+      const from = { x: this.ball.x, y: 1.95, z: this.ball.z };
+      const to = { x: aim.x, y: C.BALL_R, z: aim.z * rSign > 0 ? aim.z : rSign * Math.abs(aim.z) };
+      const v = S.plan(from, to, 'serve', power === undefined ? 1 : power);
+      const b = this.ball;
+      b.x = from.x; b.y = from.y; b.z = from.z;
+      b.vx = v.vx; b.vy = v.vy; b.vz = v.vz; b.spin = v.spin;
+      b.live = true; b.resting = false;
+      this.rally.shotCount = 1;
+      this.rally.lastHitter = server.id;
+      this.rally.bounces = 0;
+      server.swingT = 0.3; server.swingType = 'serve';
+      this.state = 'live';
+      this.stateT = 0;
+      this.events.push({ type: 'hit', style: 'serve', x: b.x, z: b.z });
+    }
+
+    // Legal service target. `lateral` is world-space (-1 = toward -x) and maps
+    // continuously across the width of the diagonal box.
+    serveTarget(lateral, depth, clampInside) {
+      const rSign = C.teamSign(1 - this.servingTeam);
+      const xs = -this.serveXSign;                    // which half the box is on
+      const t = (Math.max(-1, Math.min(1, lateral)) + 1) / 2;
+      const near = xs * 0.8, far = xs * 9.2;          // centre line -> sideline
+      let x = xs > 0 ? near + (far - near) * t : far + (near - far) * t;
+      let z = rSign * (9.5 + depth * 12.2);
+      if (clampInside) {
+        x = xs * Math.max(0.8, Math.min(9.2, Math.abs(x)));
+        z = rSign * Math.max(9.0, Math.min(21.2, Math.abs(z)));
+      }
+      return { x, z };
+    }
+
+    // ── the loop ───────────────────────────────────────────────────────────
+    update(dt, inputs) {
+      if (this.paused || this.state === 'gameover') return;
+      dt = Math.min(dt, 1 / 20);
+      this.stateT += dt;
+      if (this.hintT > 0) { this.hintT -= dt; if (this.hintT <= 0) this.hint = null; }
+      if (this.cheerT > 0) this.cheerT -= dt;
+
+      for (let i = this.marks.length - 1; i >= 0; i--) {
+        if ((this.marks[i].t -= dt) <= 0) this.marks.splice(i, 1);
+      }
+
+      this.updatePrediction();
+      this.updateAnticipation(dt);
+
+      // humans
+      for (const slot of ['p1', 'p2']) {
+        const id = this.slot[slot];
+        if (id === undefined) continue;
+        const inp = (inputs && inputs[slot]) || null;
+        this.driveHuman(this.players[id], inp, dt, slot, inputs);
+      }
+      // cpu
+      for (const p of this.players) {
+        if (p.ctrl === 'cpu') PB.AI.update(this, p, dt);
+      }
+      for (const p of this.players) this.movePlayer(p, dt);
+
+      if (this.state === 'ready') {
+        const server = this.players[this.serverIdx];
+        // keep the ball in the server's hand
+        this.ball.x = server.x + this.serveXSign * 0.9;
+        this.ball.z = server.z + C.teamSign(server.team) * 0.35;
+        this.ball.y = 1.95;
+        if (server.ctrl === 'cpu' && this.stateT > 0.6) {
+          PB.AI.serve(this, server);
+        }
+      } else if (this.state === 'live') {
+        this.stepBall(dt);
+      } else if (this.state === 'point') {
+        if (this.ball.live) this.stepBall(dt, true);
+        if (this.stateT > 1.25) this.afterPoint();
+      }
+      return this.events;
+    }
+
+    updatePrediction() {
+      const b = this.ball;
+      if (!b.live) { this.pred = null; return; }
+      const tr = P.trace(b, 2.4, 1 / 120);
+      let landing = null;
+      for (const s of tr) { if (s.bounced) { landing = s; break; } }
+      this.pred = { trace: tr, landing };
+    }
+
+    stepBall(dt, deadBall) {
+      const sub = 5;
+      const h = dt / sub;
+      const ev = {};
+      for (let i = 0; i < sub; i++) {
+        ev.bounce = false; ev.net = false;
+        P.step(this.ball, h, ev);
+        if (ev.net) {
+          this.rally.netTouch = true;
+          this.events.push({ type: 'net', x: this.ball.x, z: this.ball.z });
+        }
+        if (ev.bounce) {
+          this.events.push({ type: 'bounce', x: ev.bx, z: ev.bz, impact: ev.impact });
+          this.marks.push({ x: ev.bx, z: ev.bz, t: MARK_FADE });
+          if (this.marks.length > 12) this.marks.shift();
+          if (!deadBall) this.onBounce(ev.bx, ev.bz);
+        }
+        if (this.rally.over || this.state !== 'live') break;
+        if (!deadBall) this.checkHits();
+        if (this.rally.over) break;
+      }
+      // ball wandered off entirely
+      if (!deadBall && this.state === 'live') {
+        const b = this.ball;
+        if (!isFinite(b.x) || !isFinite(b.y) || !isFinite(b.z)) {
+          b.x = 0; b.y = 3; b.z = 0; b.vx = b.vy = b.vz = 0; b.resting = true;
+        }
+        if (b.resting || Math.abs(b.x) > 34 || Math.abs(b.z) > 46 || b.y > 60) {
+          const hitter = this.rally.lastHitter;
+          this.endRally(hitter >= 0 ? this.teamOf(hitter) : 1 - this.servingTeam, 'fora');
+        }
+      }
+    }
+
+    // ── rules on bounce ────────────────────────────────────────────────────
+    onBounce(x, z) {
+      const r = this.rally;
+      if (r.over) return;
+      const side = C.sideOf(z);
+      const hitter = r.lastHitter;
+      const hTeam = hitter >= 0 ? this.teamOf(hitter) : this.servingTeam;
+
+      if (r.bounces === 0) {
+        // first bounce after the last hit decides in/out
+        if (side === hTeam) { this.endRally(hTeam, 'nao_passou'); return; }
+        if (r.shotCount === 1) {
+          if (!C.inServiceBox(x, z, 1 - hTeam, -r.serveXSign)) {
+            const why = C.inKitchen(x, z) ? 'saque_cozinha' : 'saque_fora';
+            this.endRally(hTeam, why); return;
+          }
+        } else if (!C.inBounds(x, z)) {
+          this.endRally(hTeam, 'fora'); return;
+        }
+        r.bounces = 1;
+        // a deep ball landing behind a net player pushes that team back
+        if (Math.abs(z) > 15.5) for (const p of this.mates(side)) p.atNet = false;
+        // a soft ball dying in the kitchen means the hitting team may advance
+        if (Math.abs(z) < C.KITCHEN + 1.2 && r.shotCount >= 2) {
+          for (const p of this.mates(hTeam)) p.atNet = true;
+        }
+      } else {
+        // second bounce: the side that let it bounce twice loses the rally
+        this.endRally(side, 'dois_quiques');
+      }
+    }
+
+    // ── contact ────────────────────────────────────────────────────────────
+    // A ball that has just landed is still on the floor. Nobody may play it until
+    // it has climbed off the court or at least topped out, which is what makes
+    // the bounce readable instead of a ball that is struck as it touches down.
+    bounceIsPlayable() {
+      const b = this.ball;
+      if (this.rally.bounces === 0) return true;          // a volley, no bounce yet
+      return b.vy <= 0 || b.y >= RISE_H;
+    }
+
+    checkHits() {
+      const b = this.ball;
+      if (!b.live || this.rally.over) return;
+      if (!this.bounceIsPlayable()) return;
+      const side = C.sideOf(b.z);
+      let best = null, bestD = 1e9;
+      for (const p of this.players) {
+        if (p.team !== side) continue;
+        if (p.id === this.rally.lastHitter) continue;
+        if (p.hitCd > 0) continue;
+        const d = Math.hypot(b.x - p.x, b.z - p.z);
+        const reach = p.reach + p.lunge;
+        if (d > reach) continue;
+        if (b.y < 0.18 || b.y > 8.4) continue;
+        if (d < bestD) { bestD = d; best = p; }
+      }
+      if (!best) return;
+      this.attemptHit(best);
+    }
+
+    legality(p) {
+      const r = this.rally;
+      // only the diagonal receiver may return the serve
+      if (r.shotCount === 1 && p.id !== this.receiverIdx) return 'recebedor';
+      const volley = r.bounces === 0;
+      // serve (shot 1) and return (shot 2) must both bounce, so anything up to
+      // and including the third shot is played off the ground
+      const mustBounce = r.shotCount <= 2;
+      if (volley && mustBounce) return 'dois_quiques_regra';
+      if (volley && C.playerInKitchen(p)) return 'cozinha';
+      return null;
+    }
+
+    // How clean is this contact? Stretching, pace and awkward heights all cost
+    // control — this is what actually ends rallies.
+    contactQuality(p) {
+      const b = this.ball;
+      const d = Math.hypot(b.x - p.x, b.z - p.z);
+      const reach = p.reach + p.lunge;
+      let q = 1;
+      q -= Math.max(0, Math.min(1, (d - 1.3) / Math.max(0.6, reach - 1.3))) * 0.52;
+      q -= Math.max(0, Math.min(1, (P.speed(b) - 34) / 42)) * 0.22;
+      if (b.y < 1.0) q -= 0.16;
+      if (b.y > 5.6) q -= 0.10;
+      const cross = Math.hypot(p.vx, p.vz) / MOVE_SPEED;
+      q -= Math.max(0, cross - 0.75) * 0.35;
+      return Math.max(0.18, Math.min(1, q));
+    }
+
+    attemptHit(p) {
+      const bad = this.legality(p);
+      let swing = null;
+      if (p.ctrl === 'human') {
+        swing = this.pendingSwing[p.id] || null;
+        if (!swing && this.autoSwing) swing = PB.AI.neutralSwing(this, p);
+        if (!swing) return;
+        if (bad && swing.auto) return;                    // the assist swing never fouls
+        if (bad && this.assistRules) {
+          this.say(bad === 'cozinha' ? 'Saia da cozinha para dar voleio!'
+            : bad === 'recebedor' ? 'O saque é do seu parceiro!'
+            : 'Deixe quicar (regra dos dois quiques)!');
+          return;
+        }
+      } else {
+        if (bad) return;                                  // the CPU never breaks the rules
+        if (PB.AI.letsItGo(this, p)) return;              // reading the ball as going out
+        // decide once per shot: checkHits runs several times per frame, and
+        // re-rolling here meant the miss almost never stuck
+        if (p.ai.missShot !== this.rally.shotCount) {
+          p.ai.missShot = this.rally.shotCount;
+          const cq = this.contactQuality(p);
+          p.ai.willMiss = cq < 0.42 && Math.random() < (0.42 - cq) * 2.1 * (1.3 - p.skill);
+        }
+        if (p.ai.willMiss) return;                        // can't get there cleanly
+        swing = PB.AI.swing(this, p);
+        if (!swing) return;
+      }
+      this.pendingSwing[p.id] = null;
+      this.executeHit(p, swing);
+      if (bad && !this.assistRules) {
+        this.endRally(p.team,
+          bad === 'cozinha' ? 'cozinha' : bad === 'recebedor' ? 'recebedor' : 'voleio_saque');
+      }
+    }
+
+    executeHit(p, swing) {
+      const b = this.ball;
+      const r = this.rally;
+      const oppTeam = 1 - p.team;
+      const oSign = C.teamSign(oppTeam);
+      const from = { x: b.x, y: Math.max(0.55, b.y), z: b.z };
+
+      let style = swing.style;
+      const volley = r.bounces === 0;
+      if (!style) style = this.pickStyleFromSwipe(p, swing, volley, from);
+
+      const q = (swing.quality === undefined ? 1 : swing.quality) * this.contactQuality(p);
+      // off balance: the aggressive shot is simply not available
+      if (q < 0.52 && (style === 'drive' || style === 'smash' || style === 'punch')) {
+        style = Math.abs(p.z) > 12 ? 'lob' : 'drop';
+        swing = Object.assign({}, swing, {
+          target: { x: (Math.random() * 2 - 1) * 4.5, z: oSign * (style === 'lob' ? 18.5 : 4.8) },
+        });
+      }
+      let tx = swing.target ? swing.target.x : 0;
+      let tz = swing.target ? swing.target.z : oSign * 15;
+      if (!swing.target) {
+        const depth = this.depthForStyle(style, swing.depth);
+        tz = oSign * depth;
+        tx = Math.max(-9.4, Math.min(9.4, swing.lateral * 9.4));
+      }
+      // timing/skill scatter
+      const jitter = (1 - q) * 5.0;
+      tx += (Math.random() * 2 - 1) * jitter;
+      tz += (Math.random() * 2 - 1) * jitter * oSign * 0.9;
+
+      if (!isFinite(tx) || !isFinite(tz)) { tx = 0; tz = oSign * 15; }
+      const v = S.plan(from, { x: tx, y: C.BALL_R, z: tz }, style, 0.55 + 0.45 * q);
+      if (swing.netError) { v.vx *= 0.68; v.vy *= 0.68; v.vz *= 0.68; }
+      if (!isFinite(v.vx) || !isFinite(v.vy) || !isFinite(v.vz)) { v.vx = 0; v.vy = 12; v.vz = oSign * 22; }
+      b.vx = v.vx; b.vy = v.vy; b.vz = v.vz; b.spin = v.spin;
+      b.live = true; b.resting = false;
+      b.z = from.z + Math.sign(v.vz) * 0.02;
+
+      r.lastHitter = p.id;
+      r.shotCount++;
+      r.bounces = 0;
+      r.netTouch = false;
+      r.softCount = (style === 'dink' || style === 'drop') ? r.softCount + 1 : 0;
+      p.hitCd = HIT_CD;
+      p.swingType = style;
+      p.swingKind = (style === 'serve' || style === 'smash') ? 'over'
+        : (style === 'dink' || style === 'drop') ? 'soft' : 'ground';
+      p.swingDur = p.swingKind === 'soft' ? 0.34 : p.swingKind === 'over' ? 0.5 : 0.44;
+      p.swingT = p.swingDur;
+      p.swingDir = Math.sign(b.x - p.x) || 1;
+      // remember where the ball actually was, so the paddle meets it
+      p.swingHit = { dx: b.x - p.x, dy: Math.max(0.6, from.y), dz: b.z - p.z };
+      p.swingFore = (b.x - p.x) * (p.team === 0 ? 1 : -1) >= -0.35;
+      p.prep = 0;
+      if (volley) p.volleyMomentum = 0.45;
+      if (r.shotCount === 2) p.atNet = true;              // returner charges the net
+
+      this.events.push({ type: 'hit', style, x: b.x, z: b.z, power: Math.hypot(v.vx, v.vy, v.vz) });
+    }
+
+    depthForStyle(style, t) {
+      t = t === undefined ? 0.5 : Math.max(0, Math.min(1, t));
+      switch (style) {
+        case 'dink': return 2.6 + t * 4.2;
+        case 'drop': return 3.2 + t * 3.6;
+        case 'lob':  return 15.0 + t * 6.0;
+        case 'punch':return 8.0 + t * 9.0;
+        case 'smash':return 7.0 + t * 10.0;
+        default:     return 10.0 + t * 10.8;
+      }
+    }
+
+    pickStyleFromSwipe(p, sw, volley, from) {
+      const nearNet = Math.abs(p.z) < 10.5;
+      if (sw.fast && from.y > 3.3 && Math.abs(from.z) < 13 && volley) return 'smash';
+      if (sw.fast && sw.long) return 'drive';
+      if (sw.fast && !sw.long) return 'punch';
+      if (!sw.fast && sw.long) return 'lob';
+      return nearNet ? 'dink' : 'drop';
+    }
+
+    // ── human control ──────────────────────────────────────────────────────
+    driveHuman(p, inp, dt, slot, inputs) {
+      if (!inp) { p.tx = p.x; p.tz = p.z; p.mx = 0; p.mz = 0; return; }
+      const sign = p.team === 0 ? 1 : -1;                 // view space -> world
+      p.mx = (inp.mx || 0) * sign;
+      p.mz = (inp.mz || 0) * sign;
+
+      if (inp.swipe) {
+        const sw = inp.swipe;
+        const lateral = Math.max(-1, Math.min(1, sw.lateral));
+        if (this.state === 'ready' && p.id === this.serverIdx) {
+          // lateral is in view space; the target lives in world space
+          const aim = this.serveTarget(lateral * sign, Math.max(0, Math.min(1, sw.depth)), this.assistRules);
+          this.doServe(aim, 0.75 + 0.25 * sw.power);
+          inputs[slot].swipe = null;
+          return;
+        }
+        this.pendingSwing[p.id] = {
+          lateral: lateral * sign,
+          depth: Math.max(0, Math.min(1, sw.depth)),
+          fast: sw.fast, long: sw.long, power: sw.power,
+          quality: 1, t: 0,
+        };
+        inputs[slot].swipe = null;
+      }
+      const ps = this.pendingSwing[p.id];
+      if (ps) {
+        ps.t += dt;
+        ps.quality = Math.max(0.35, 1 - ps.t / 0.5);
+        if (ps.t > 0.5) this.pendingSwing[p.id] = null;
+      }
+    }
+
+    movePlayer(p, dt) {
+      let dx, dz;
+      if (p.ctrl === 'human') {
+        dx = p.mx || 0; dz = p.mz || 0;
+      } else {
+        dx = p.tx - p.x; dz = p.tz - p.z;
+        const d = Math.hypot(dx, dz);
+        if (d > 0.25) { dx /= d; dz /= d; } else { dx = dz = 0; }
+      }
+      const mag = Math.hypot(dx, dz);
+      if (mag > 1) { dx /= mag; dz /= mag; }
+      const speed = MOVE_SPEED * (p.ctrl === 'cpu' ? 0.72 + 0.28 * p.skill : 1);
+      const tvx = dx * speed, tvz = dz * speed;
+      const k = Math.min(1, dt * 11);
+      p.vx += (tvx - p.vx) * k;
+      p.vz += (tvz - p.vz) * k;
+      p.x += p.vx * dt;
+      p.z += p.vz * dt;
+
+      // stretch for a wide ball
+      const b = this.ball;
+      p.lunge = 0;
+      if (b.live && C.sideOf(b.z) === p.team) {
+        const d = Math.hypot(b.x - p.x, b.z - p.z);
+        if (d < p.reach + 1.4) p.lunge = Math.min(1.15, Math.max(0, d - p.reach + 1.0));
+      }
+
+      if (p.volleyMomentum > 0) {
+        p.volleyMomentum -= dt;
+        const inK = C.playerInKitchen(p);
+        if (inK) {
+          if (this.assistRules || p.ctrl === 'cpu') {
+            p.z = C.teamSign(p.team) * (C.KITCHEN + C.footprint(p) + 0.05);  // held out
+            p.vz = 0;
+            if (p.ctrl === 'human') this.say('Impulso: não entre na cozinha após o voleio!', 1.2);
+          } else if (this.state === 'live') {
+            this.endRally(p.team, 'impulso');
+          }
+        }
+      }
+      C.clampToPlayArea(p, p.team);
+      if (p.hitCd > 0) p.hitCd -= dt;
+      if (p.swingT > 0) p.swingT -= dt;
+      this.animate(p, dt);
+    }
+
+    // Visual state only: gait, stance and how loaded the swing looks.
+    animate(p, dt) {
+      const spd = Math.hypot(p.vx, p.vz);
+      p.speedN = Math.min(1, spd / MOVE_SPEED);
+      p.runPhase += dt * (5.2 + p.speedN * 12.5);
+      if (p.runPhase > Math.PI * 2) p.runPhase -= Math.PI * 2;
+      // lean into the run, and square up again when standing
+      const target = -(p.vx / MOVE_SPEED) * 0.22 * (p.team === 0 ? 1 : -1);
+      p.lean += (target - p.lean) * Math.min(1, dt * 6);
+      // turn the body toward where it is running: a player who never turns
+      // reads as a crab shuffling sideways
+      const fwd = Math.abs(p.vz);
+      // runAngle is where the body is actually travelling; yaw is how far it
+      // manages to turn toward it. What is left over is the sideways shuffle.
+      p.runAngle = spd > 1.4 ? Math.atan2(p.vx, fwd + 2.2) : 0;
+      let yawWant = Math.max(-1.15, Math.min(1.15, p.runAngle)) * Math.min(1, spd / 4.5);
+      if (p.prep > 0.25 || p.swingT > 0) yawWant *= 0.35;   // squaring up to hit
+      p.yaw += (yawWant - p.yaw) * Math.min(1, dt * 7);
+      // waiting between points: a small split-step bounce
+      p.hop = this.state === 'ready' ? (Math.sin(this.stateT * 6.5) * 0.5 + 0.5) * 0.06 : 0;
+      // Ready position is a real athletic stance: knees bent and weight forward
+      // even before the ball comes, deeper still at the kitchen line.
+      let wantCrouch = 0.46 + p.prep * 0.36 + (Math.abs(p.z) < 10 ? 0.12 : 0);
+      // reaching for a low ball is done with the knees, not just the arm
+      if (p.swingHit) {
+        const low = Math.max(0, Math.min(1, (2.7 - p.swingHit.dy) / 2.0));
+        const active = p.swingT > 0 ? 1 : Math.max(0, p.prep);
+        wantCrouch = Math.max(wantCrouch, (0.22 + low * 0.72) * active);
+      }
+      p.crouch += (wantCrouch - p.crouch) * Math.min(1, dt * 8);
+    }
+
+    // How close is this player to having to hit? Drives the loaded stance.
+    updateAnticipation(dt) {
+      for (const p of this.players) {
+        if (p.swingT > 0) { p.prep = 0; continue; }
+        let t = -1;
+        if (this.pred && this.ball.live) {
+          for (const s of this.pred.trace) {
+            if (C.sideOf(s.z) !== p.team) continue;
+            if (s.y > 8) continue;
+            if (Math.hypot(s.x - p.x, s.z - p.z) < 4.2) { t = s.t; break; }
+          }
+        }
+        const want = t >= 0 ? Math.max(0, 1 - t / 0.62) : 0;
+        const k = Math.min(1, dt * (want > p.prep ? 9 : 5));
+        p.prep += (want - p.prep) * k;
+      }
+    }
+
+    // ── scoring ────────────────────────────────────────────────────────────
+    endRally(losingTeam, reason) {
+      if (this.rally.over) return;
+      this.rally.over = true;
+      const winner = 1 - losingTeam;
+      this.lastReason = reason;
+      this.lastWinner = winner;
+      this.state = 'point';
+      this.stateT = 0;
+      // the longer the rally, the louder the stands
+      this.cheerLevel = Math.min(1, 0.45 + this.rally.shotCount * 0.045);
+      this.cheerDur = 2.6;
+      this.cheerT = this.cheerDur;
+      this.events.push({ type: 'point', winner, reason, cheer: this.cheerLevel });
+
+      if (winner === this.servingTeam) {
+        this.score[winner]++;
+        if (this.isDoubles()) {
+          for (const p of this.mates(this.servingTeam)) p.courtSide = p.courtSide === 'R' ? 'L' : 'R';
+        }
+        this.sideOut = false;
+      } else if (this.isDoubles() && this.serverNumber === 1) {
+        const partner = this.mates(this.servingTeam).find(p => p.id !== this.serverIdx);
+        this.serverIdx = partner.id;
+        this.serverNumber = 2;
+        this.sideOut = false;
+      } else {
+        this.servingTeam = winner;
+        this.serverNumber = 1;
+        if (this.isDoubles()) {
+          const right = this.mates(winner).find(p => p.courtSide === 'R');
+          this.serverIdx = right ? right.id : this.mates(winner)[0].id;
+        } else {
+          this.serverIdx = this.mates(winner)[0].id;
+        }
+        this.sideOut = true;
+      }
+      this.banner = PB.Match.reasonText(reason, this);
+
+      const tp = this.cfg.targetPoints;
+      if (this.score[winner] >= tp && this.score[winner] - this.score[1 - winner] >= this.cfg.winBy) {
+        this.winner = winner;
+        this.cheerLevel = 1;
+        this.cheerDur = 4.5;
+        this.cheerT = this.cheerDur;
+      }
+    }
+
+    afterPoint() {
+      if (this.winner >= 0) { this.state = 'gameover'; this.banner = null; return; }
+      this.banner = null;
+      this.prepareServe();
+    }
+  }
+
+  Match.reasonText = function (reason, m) {
+    const w = m.lastWinner === 0 ? 'Time 1' : 'Time 2';
+    const map = {
+      fora: 'Bola fora',
+      nao_passou: 'Na rede',
+      saque_fora: 'Saque fora',
+      saque_cozinha: 'Saque na cozinha',
+      dois_quiques: 'Dois quiques',
+      cozinha: 'Voleio na cozinha',
+      voleio_saque: 'Voleio antes do quique',
+      recebedor: 'Recebedor errado',
+      impulso: 'Impulso na cozinha',
+      pe_no_saque: 'Pé na linha no saque',
+    };
+    const label = map[reason] || 'Ponto';
+    return { label, team: m.lastWinner, sideOut: m.sideOut, w };
+  };
+
+  Match.SKILL = SKILL;
+  Match.MOVE_SPEED = MOVE_SPEED;
+  return Match;
+})();
+
+</script>
+<script>
+'use strict';
+// Pseudo-3D renderer: a pinhole camera sitting behind the baseline, drawing the
+// court, net, players and ball straight onto a 2D canvas.
+var PB = (function () {
+  var g = typeof window !== 'undefined' ? window : globalThis;
+  return g.PB || (g.PB = {});
+})();
+
+PB.Renderer = (function () {
+  const C = PB.Court;
+
+  const COL = {
+    skyTop: '#101d33', skyMid: '#24466d', skyGlow: '#e08a58',
+    surround: '#1d5b86', court: '#2f86c4', kitchen: '#b8442c', kitchen2: '#a13a25',
+    line: '#f0f6fa', net: '#0d1420', tape: '#f4f8fb',
+    ball: '#d9ff3d', shadow: 'rgba(0,0,0,0.30)',
+    team: [
+      { shirt: '#ffd24a', shirt2: '#e8ac1f', trim: '#ffeaa0', shorts: '#1b2634', shorts2: '#111a25' },
+      { shirt: '#ff5f6d', shirt2: '#d63b53', trim: '#ffc2c7', shorts: '#221a33', shorts2: '#171126' },
+    ],
+    skin: ['#e2b083', '#c68a5c', '#9c6640', '#6f462b'],
+    skinDark: ['#c9955f', '#a86f45', '#7d4e2f', '#573520'],
+    hair: ['#1d150f', '#3b2416', '#7a4a22', '#c9a24a', '#2b2b31', '#8d8d96'],
+    shoe: '#f2f5f8',
+    paddleFace: ['#2b4a6b', '#6b2b3a', '#1f5a4a', '#4a3a6b'],
+    crowd: ['#c8d4e0', '#e0d3b8', '#b8c9e0', '#d9b6b6', '#b6d9c4', '#cbc0dd', '#e8d9a8'],
+    crowdSkin: ['#e2b083', '#c68a5c', '#8d5a3b'],
+  };
+
+  const FENCE_Z = 30, FENCE_H = 8, FENCE_X = 26;
+  const BACK_ROOM = 4.5;   // how far behind the baseline a player may run
+  const CROWD_ROWS = 16;      // generated; how many are used depends on the camera
+  const ROW_STEP = 1.85;      // real stadium rows, so spectators stay person sized
+  const UI = (a, b, c) => `rgb(${Math.round(a*255)},${Math.round(b*255)},${Math.round(c*255)})`;
+
+  // Scale and height of the broadcast scoreboard panel. The camera needs both so
+  // it never frames a player underneath the panel, so they live outside the
+  // renderer and the drawing code reads the same numbers.
+  function hudScale(rect) {
+    return Math.max(0.55, Math.min(1.05, Math.min(rect.w / 900, rect.h / 520)));
+  }
+  function hudBand(rect) {
+    const k = hudScale(rect);
+    return Math.min(0.24, (10 * k + 20 * k + 30 * k * 2 + 15 * k + 6) / rect.h);
+  }
+
+  function Cam(vp, side, focusX) {
+    // Two rigs. A wide frame gets the television angle: low and far back, which
+    // is what makes a broadcast read — the court lies flat and wide, the near
+    // pair large, the far pair small. A narrow frame cannot afford that (the
+    // court would be a thin strip), so it keeps a higher, closer camera.
+    const wide = vp.w >= vp.h * 1.3;
+    // Between a broadcast angle and Super Tennis: higher and further back than
+    // television, so more of the court reads from above without going top-down.
+    // The narrow rig sits higher still, otherwise the court is a thin strip and
+    // the stands eat most of a portrait frame.
+    const camY = wide ? 20 : 40;
+    const camZ = wide ? -75 : -50;
+    const aimY = 2.0, aimZ = 6;
+    const pitch = Math.atan2(camY - aimY, aimZ - camZ);
+    const sin = Math.sin(pitch), cos = Math.cos(pitch);
+    const czOf = z => camY * sin + (z - camZ) * cos;
+    const vOf = z => -((-camY) * cos + (z - camZ) * sin) / czOf(z);
+
+    const BACK = C.HALF_L + BACK_ROOM;
+    const halfNear = C.HALF_W / czOf(-C.HALF_L);
+    // Vertical extent measured between what actually has to be on screen: the
+    // feet of the deepest near player and the HEAD of the deepest far one.
+    const czAt = (y, z) => (y - camY) * -sin + (z - camZ) * cos;
+    const vAt = (y, z) => -((y - camY) * cos + (z - camZ) * sin) / czAt(y, z);
+    const topV = vAt(6.4, BACK);
+    const botV = vAt(0, -BACK);
+    // Room the scoreboard needs at the top of this viewport; nothing that must
+    // stay legible is framed under it.
+    const top = hudBand(vp) + 0.005;
+    let focal = Math.min(
+      (wide ? 0.66 : 0.98) * vp.w / (2 * halfNear),
+      (0.995 - top) * vp.h / (botV - topV)
+    );
+
+    this.side = side; this.sin = sin; this.cos = cos; this.focal = focal;
+    this.y = camY; this.z = camZ;
+    this.x = (side === 1 ? -1 : 1) * focusX * 0.25;
+    this.cx = vp.x + vp.w / 2;
+    // Preferred framing: the near baseline low in a wide frame, the run-back at
+    // the bottom for a narrow one — then slid until nobody is cut off at either
+    // edge. Sitting the baseline low keeps the raised camera from leaving a band
+    // of empty floor under the near pair.
+    let cy = wide
+      ? vp.y + vp.h * 0.88 - focal * vOf(-C.HALF_L)
+      : vp.y + vp.h * 0.99 - focal * vOf(-BACK);
+    cy = Math.max(cy, vp.y + vp.h * top - focal * topV);
+    cy = Math.min(cy, vp.y + vp.h * 0.995 - focal * botV);
+    this.cy = cy;
+    this.horizonY = cy - focal * (sin / cos);
+    this.vp = vp;
+    this.wide = wide;
+  }
+
+  // Inverse of proj at a fixed depth: which world height lands on this screen
+  // row? Lets the stadium fit whatever band the camera leaves above the court.
+  Cam.prototype.yAtScreen = function (z, screenY) {
+    if (this.side === 1) z = -z;
+    const dz = z - this.z;
+    const v = (this.cy - screenY) / this.focal;
+    const den = -v * this.sin - this.cos;
+    if (Math.abs(den) < 1e-6) return this.y;
+    return this.y + (dz * (this.sin - v * this.cos)) / den;
+  };
+
+  Cam.prototype.proj = function (x, y, z) {
+    if (this.side === 1) { x = -x; z = -z; }
+    const dx = x - this.x, dy = y - this.y, dz = z - this.z;
+    const cz = -dy * this.sin + dz * this.cos;
+    const cy = dy * this.cos + dz * this.sin;
+    const s = this.focal / Math.max(0.8, cz);
+    return { x: this.cx + dx * s, y: this.cy - cy * s, s, cz };
+  };
+
+
+  // ── character rig ────────────────────────────────────────────────────────
+  // Bodies are drawn from profiled outlines, not primitives: every bone carries
+  // a width profile (a thigh swells at the quad and tapers to the knee, a calf
+  // bulges high, a forearm narrows to the wrist) and is filled with a gradient
+  // laid across the limb, which is what gives a drawn figure its roundness.
+  const BODY_ATHLETIC = {
+    ankle: 0.32, knee: 1.60, hip: 2.86, waist: 3.34, shoulder: 4.68,
+    head: 5.44, headR: 0.36,
+    shoulderHalf: 0.62, hipHalf: 0.40,
+    upperArm: 1.04, foreArm: 0.98,
+    thigh: 1.26, shin: 1.28,
+  };
+  const BODY_ARCADE = {
+    ankle: 0.34, knee: 1.46, hip: 2.58, waist: 3.00, shoulder: 4.22,
+    head: 5.02, headR: 0.52,
+    shoulderHalf: 0.70, hipHalf: 0.46,
+    upperArm: 0.88, foreArm: 0.80,
+    thigh: 1.12, shin: 1.16,
+  };
+
+  // half-widths in feet along each bone, start joint to end joint
+  const PROFILE_MII = {
+    arm:   [[0, 0.145], [0.5, 0.15], [1, 0.13]],
+    leg:   [[0, 0.195], [0.5, 0.20], [1, 0.17]],
+  };
+
+  const PROFILE = {
+    thigh:   [[0, 0.30], [0.28, 0.315], [0.68, 0.235], [1, 0.165]],
+    shin:    [[0, 0.165], [0.22, 0.205], [0.58, 0.135], [1, 0.088]],
+    upper:   [[0, 0.205], [0.32, 0.20], [0.75, 0.145], [1, 0.125]],
+    fore:    [[0, 0.125], [0.28, 0.15], [0.72, 0.105], [1, 0.078]],
+    neck:    [[0, 0.135], [1, 0.125]],
+  };
+
+  // Wii Sports proportions: about three and a half heads tall, thin limbs,
+  // no neck, and all the character in the face.
+  const BODY_MII = {
+    ankle: 0.30, knee: 1.32, hip: 2.42, waist: 2.90, shoulder: 3.94,
+    head: 4.92, headR: 0.70,
+    shoulderHalf: 0.62, hipHalf: 0.52,
+    upperArm: 0.78, foreArm: 0.72,
+    thigh: 1.06, shin: 1.02,
+  };
+
+  const CHAR_STYLES = {
+    boneco:   { body: BODY_MII, limb: 1.00, shade: true, outline: 0, detail: false, kind: 'mii' },
+    atletico: { body: BODY_ATHLETIC, limb: 1.00, shade: true, outline: 0.014, detail: true },
+    vetor:    { body: BODY_ATHLETIC, limb: 1.22, shade: false, outline: 0.075, detail: false },
+    arcade:   { body: BODY_ARCADE,   limb: 1.42, shade: false, outline: 0.055, detail: false },
+  };
+
+  let BODY = BODY_ATHLETIC;
+  let STYLE = CHAR_STYLES.atletico;
+  const OUTLINE_COL = '#131d29';
+  const LIGHT = { x: -0.55, y: -0.83 };     // key light, upper left
+
+  // ── colour helpers ───────────────────────────────────────────────────────
+  const tintCache = new Map();
+  function tint(hex, amt) {
+    const key = hex + '|' + amt;
+    let v = tintCache.get(key);
+    if (v) return v;
+    const n = parseInt(hex.slice(1), 16);
+    let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    if (amt >= 0) {
+      r += (255 - r) * amt; g += (255 - g) * amt; b += (255 - b) * amt;
+    } else {
+      r *= 1 + amt; g *= 1 + amt; b *= 1 + amt;
+    }
+    v = `rgb(${r | 0},${g | 0},${b | 0})`;
+    tintCache.set(key, v);
+    return v;
+  }
+
+  function ik(ax, ay, bx, by, l1, l2, bend) {
+    let dx = bx - ax, dy = by - ay;
+    let d = Math.hypot(dx, dy);
+    if (d < 1e-4) { d = 1e-4; dx = 1e-4; }
+    const dd = Math.min(d, l1 + l2 - 0.002);
+    const a = (l1 * l1 - l2 * l2 + dd * dd) / (2 * dd);
+    let h = Math.sqrt(Math.max(0, l1 * l1 - a * a));
+    h *= Math.max(0.18, Math.min(1, (dd - 0.45) / 0.9));
+    const ux = dx / d, uy = dy / d;
+    return { x: ax + ux * a - uy * h * bend, y: ay + uy * a + ux * h * bend };
+  }
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function ease(t) { return t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t); }
+  function mix(p1, p2, t) { return { x: lerp(p1.x, p2.x, t), y: lerp(p1.y, p2.y, t) }; }
+  function reachable(sh, target, len) {
+    const dx = target.x - sh.x, dy = target.y - sh.y;
+    const d = Math.hypot(dx, dy);
+    if (d <= len || d < 1e-4) return target;
+    const k = len / d;
+    return { x: sh.x + dx * k, y: sh.y + dy * k };
+  }
+
+  const Char = {
+    look(p) {
+      if (!p._look) {
+        const i = p.id;
+        p._look = {
+          skin: i % COL.skin.length,
+          hair: COL.hair[(i * 2 + 1) % COL.hair.length],
+          style: i % 4,
+          paddle: COL.paddleFace[i % COL.paddleFace.length],
+        };
+      }
+      return p._look;
+    },
+
+    // ── the drawn limb ─────────────────────────────────────────────────────
+    // Walks the width profile up one side and back down the other, smoothing
+    // through the points, then rounds both ends. One gradient across the bone
+    // does the modelling.
+    bone(ctx, P, ax, ay, bx, by, profile, color, opts) {
+      const o = opts || {};
+      const x1 = P.X(ax), y1 = P.Y(ay), x2 = P.X(bx), y2 = P.Y(by);
+      const dx = x2 - x1, dy = y2 - y1;
+      const len = Math.hypot(dx, dy) || 1;
+      const ux = dx / len, uy = dy / len;
+      const nx = -uy, ny = ux;
+      const k = P.s * (o.raw ? 1 : STYLE.limb);
+      const pt = (t, w) => [x1 + ux * len * t + nx * w * k, y1 + uy * len * t + ny * w * k];
+
+      const path = new Path2D();
+      const side = (sign, reverse) => {
+        const list = reverse ? profile.slice().reverse() : profile;
+        for (let i = 0; i < list.length; i++) {
+          const [t, w] = list[i];
+          const [px, py] = pt(t, w * sign);
+          if (i === 0 && sign > 0 && !reverse) path.moveTo(px, py);
+          else if (i === 0) { /* continues from the cap */ }
+          else {
+            const [pt0, pw0] = list[i - 1];
+            const [mx, my] = pt((t + pt0) / 2, ((w + pw0) / 2) * sign);
+            path.quadraticCurveTo(mx, my, px, py);
+          }
+        }
+      };
+      const endW = profile[profile.length - 1][1] * k;
+      const startW = profile[0][1] * k;
+      // Caps are drawn as curves that continue the outline. Arcs here reversed
+      // the winding and punched holes through the limb at every joint.
+      const cap = (cx, cy, w, dir) => {
+        const r1x = cx + nx * w, r1y = cy + ny * w;
+        const l1x = cx - nx * w, l1y = cy - ny * w;
+        path.bezierCurveTo(r1x + ux * w * 1.34 * dir, r1y + uy * w * 1.34 * dir,
+                           l1x + ux * w * 1.34 * dir, l1y + uy * w * 1.34 * dir,
+                           l1x, l1y);
+      };
+      side(1, false);
+      cap(x2, y2, endW, 1);
+      side(-1, true);
+      cap(x1, y1, startW, -1);
+      path.closePath();
+
+      if (STYLE.outline > 0) {
+        ctx.strokeStyle = OUTLINE_COL;
+        ctx.lineWidth = Math.max(1, STYLE.outline * P.s * 2);
+        ctx.lineJoin = 'round';
+        ctx.stroke(path);
+      }
+      ctx.fillStyle = STYLE.shade ? this.crossGradient(ctx, x1, y1, x2, y2, nx, ny, startW, color)
+                                  : color;
+      ctx.fill(path);
+      return path;
+    },
+
+    // light on one edge, the body colour across the middle, shadow on the other
+    crossGradient(ctx, x1, y1, x2, y2, nx, ny, w, color) {
+      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+      const sign = (nx * LIGHT.x + ny * LIGHT.y) >= 0 ? 1 : -1;
+      const r = Math.max(2, w * 1.6);
+      const g = ctx.createLinearGradient(mx + nx * r * sign, my + ny * r * sign,
+                                         mx - nx * r * sign, my - ny * r * sign);
+      g.addColorStop(0, tint(color, 0.20));
+      g.addColorStop(0.42, color);
+      g.addColorStop(1, tint(color, -0.32));
+      return g;
+    },
+
+    draw(ctx, cam, p, base, s, isMe) {
+      STYLE = CHAR_STYLES[Renderer.charStyle] || CHAR_STYLES.atletico;
+      BODY = STYLE.body;
+      const look = this.look(p);
+      const kit = COL.team[p.team];
+      const skin = COL.skin[look.skin];
+      const facing = cam.side === p.team ? 1 : -1;
+      const hand = facing;
+      const P = { s, X: v => base.x + v * s, Y: v => base.y - v * s };
+
+      const crouch = p.crouch || 0;
+      const stride = p.speedN || 0;
+      const ph = p.runPhase || 0;
+      const mir = cam.side === 1 ? -1 : 1;
+      const lean = (p.lean || 0) * mir;
+      const yaw = (p.yaw || 0) * mir;
+      const bob = Math.abs(Math.sin(ph)) * 0.10 * stride;
+      const hipY = BODY.hip - crouch * 0.85 - bob + (p.hop || 0);
+      const shY = hipY + (BODY.shoulder - BODY.hip) - crouch * 0.12;
+
+      const swinging = p.swingT > 0;
+      const prog = swinging ? 1 - p.swingT / (p.swingDur || 0.42) : 0;
+      const coilAmt = swinging ? (prog < 0.32 ? 1 - prog / 0.32 : 0) : (p.prep || 0);
+      const kind = p.swingKind || 'ground';
+      const fore = p.swingFore !== false;
+      const coil = coilAmt * (fore ? 0.55 : -0.42) * hand;
+
+      const turn = yaw + coil;
+      const shHalf = BODY.shoulderHalf * (0.70 + 0.30 * Math.cos(turn * 1.25));
+      const shOff = Math.sin(turn) * 0.36 + lean * 0.55;
+      const hipTurn = yaw * 0.55 + coil * 0.25;
+      const hipHalf = BODY.hipHalf * (0.76 + 0.24 * Math.cos(hipTurn * 1.25));
+      const hipOff = Math.sin(hipTurn) * 0.22 + lean * 0.3;
+      const shL = { x: -shHalf + shOff, y: shY };
+      const shR = { x: shHalf + shOff, y: shY };
+      const hipL = { x: -hipHalf + hipOff, y: hipY };
+      const hipR = { x: hipHalf + hipOff, y: hipY };
+
+      const resid = (p.runAngle || 0) - (p.yaw || 0);
+      const strideLat = Math.sin(resid) * stride * mir;
+      const strideDep = Math.cos(resid) * stride;
+      // Athletic base: feet wider than the hips, wider still as the knees bend.
+      const stanceHalf = BODY.hipHalf + 0.26 + crouch * 0.34;
+      const legs = [];
+      for (let i = 0; i < 2; i++) {
+        const side = i === 0 ? -1 : 1;
+        const phase = ph + (i === 0 ? Math.PI : 0);
+        const sw = Math.sin(phase);
+        const hipJ = side < 0 ? hipL : hipR;
+        const ahead = sw * strideDep;
+        const lift = Math.max(0, sw) * stride * 0.55;
+        const footX = side * stanceHalf + sw * strideLat * 1.15 + lean * 0.8 + ahead * 0.18;
+        const footY = BODY.ankle + lift * 0.42 + Math.max(0, ahead) * 0.30;
+        const knee = ik(hipJ.x, hipJ.y, footX, footY, BODY.thigh, BODY.shin, side * 0.42);
+        legs.push({ side, hip: hipJ, knee, foot: { x: footX, y: footY }, depth: ahead });
+      }
+
+      const hitDX = p.swingHit ? p.swingHit.dx * mir : 0;
+      const hitY = p.swingHit ? p.swingHit.dy : shY - 0.4;
+      const swA = Math.sin(ph + Math.PI) * stride;
+      // Ready position, the way the sport is actually played: paddle up in front
+      // of the chest near the midline, tip toward the sky, both hands together,
+      // elbows bent down and out. Never hanging at the side.
+      const ready = {
+        x: hand * (0.48 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.30 - swA * 0.10,
+        y: shY - 0.18 + swA * 0.10,
+      };
+      const readyElbow = {
+        x: hand * (1.02 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.20,
+        y: shY - 0.60 + swA * 0.06,
+      };
+      let load, contact, follow;
+      if (kind === 'over') {
+        load = { x: hand * 0.95, y: shY - 1.45 };
+        contact = { x: Math.max(-1.3, Math.min(1.3, hitDX)), y: Math.max(hitY, shY + 1.25) };
+        follow = { x: -hand * 0.85, y: shY - 1.05 };
+      } else if (kind === 'soft') {
+        load = { x: hand * (fore ? 0.95 : -0.55), y: shY - 1.42 };
+        contact = { x: Math.max(-1.8, Math.min(1.8, hitDX)), y: Math.max(0.85, Math.min(2.9, hitY)) };
+        follow = { x: hand * 0.34, y: shY - 0.52 };
+      } else if (fore) {
+        load = { x: hand * 1.42, y: shY - 1.12 };
+        contact = { x: Math.max(-2.2, Math.min(2.2, hitDX)), y: Math.max(0.95, Math.min(5.2, hitY)) };
+        follow = { x: -hand * 0.88, y: shY + 0.34 };
+      } else {
+        load = { x: -hand * 0.78, y: shY - 0.98 };
+        contact = { x: Math.max(-2.2, Math.min(2.2, hitDX)), y: Math.max(0.95, Math.min(5.2, hitY)) };
+        follow = { x: hand * 1.52, y: shY + 0.42 };
+      }
+      let handP = swinging
+        ? (prog < 0.32 ? mix(load, contact, ease(prog / 0.32))
+                       : mix(contact, follow, ease((prog - 0.32) / 0.68)))
+        : mix(ready, load, ease(p.prep || 0));
+
+      const shPad = hand > 0 ? shR : shL;
+      const shFree = hand > 0 ? shL : shR;
+      const armLen = (BODY.upperArm + BODY.foreArm) * 0.97;
+      handP = reachable(shPad, handP, armLen);
+      // How much of the pose is the waiting stance rather than a loaded swing.
+      const readyAmt = swinging ? 0 : 1 - ease(p.prep || 0);
+      const freeSwing = {
+        x: -hand * (0.86 + Math.abs(swA) * 0.26) + Math.sin(turn) * 0.42 - swA * 0.26,
+        y: shY - 1.06 + swA * 0.34 + coilAmt * 0.42,
+      };
+      // The free hand supports the paddle throat rather than dangling.
+      const freeReady = {
+        x: -hand * 0.14 + Math.sin(turn) * 0.26 - swA * 0.10,
+        y: shY - 0.36 + swA * 0.08,
+      };
+      const freeReadyElbow = {
+        x: -hand * (0.80 + 0.10 * Math.cos(turn)) + Math.sin(turn) * 0.16,
+        y: shY - 0.58,
+      };
+      const freeHand = mix(freeSwing, freeReady, readyAmt);
+      const freeHandR = reachable(shFree, freeHand, armLen);
+      const freeElbow = mix(
+        ik(shFree.x, shFree.y, freeHandR.x, freeHandR.y, BODY.upperArm, BODY.foreArm, hand * 0.75),
+        freeReadyElbow, readyAmt);
+      const elbow = mix(
+        ik(shPad.x, shPad.y, handP.x, handP.y, BODY.upperArm, BODY.foreArm, -hand * 0.8),
+        readyElbow, readyAmt);
+
+      // Seen from behind, everything the player holds in front of their chest is
+      // behind their back — arms and paddle go under the torso, and only what
+      // sticks out past the silhouette shows. Facing the camera, they go on top.
+      const fromBehind = facing > 0;
+      const drawPaddle = () =>
+        this.paddle(ctx, P, elbow, handP, look, hand, swinging, prog, readyAmt);
+
+      this.shadow(ctx, P, base, s, stanceHalf, isMe, p);
+      if (STYLE.kind === 'mii') {
+        this.mii(ctx, P, {
+          legs, shL, shR, hipL, hipR, shY, hipY, shPad, shFree,
+          elbow, handP, freeElbow, freeHandR, swA,
+        }, kit, skin, look, facing, turn, drawPaddle);
+        return;
+      }
+      const backLeg = legs[0].depth <= legs[1].depth ? legs[0] : legs[1];
+      const frontLeg = backLeg === legs[0] ? legs[1] : legs[0];
+      const freeInFront = swA > 0 && !fromBehind;
+      const arms = () => {
+        this.arm(ctx, P, shFree, freeElbow, freeHandR, kit, skin, false);
+        this.arm(ctx, P, shPad, elbow, handP, kit, skin, false);
+      };
+
+      this.leg(ctx, P, backLeg, kit, skin, true);
+      if (!freeInFront && !fromBehind) {
+        this.arm(ctx, P, shFree, freeElbow, freeHandR, kit, skin, true);
+      }
+      this.shorts(ctx, P, legs[0], legs[1], hipL, hipR, kit);
+      if (fromBehind) { arms(); drawPaddle(); }
+      this.torso(ctx, P, shL, shR, hipL, hipR, kit, skin, shY, hipY);
+      this.head(ctx, P, shL, shR, shY, skin, look, turn, facing);
+      this.leg(ctx, P, frontLeg, kit, skin, false);
+      if (!fromBehind) {
+        if (freeInFront) this.arm(ctx, P, shFree, freeElbow, freeHandR, kit, skin, false);
+        this.arm(ctx, P, shPad, elbow, handP, kit, skin, false);
+        drawPaddle();
+      }
+    },
+
+    // ── Wii-style figure ───────────────────────────────────────────────────
+    mii(ctx, P, parts, kit, skin, look, facing, turn, drawPaddle) {
+      const { legs, shL, shR, hipL, hipR, shY, hipY, shPad, shFree,
+              elbow, handP, freeElbow, freeHandR, swA } = parts;
+      const X = P.X, Y = P.Y;
+      const soft = (c, a) => tint(c, a);
+
+      // legs, then a small pair of shorts, then the rounded body
+      for (const L of [legs[0], legs[1]].sort((a, b) => a.depth - b.depth)) {
+        const dim = L === legs[0] && legs[0].depth < legs[1].depth ? -0.10 : 0;
+        this.bone(ctx, P, L.hip.x, L.hip.y, L.knee.x, L.knee.y, PROFILE_MII.leg, soft(skin, dim));
+        this.bone(ctx, P, L.knee.x, L.knee.y, L.foot.x, L.foot.y + 0.14, PROFILE_MII.leg, soft(skin, dim));
+        // shoe: a rounded block, no laces at this scale
+        ctx.beginPath();
+        ctx.ellipse(X(L.foot.x + L.side * 0.06), Y(L.foot.y + 0.10),
+                    P.s * 0.30, P.s * 0.21, 0, 0, Math.PI * 2);
+        ctx.fillStyle = soft('#f4f7fa', dim);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(X(L.foot.x + L.side * 0.06), Y(L.foot.y + 0.03),
+                    P.s * 0.30, P.s * 0.09, 0, 0, Math.PI * 2);
+        ctx.fillStyle = soft(kit.shirt2, dim - 0.1);
+        ctx.fill();
+      }
+
+      // arms: thin tubes with mitten hands. Rounded caps at the shoulder and the
+      // elbow hide the seam where two bones meet at a sharp angle — and in the
+      // ready pose the elbows are bent hard, so the seam would show.
+      const joint = (x, y, r, c) => {
+        ctx.beginPath();
+        ctx.ellipse(X(x), Y(y), P.s * r, P.s * r, 0, 0, Math.PI * 2);
+        ctx.fillStyle = c;
+        ctx.fill();
+      };
+      const arms = () => {
+        const armPair = [[shFree, freeElbow, freeHandR, swA <= 0], [shPad, elbow, handP, false]];
+        for (const [sh, el, hd, far] of armPair) {
+          const dim = far ? -0.10 : 0;
+          this.bone(ctx, P, sh.x, sh.y - 0.05, el.x, el.y, PROFILE_MII.arm, soft(skin, dim));
+          joint(el.x, el.y, 0.145, soft(skin, dim));
+          this.bone(ctx, P, el.x, el.y, hd.x, hd.y, PROFILE_MII.arm, soft(skin, dim));
+          joint(sh.x, sh.y - 0.05, 0.145, soft(skin, dim));
+          joint(hd.x, hd.y, 0.165, soft(skin, dim + 0.04));
+        }
+      };
+      // From behind, the arms and the paddle are on the far side of the chest.
+      const fromBehind = facing > 0;
+      if (fromBehind) { arms(); drawPaddle(); }
+
+      const bodyTop = shY + 0.10, bodyBot = hipY - 0.30;
+      const halfTop = BODY.shoulderHalf, halfBot = BODY.hipHalf + 0.20;
+      const body = new Path2D();
+      body.moveTo(X(-halfTop + (shL.x + shR.x) / 2), Y(bodyTop));
+      body.bezierCurveTo(X(-halfTop - 0.20 + (shL.x + shR.x) / 2), Y(bodyTop - 0.5),
+                         X(-halfBot - 0.10 + (hipL.x + hipR.x) / 2), Y(bodyBot + 0.5),
+                         X(-halfBot + (hipL.x + hipR.x) / 2), Y(bodyBot));
+      body.quadraticCurveTo(X((hipL.x + hipR.x) / 2), Y(bodyBot - 0.24),
+                            X(halfBot + (hipL.x + hipR.x) / 2), Y(bodyBot));
+      body.bezierCurveTo(X(halfBot + 0.10 + (hipL.x + hipR.x) / 2), Y(bodyBot + 0.5),
+                         X(halfTop + 0.20 + (shL.x + shR.x) / 2), Y(bodyTop - 0.5),
+                         X(halfTop + (shL.x + shR.x) / 2), Y(bodyTop));
+      body.quadraticCurveTo(X((shL.x + shR.x) / 2), Y(bodyTop + 0.22),
+                            X(-halfTop + (shL.x + shR.x) / 2), Y(bodyTop));
+      body.closePath();
+      const bg = ctx.createLinearGradient(X(-halfTop - 0.4), 0, X(halfTop + 0.4), 0);
+      bg.addColorStop(0, tint(kit.shirt, 0.20));
+      bg.addColorStop(0.5, kit.shirt);
+      bg.addColorStop(1, tint(kit.shirt, -0.24));
+      ctx.fillStyle = bg;
+      ctx.fill(body);
+
+      if (!fromBehind) arms();
+
+      // head: the whole character lives here
+      const cx = (shL.x + shR.x) / 2 + Math.sin(turn) * 0.10;
+      const R = BODY.headR;
+      const cy = shY + (BODY.head - BODY.shoulder);
+      const hg = ctx.createRadialGradient(X(cx - R * 0.4), Y(cy + R * 0.4), P.s * R * 0.1,
+                                          X(cx), Y(cy), P.s * R * 1.15);
+      hg.addColorStop(0, tint(skin, 0.16));
+      hg.addColorStop(0.72, skin);
+      hg.addColorStop(1, tint(skin, -0.22));
+      ctx.beginPath();
+      ctx.ellipse(X(cx), Y(cy), P.s * R * 0.92, P.s * R, 0, 0, Math.PI * 2);
+      ctx.fillStyle = hg;
+      ctx.fill();
+      // ears
+      for (const es of [-1, 1]) {
+        ctx.beginPath();
+        ctx.ellipse(X(cx + es * R * 0.90), Y(cy - R * 0.05), P.s * R * 0.13, P.s * R * 0.22, 0, 0, Math.PI * 2);
+        ctx.fillStyle = tint(skin, -0.12);
+        ctx.fill();
+      }
+      // hair
+      const cap = new Path2D();
+      cap.moveTo(X(cx - R * 0.95), Y(cy + R * 0.12));
+      cap.quadraticCurveTo(X(cx - R * 1.0), Y(cy + R * 1.10), X(cx), Y(cy + R * 1.12));
+      cap.quadraticCurveTo(X(cx + R * 1.0), Y(cy + R * 1.10), X(cx + R * 0.95), Y(cy + R * 0.12));
+      if (facing < 0) {
+        // seen from the front: a fringe across the brow
+        cap.quadraticCurveTo(X(cx + R * 0.5), Y(cy + R * 0.30), X(cx + R * 0.05), Y(cy + R * 0.44));
+        cap.quadraticCurveTo(X(cx - R * 0.5), Y(cy + R * 0.58), X(cx - R * 0.95), Y(cy + R * 0.12));
+      } else {
+        // seen from behind: hair covers the whole skull
+        cap.quadraticCurveTo(X(cx), Y(cy - R * 0.55), X(cx - R * 0.95), Y(cy + R * 0.12));
+      }
+      cap.closePath();
+      ctx.fillStyle = look.hair;
+      ctx.fill(cap);
+      if (look.style === 1) {
+        this.bone(ctx, P, cx - R * 0.1, cy + R * 0.7, cx - R * 0.1 + Math.sin(turn) * 0.2, cy - R * 0.2,
+                  [[0, 0.2], [0.5, 0.24], [1, 0.08]], look.hair, { raw: true });
+      }
+      if (facing < 0) this.face(ctx, P, cx, cy, R, look);
+      if (!fromBehind) drawPaddle();
+    },
+
+    // Two eyes, two brows, one mouth — the Mii formula.
+    face(ctx, P, cx, cy, R, look) {
+      const X = P.X, Y = P.Y;
+      const eyeDX = R * 0.36, eyeY = cy + R * 0.10;
+      for (const s of [-1, 1]) {
+        ctx.beginPath();
+        ctx.ellipse(X(cx + s * eyeDX), Y(eyeY), P.s * R * 0.15, P.s * R * 0.19, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#fdfdfd';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(X(cx + s * eyeDX), Y(eyeY - R * 0.02), P.s * R * 0.085, P.s * R * 0.115, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#231a15';
+        ctx.fill();
+      }
+      ctx.strokeStyle = tint(look.hair, -0.1);
+      ctx.lineWidth = Math.max(1, P.s * R * 0.09);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (const s of [-1, 1]) {
+        ctx.moveTo(X(cx + s * eyeDX - R * 0.17), Y(eyeY + R * 0.34));
+        ctx.lineTo(X(cx + s * eyeDX + R * 0.17), Y(eyeY + R * 0.36));
+      }
+      ctx.stroke();
+      ctx.strokeStyle = '#7d4436';
+      ctx.lineWidth = Math.max(1, P.s * R * 0.075);
+      ctx.beginPath();
+      ctx.moveTo(X(cx - R * 0.17), Y(cy - R * 0.34));
+      ctx.quadraticCurveTo(X(cx), Y(cy - R * 0.46), X(cx + R * 0.17), Y(cy - R * 0.34));
+      ctx.stroke();
+    },
+
+    shadow(ctx, P, base, s, stanceHalf, isMe, p) {
+      ctx.save();
+      const g = ctx.createRadialGradient(base.x, base.y, s * 0.1, base.x, base.y, s * 1.5);
+      g.addColorStop(0, 'rgba(0,0,0,0.36)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(base.x, base.y, s * (1.5 + stanceHalf), s * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      if (isMe || p.ctrl === 'human') {
+        ctx.save();
+        ctx.strokeStyle = isMe ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)';
+        ctx.lineWidth = Math.max(1.5, s * (isMe ? 0.06 : 0.045));
+        ctx.beginPath();
+        ctx.ellipse(base.x, base.y, s * 1.22, s * 0.41, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    },
+
+    leg(ctx, P, L, kit, skin, far) {
+      const dim = far ? -0.14 : 0;
+      const flesh = tint(skin, dim);
+      // skin first, the whole leg, so no seam shows at the knee
+      this.bone(ctx, P, L.hip.x, L.hip.y + 0.1, L.knee.x, L.knee.y, PROFILE.thigh, flesh);
+      this.bone(ctx, P, L.knee.x, L.knee.y, L.foot.x, L.foot.y + 0.08, PROFILE.shin, flesh);
+
+      if (STYLE.detail) {
+        this.bone(ctx, P, L.foot.x, L.foot.y + 0.30, L.foot.x, L.foot.y + 0.12,
+                  [[0, 0.14], [1, 0.155]], tint('#eef3f7', dim));
+      }
+      this.shoe(ctx, P, L, dim);
+    },
+
+    // toe box, sole plate and heel, pointing the way the foot travels
+    shoe(ctx, P, L, dim) {
+      const dir = L.side >= 0 ? 1 : -1;
+      const x = L.foot.x, y = L.foot.y;
+      const p = (dx, dy) => [P.X(x + dx * dir), P.Y(y + dy)];
+      const path = new Path2D();
+      let q = p(-0.16, 0.30); path.moveTo(q[0], q[1]);
+      q = p(0.10, 0.26); path.lineTo(q[0], q[1]);
+      const c1 = p(0.34, 0.20), c2 = p(0.42, 0.07);
+      path.quadraticCurveTo(c1[0], c1[1], c2[0], c2[1]);
+      q = p(0.40, 0.0); path.lineTo(q[0], q[1]);
+      q = p(-0.20, 0.0); path.lineTo(q[0], q[1]);
+      path.closePath();
+      if (STYLE.outline > 0) {
+        ctx.strokeStyle = OUTLINE_COL;
+        ctx.lineWidth = Math.max(1, STYLE.outline * P.s * 2);
+        ctx.stroke(path);
+      }
+      ctx.fillStyle = tint(COL.shoe, dim);
+      ctx.fill(path);
+      // sole
+      const sole = new Path2D();
+      q = p(-0.20, 0.02); sole.moveTo(q[0], q[1]);
+      q = p(0.40, 0.02); sole.lineTo(q[0], q[1]);
+      q = p(0.40, -0.02); sole.lineTo(q[0], q[1]);
+      q = p(-0.20, -0.02); sole.lineTo(q[0], q[1]);
+      sole.closePath();
+      ctx.fillStyle = tint('#20303f', dim);
+      ctx.fill(sole);
+    },
+
+    arm(ctx, P, sh, elbow, hand, kit, skin, far) {
+      const dim = far ? -0.14 : 0;
+      const flesh = tint(skin, dim);
+      this.bone(ctx, P, sh.x, sh.y, elbow.x, elbow.y, PROFILE.upper, flesh);
+      this.bone(ctx, P, elbow.x, elbow.y, hand.x, hand.y, PROFILE.fore, flesh);
+      // sleeve: a cap of shirt over the shoulder end of the upper arm
+      const t = 0.46;
+      this.bone(ctx, P, sh.x * 0.45, sh.y + 0.02,
+                sh.x + (elbow.x - sh.x) * t, sh.y + (elbow.y - sh.y) * t,
+                [[0, 0.26], [0.55, 0.27], [1, 0.21]], tint(kit.shirt, dim - 0.05));
+      if (STYLE.detail) {
+        const wx = elbow.x + (hand.x - elbow.x) * 0.84, wy = elbow.y + (hand.y - elbow.y) * 0.84;
+        this.bone(ctx, P, wx, wy, hand.x, hand.y, [[0, 0.115], [1, 0.10]], tint(kit.trim, dim));
+      }
+      // hand, a mitten rather than a ball
+      const ang = Math.atan2(hand.y - elbow.y, hand.x - elbow.x);
+      ctx.save();
+      ctx.translate(P.X(hand.x), P.Y(hand.y));
+      ctx.rotate(-ang);
+      const hp = new Path2D();
+      hp.ellipse(P.s * 0.05, 0, P.s * 0.092, P.s * 0.072, 0, 0, Math.PI * 2);
+      if (STYLE.outline > 0.03) {
+        ctx.strokeStyle = OUTLINE_COL;
+        ctx.lineWidth = Math.max(1, STYLE.outline * P.s * 2);
+        ctx.stroke(hp);
+      }
+      ctx.fillStyle = flesh;
+      ctx.fill(hp);
+      ctx.restore();
+    },
+
+    // One pair of shorts spanning both hips, its hems following each thigh.
+    shorts(ctx, P, legA, legB, hipL, hipR, kit) {
+      const left = legA.hip.x <= legB.hip.x ? legA : legB;
+      const right = left === legA ? legB : legA;
+      const X = P.X, Y = P.Y;
+      const hemOf = L => {
+        const t = 0.60;
+        return {
+          x: L.hip.x + (L.knee.x - L.hip.x) * t,
+          y: L.hip.y + (L.knee.y - L.hip.y) * t,
+          nx: (L.knee.y - L.hip.y), ny: -(L.knee.x - L.hip.x),
+        };
+      };
+      const hl = hemOf(left), hr = hemOf(right);
+      const norm = h => {
+        const d = Math.hypot(h.nx, h.ny) || 1;
+        return { x: (h.nx / d) * 0.29, y: (h.ny / d) * 0.29 };
+      };
+      const nl = norm(hl), nr = norm(hr);
+      const path = new Path2D();
+      path.moveTo(X(hipL.x - 0.30), Y(hipL.y + 0.30));
+      path.lineTo(X(hl.x - nl.x), Y(hl.y - nl.y));
+      path.quadraticCurveTo(X(hl.x), Y(hl.y - 0.10), X(hl.x + nl.x), Y(hl.y + nl.y));
+      path.quadraticCurveTo(X((hl.x + hr.x) / 2), Y(Math.max(hl.y, hr.y) + 0.62),
+                            X(hr.x - nr.x), Y(hr.y + nr.y));
+      path.quadraticCurveTo(X(hr.x), Y(hr.y - 0.10), X(hr.x + nr.x), Y(hr.y - nr.y));
+      path.lineTo(X(hipR.x + 0.30), Y(hipR.y + 0.30));
+      path.closePath();
+      if (STYLE.outline > 0) {
+        ctx.strokeStyle = OUTLINE_COL;
+        ctx.lineWidth = Math.max(1.5, STYLE.outline * P.s * 2);
+        ctx.lineJoin = 'round';
+        ctx.stroke(path);
+      }
+      if (STYLE.shade) {
+        const g = ctx.createLinearGradient(X(hipL.x - 0.4), 0, X(hipR.x + 0.4), 0);
+        g.addColorStop(0, tint(kit.shorts, 0.22));
+        g.addColorStop(0.45, kit.shorts);
+        g.addColorStop(1, tint(kit.shorts, -0.30));
+        ctx.fillStyle = g;
+      } else {
+        ctx.fillStyle = kit.shorts;
+      }
+      ctx.fill(path);
+    },
+
+    // A shirt silhouette: deltoid over the shoulder, waist pinch, hem flare.
+    torso(ctx, P, shL, shR, hipL, hipR, kit, skin, shY, hipY) {
+      const midY = (shY + hipY) / 2;
+      const path = new Path2D();
+      const X = P.X, Y = P.Y;
+      path.moveTo(X(shL.x + 0.10), Y(shY + 0.16));
+      path.quadraticCurveTo(X(shL.x - 0.16), Y(shY + 0.10), X(shL.x - 0.20), Y(shY - 0.22));
+      path.quadraticCurveTo(X(shL.x - 0.08), Y(midY + 0.10), X(hipL.x - 0.26), Y(hipY + 0.46));
+      path.quadraticCurveTo(X((hipL.x + hipR.x) / 2), Y(hipY + 0.24), X(hipR.x + 0.26), Y(hipY + 0.46));
+      path.quadraticCurveTo(X(shR.x + 0.10), Y(midY + 0.16), X(shR.x + 0.20), Y(shY - 0.22));
+      path.quadraticCurveTo(X(shR.x + 0.16), Y(shY + 0.10), X(shR.x - 0.10), Y(shY + 0.16));
+      path.quadraticCurveTo(X(0), Y(shY + 0.02), X(shL.x + 0.10), Y(shY + 0.16));
+      path.closePath();
+
+      if (STYLE.outline > 0) {
+        ctx.strokeStyle = OUTLINE_COL;
+        ctx.lineWidth = Math.max(2, STYLE.outline * P.s * 2);
+        ctx.lineJoin = 'round';
+        ctx.stroke(path);
+      }
+      if (STYLE.shade) {
+        const g = ctx.createLinearGradient(X(shL.x - 0.3), 0, X(shR.x + 0.3), 0);
+        g.addColorStop(0, tint(kit.shirt, 0.18));
+        g.addColorStop(0.45, kit.shirt);
+        g.addColorStop(1, tint(kit.shirt, -0.28));
+        ctx.fillStyle = g;
+      } else {
+        ctx.fillStyle = kit.shirt;
+      }
+      ctx.fill(path);
+
+      const collar = new Path2D();
+      collar.moveTo(X(shL.x + 0.12), Y(shY + 0.15));
+      collar.quadraticCurveTo(X(0), Y(shY - 0.10), X(shR.x - 0.12), Y(shY + 0.15));
+      collar.quadraticCurveTo(X(0), Y(shY + 0.03), X(shL.x + 0.12), Y(shY + 0.15));
+      collar.closePath();
+      ctx.fillStyle = kit.trim;
+      ctx.fill(collar);
+    },
+
+    // Skull, jaw and ear — not a circle.
+    head(ctx, P, shL, shR, shY, skin, look, coil, facing) {
+      const cx = (shL.x + shR.x) / 2 + Math.sin(coil) * 0.14;
+      const headY = shY + (BODY.head - BODY.shoulder) + 0.06;
+      const R = BODY.headR;
+      this.bone(ctx, P, cx, shY - 0.02, cx, headY - R * 0.66, PROFILE.neck, tint(skin, -0.22));
+
+      const X = P.X, Y = P.Y;
+      const path = new Path2D();
+      path.moveTo(X(cx - R * 0.94), Y(headY + R * 0.12));
+      path.quadraticCurveTo(X(cx - R * 0.98), Y(headY + R * 1.05), X(cx), Y(headY + R * 1.06));
+      path.quadraticCurveTo(X(cx + R * 0.98), Y(headY + R * 1.05), X(cx + R * 0.94), Y(headY + R * 0.12));
+      path.quadraticCurveTo(X(cx + R * 0.86), Y(headY - R * 0.72), X(cx + R * 0.30), Y(headY - R * 1.02));
+      path.quadraticCurveTo(X(cx), Y(headY - R * 1.16), X(cx - R * 0.30), Y(headY - R * 1.02));
+      path.quadraticCurveTo(X(cx - R * 0.86), Y(headY - R * 0.72), X(cx - R * 0.94), Y(headY + R * 0.12));
+      path.closePath();
+      if (STYLE.outline > 0) {
+        ctx.strokeStyle = OUTLINE_COL;
+        ctx.lineWidth = Math.max(1.5, STYLE.outline * P.s * 2);
+        ctx.stroke(path);
+      }
+      if (STYLE.shade) {
+        const g = ctx.createLinearGradient(X(cx - R), 0, X(cx + R), 0);
+        g.addColorStop(0, tint(skin, 0.16));
+        g.addColorStop(0.5, skin);
+        g.addColorStop(1, tint(skin, -0.26));
+        ctx.fillStyle = g;
+      } else {
+        ctx.fillStyle = skin;
+      }
+      ctx.fill(path);
+
+      // ear on the shaded side
+      const es = facing >= 0 ? 1 : -1;
+      ctx.beginPath();
+      ctx.ellipse(X(cx + es * R * 0.92), Y(headY + R * 0.05), P.s * R * 0.16, P.s * R * 0.26, 0, 0, Math.PI * 2);
+      ctx.fillStyle = tint(skin, -0.18);
+      ctx.fill();
+
+      this.hair(ctx, P, cx, headY, R, look, coil, facing);
+    },
+
+    hair(ctx, P, cx, headY, R, look, coil, facing) {
+      const X = P.X, Y = P.Y;
+      const col = look.hair;
+      const cap = new Path2D();
+      cap.moveTo(X(cx - R * 0.99), Y(headY + R * 0.05));
+      cap.quadraticCurveTo(X(cx - R * 1.02), Y(headY + R * 1.12), X(cx), Y(headY + R * 1.14));
+      cap.quadraticCurveTo(X(cx + R * 1.02), Y(headY + R * 1.12), X(cx + R * 0.99), Y(headY + R * 0.05));
+      // fringe sweeping across the brow
+      cap.quadraticCurveTo(X(cx + R * 0.55), Y(headY + R * 0.30), X(cx + R * 0.12), Y(headY + R * 0.46));
+      cap.quadraticCurveTo(X(cx - R * 0.45), Y(headY + R * 0.62), X(cx - R * 0.99), Y(headY + R * 0.05));
+      cap.closePath();
+      if (STYLE.outline > 0) {
+        ctx.strokeStyle = OUTLINE_COL;
+        ctx.lineWidth = Math.max(1, STYLE.outline * P.s * 1.6);
+        ctx.stroke(cap);
+      }
+      if (STYLE.shade) {
+        const g = ctx.createLinearGradient(X(cx - R), 0, X(cx + R), 0);
+        g.addColorStop(0, tint(col, 0.26));
+        g.addColorStop(0.55, col);
+        g.addColorStop(1, tint(col, -0.22));
+        ctx.fillStyle = g;
+      } else {
+        ctx.fillStyle = col;
+      }
+      ctx.fill(cap);
+
+      if (look.style === 1) {
+        const tx = cx - R * 0.15, ty = headY + R * 0.55;
+        this.bone(ctx, P, tx, ty, tx + Math.sin(coil) * 0.14, ty - 0.62,
+                  [[0, 0.13], [0.45, 0.16], [1, 0.05]], col, { raw: true });
+      } else if (look.style === 2) {
+        for (let i = -1; i <= 1; i++) {
+          ctx.beginPath();
+          ctx.arc(X(cx + i * R * 0.6), Y(headY + R * 1.0), P.s * R * 0.40, 0, Math.PI * 2);
+          ctx.fillStyle = col;
+          ctx.fill();
+        }
+      } else if (look.style === 3) {
+        const brim = new Path2D();
+        brim.moveTo(X(cx - R * 1.0), Y(headY + R * 0.34));
+        brim.quadraticCurveTo(X(cx), Y(headY + R * 0.02), X(cx + R * 1.0), Y(headY + R * 0.34));
+        brim.quadraticCurveTo(X(cx), Y(headY + R * 0.26), X(cx - R * 1.0), Y(headY + R * 0.34));
+        brim.closePath();
+        ctx.fillStyle = tint(col, -0.25);
+        ctx.fill(brim);
+      }
+
+      if (facing < 0) {
+        ctx.fillStyle = 'rgba(35,22,14,0.5)';
+        const eyeR = Math.max(0.5, P.s * R * 0.10);
+        ctx.beginPath();
+        ctx.ellipse(X(cx - R * 0.34), Y(headY + R * 0.16), eyeR, eyeR * 1.2, 0, 0, Math.PI * 2);
+        ctx.ellipse(X(cx + R * 0.34), Y(headY + R * 0.16), eyeR, eyeR * 1.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    },
+
+    // A pickleball paddle: rounded face, throat, grip with a butt cap.
+    paddle(ctx, P, elbow, hand, look, side, swinging, prog, readyAmt) {
+      const dx = hand.x - elbow.x, dy = hand.y - elbow.y;
+      const len = Math.hypot(dx, dy) || 1;
+      let ux = dx / len, uy = dy / len;
+      // Waiting: the face points at the sky, barely tilted off vertical.
+      if (readyAmt > 0.001) {
+        ux = lerp(ux, side * 0.28, readyAmt);
+        uy = lerp(uy, 0.99, readyAmt);
+        const n = Math.hypot(ux, uy) || 1;
+        ux /= n; uy /= n;
+      }
+      if (swinging && prog > 0.2 && prog < 0.55) {
+        ux = lerp(ux, side * 0.35, 0.5);
+        uy = lerp(uy, 0.9, 0.5);
+        const n = Math.hypot(ux, uy) || 1;
+        ux /= n; uy /= n;
+      }
+      const ang = Math.atan2(-(P.Y(hand.y + uy) - P.Y(hand.y)), P.X(hand.x + ux) - P.X(hand.x));
+      ctx.save();
+      ctx.translate(P.X(hand.x), P.Y(hand.y));
+      ctx.rotate(-ang + Math.PI / 2);
+      const u = P.s;
+      const face = new Path2D();
+      const w = 0.33 * u, h = 0.50 * u, top = -1.02 * u;
+      face.moveTo(-w * 0.55, -0.30 * u);
+      face.quadraticCurveTo(-w, top + h * 0.9, -w * 0.72, top + h * 0.25);
+      face.quadraticCurveTo(-w * 0.5, top - 0.02 * u, 0, top);
+      face.quadraticCurveTo(w * 0.5, top - 0.02 * u, w * 0.72, top + h * 0.25);
+      face.quadraticCurveTo(w, top + h * 0.9, w * 0.55, -0.30 * u);
+      face.quadraticCurveTo(0, -0.16 * u, -w * 0.55, -0.30 * u);
+      face.closePath();
+      const grip = new Path2D();
+      grip.moveTo(-0.09 * u, -0.34 * u);
+      grip.lineTo(0.09 * u, -0.34 * u);
+      grip.lineTo(0.10 * u, 0.06 * u);
+      grip.lineTo(-0.10 * u, 0.06 * u);
+      grip.closePath();
+
+      ctx.strokeStyle = OUTLINE_COL;
+      ctx.lineWidth = Math.max(1, (STYLE.outline || 0.012) * u * 2);
+      ctx.stroke(grip);
+      ctx.fillStyle = '#1b2530';
+      ctx.fill(grip);
+      ctx.stroke(face);
+      if (STYLE.shade) {
+        const g = ctx.createLinearGradient(-w, 0, w, 0);
+        g.addColorStop(0, tint(look.paddle, 0.22));
+        g.addColorStop(1, tint(look.paddle, -0.24));
+        ctx.fillStyle = g;
+      } else {
+        ctx.fillStyle = look.paddle;
+      }
+      ctx.fill(face);
+      // edge guard
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+      ctx.lineWidth = Math.max(1, u * 0.035);
+      ctx.stroke(face);
+      ctx.restore();
+    },
+  };
+
+  function spaced(s) { return s.split('').join(' '); }
+
+  class Renderer {
+    constructor(canvas) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext('2d');
+      this.trail = [];
+      this.dpr = 1;
+      this.shake = 0;
+    }
+
+    resize() {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+      this.canvas.width = Math.round(w * dpr);
+      this.canvas.height = Math.round(h * dpr);
+      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      this.w = w; this.h = h; this.dpr = dpr;
+    }
+
+    viewports(m) {
+      if (!m.versus) return [{ side: 0, rect: { x: 0, y: 0, w: this.w, h: this.h }, slot: 'p1' }];
+      const half = Math.floor(this.h / 2);
+      return [
+        { side: 1, rect: { x: 0, y: 0, w: this.w, h: half }, slot: 'p2' },
+        { side: 0, rect: { x: 0, y: half, w: this.w, h: this.h - half }, slot: 'p1' },
+      ];
+    }
+
+    // ── frame ──────────────────────────────────────────────────────────────
+    draw(m, input) {
+      const ctx = this.ctx;
+      this.match = m;
+      ctx.clearRect(0, 0, this.w, this.h);
+      const views = this.viewports(m);
+
+      // ball trail
+      if (m.ball.live) {
+        this.trail.push({ x: m.ball.x, y: m.ball.y, z: m.ball.z });
+        if (this.trail.length > 9) this.trail.shift();
+      } else if (this.trail.length) this.trail.length = 0;
+
+      for (const v of views) {
+        const id = m.slot[v.slot];
+        const me = id !== undefined ? m.players[id] : m.players[0];
+        const cam = new Cam(v.rect, v.side, me ? me.x : 0);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(v.rect.x, v.rect.y, v.rect.w, v.rect.h);
+        ctx.clip();
+        this.drawWorld(ctx, m, cam, me);
+        this.drawViewHud(ctx, m, v, me);
+        ctx.restore();
+      }
+      if (views.length > 1) {
+        ctx.fillStyle = '#0a0f16';
+        ctx.fillRect(0, views[1].rect.y - 2, this.w, 4);
+      }
+      if (input) this.drawTouch(ctx, input);
+    }
+
+    drawWorld(ctx, m, cam, me) {
+      const vp = cam.vp;
+      const g = ctx.createLinearGradient(0, vp.y, 0, vp.y + vp.h);
+      g.addColorStop(0, COL.skyTop);
+      g.addColorStop(0.5, COL.skyMid);
+      g.addColorStop(1, '#37718c');
+      ctx.fillStyle = g;
+      ctx.fillRect(vp.x, vp.y, vp.w, vp.h);
+
+      this.drawStands(ctx, cam);
+      // ground plane, stopping at the back fence (mirrored for the far camera)
+      const F = cam.side === 1 ? -1 : 1;
+      this.quad(ctx, cam, [[-60, -42 * F], [60, -42 * F], [60, FENCE_Z * F], [-60, FENCE_Z * F]], COL.surround);
+      this.drawFence(ctx, cam);
+      this.drawCourt(ctx, cam);
+
+      if (m.state === 'ready') {
+        this.highlightBox(ctx, cam, 1 - m.servingTeam, -m.serveXSign, 0.9);
+      }
+
+      const far = m.players.filter(p => p.team === 1);
+      const near = m.players.filter(p => p.team === 0);
+      const order = cam.side === 0 ? [far, near] : [near, far];
+
+      this.drawShadows(ctx, cam, m);
+      for (const p of order[0]) this.drawPlayer(ctx, cam, p, m, me);
+      this.drawNet(ctx, cam);
+      for (const p of order[1]) this.drawPlayer(ctx, cam, p, m, me);
+      this.drawBall(ctx, cam, m);
+    }
+
+    // How much screen room is left above the far edge of the ground, and how the
+    // fence and the stand split it. The venue composes itself from this, so it
+    // works in portrait, landscape and split screen alike.
+    venue(cam) {
+      const F = cam.side === 1 ? -1 : 1;
+      const vp = cam.vp;
+      const baseY = cam.proj(0, 0, FENCE_Z * F).y;
+      const band = Math.max(26, baseY - (vp.y + vp.h * 0.015));
+      const standZ = (FENCE_Z + 8) * F;
+      const yLow = Math.max(0.4, cam.yAtScreen(standZ, baseY - band * 0.30));
+      const yHigh = cam.yAtScreen(standZ, baseY - band * 0.99);
+      // fill the band with more rows, never with taller people
+      const rows = Math.max(3, Math.min(CROWD_ROWS, Math.floor((yHigh - yLow) / ROW_STEP)));
+      return {
+        F, baseY, band, standZ, rows, step: ROW_STEP,
+        fenceH: Math.max(3, cam.yAtScreen(FENCE_Z * F, baseY - band * 0.34)),
+        standLow: yLow,
+        standHigh: yLow + rows * ROW_STEP,
+      };
+    }
+
+    drawFence(ctx, cam) {
+      const V = this.venue(cam);
+      const F = V.F, H = V.fenceH, FZ = FENCE_Z * F;
+      const mesh = (pts, fill) => {
+        ctx.beginPath();
+        for (let i = 0; i < pts.length; i++) {
+          const p = cam.proj(pts[i][0], pts[i][1], pts[i][2]);
+          if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = fill;
+        ctx.fill();
+      };
+      for (const sx of [-FENCE_X, FENCE_X]) {
+        mesh([[sx, 0, -30 * F], [sx, H, -30 * F], [sx, H, FZ], [sx, 0, FZ]], 'rgba(16,32,42,0.55)');
+      }
+      mesh([[-FENCE_X, 0, FZ], [-FENCE_X, H, FZ], [FENCE_X, H, FZ], [FENCE_X, 0, FZ]], 'rgba(14,28,38,0.72)');
+      ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = -FENCE_X; i <= FENCE_X; i += 3) {
+        const p1 = cam.proj(i, 0, FZ), p2 = cam.proj(i, H, FZ);
+        ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+      }
+      for (let hgt = H / 4; hgt < H; hgt += H / 4) {
+        const p1 = cam.proj(-FENCE_X, hgt, FZ), p2 = cam.proj(FENCE_X, hgt, FZ);
+        ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+      }
+      ctx.stroke();
+      const bz = FZ - 0.05 * F;
+      mesh([[-FENCE_X, H * 0.26, bz], [-FENCE_X, H * 0.58, bz],
+            [FENCE_X, H * 0.58, bz], [FENCE_X, H * 0.26, bz]], 'rgba(20,90,120,0.85)');
+      const anchor = cam.proj(0, H * 0.42, bz - 0.01 * F);
+      ctx.save();
+      ctx.font = `700 ${Math.max(7, anchor.s * 0.8)}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fillText('P I C K L E B A L L', anchor.x, anchor.y + anchor.s * 0.28);
+      ctx.restore();
+    }
+
+    drawStands(ctx, cam) {
+      const V = this.venue(cam);
+      const Z = V.standZ, X = 60;
+      const lo = V.standLow, hi = V.standHigh;
+      const poly = (y0, y1, fill) => {
+        ctx.beginPath();
+        const pts = [[-X, y0], [-X, y1], [X, y1], [X, y0]];
+        for (let i = 0; i < pts.length; i++) {
+          const p = cam.proj(pts[i][0], pts[i][1], Z);
+          if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = fill;
+        ctx.fill();
+      };
+      poly(lo - 1.5, hi + 1.4, UI(0.08, 0.15, 0.21));
+      const step = V.step;
+      for (let i = 0; i < V.rows; i++) {
+        const y0 = lo + i * step;
+        poly(y0, y0 + step * 0.72, i % 2 === 0 ? UI(0.09, 0.16, 0.23) : UI(0.115, 0.19, 0.27));
+      }
+      poly(hi + 1.4, hi + 2.6, '#0e1a26');
+
+      this.drawCrowd(ctx, cam, V);
+
+      for (const px of [-23, 23]) {
+        const zz = Z - 5 * V.F;
+        const base = cam.proj(px, 0, zz), top = cam.proj(px, hi + 9, zz);
+        ctx.strokeStyle = '#1a2a3a';
+        ctx.lineWidth = Math.max(2, base.s * 0.5);
+        ctx.beginPath(); ctx.moveTo(base.x, base.y); ctx.lineTo(top.x, top.y); ctx.stroke();
+        const lamp = cam.proj(px, hi + 10.5, zz);
+        const rr = Math.max(6, lamp.s * 4.5);
+        const glow = ctx.createRadialGradient(lamp.x, lamp.y, 0, lamp.x, lamp.y, rr);
+        glow.addColorStop(0, 'rgba(255,246,214,0.55)');
+        glow.addColorStop(1, 'rgba(255,246,214,0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath(); ctx.arc(lamp.x, lamp.y, rr, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fdf3cd';
+        ctx.fillRect(lamp.x - rr * 0.28, lamp.y - rr * 0.16, rr * 0.56, rr * 0.3);
+      }
+    }
+
+    // Spectators: built once, projected every frame, and drawn batched by
+    // colour so a full stand costs a handful of fills.
+    crowdSeats() {
+      if (this._crowd) return this._crowd;
+      const seats = [];
+      const rand = i => { const x = Math.sin(i * 12.9898) * 43758.5453; return x - Math.floor(x); };
+      for (let row = 0; row < CROWD_ROWS; row++) {
+        for (let i = 0; i < 80; i++) {
+          const k = row * 149 + i;
+          if (rand(k * 3.1) < 0.10) continue;                 // empty seats
+          seats.push({
+            x: -60 + i * 1.5 + rand(k) * 0.5,
+            row,
+            shirt: Math.floor(rand(k * 1.7) * COL.crowd.length),
+            skin: Math.floor(rand(k * 2.3) * COL.crowdSkin.length),
+            ph: rand(k * 5.9) * 6.283,
+          });
+        }
+      }
+      this._crowd = seats;
+      return seats;
+    }
+
+    drawCrowd(ctx, cam, V) {
+      const seats = this.crowdSeats();
+      const step = V.step;
+      const t = performance.now() / 1000;
+      const m = this.match;
+      const active = m && m.cheerT > 0;
+      const age = active ? (m.cheerDur - m.cheerT) : 0;
+      const fade = active ? Math.min(1, m.cheerT / 0.6) * (m.cheerLevel || 1) : 0;
+
+      const vp = cam.vp;
+      const bodies = [];
+      const heads = [];
+      for (let i = 0; i < COL.crowd.length; i++) bodies.push(null);
+      for (let i = 0; i < COL.crowdSkin.length; i++) heads.push(null);
+      let arms = null;
+
+      for (const s of seats) {
+        if (s.row >= V.rows) continue;
+        // the celebration travels along the stand like a wave
+        const wave = ((s.x + 54) / 108) * 0.75;
+        const local = active ? Math.max(0, Math.min(1, (age - wave) * 3.2)) * fade : 0;
+        const jump = local * Math.abs(Math.sin((age - wave) * 8 + s.ph)) * 0.62;
+        const sway = Math.sin(t * 1.2 + s.ph) * 0.05;
+        const y = V.standLow + s.row * step + step * 0.34 + (jump + sway) * step * 0.85;
+
+        const base = cam.proj(s.x, y, V.standZ);
+        if (base.x < vp.x - 30 || base.x > vp.x + vp.w + 30) continue;
+        if (base.y < vp.y - 30 || base.y > vp.y + vp.h + 30) continue;
+        const u = base.s * 1.05;                          // a person, not a row
+        const bw = u * 0.95, bh = u * 1.35;
+
+        let bp = bodies[s.shirt];
+        if (!bp) { bp = bodies[s.shirt] = new Path2D(); }
+        bp.moveTo(base.x - bw / 2, base.y);
+        bp.lineTo(base.x + bw / 2, base.y);
+        bp.lineTo(base.x + bw * 0.40, base.y - bh);
+        bp.lineTo(base.x - bw * 0.40, base.y - bh);
+        bp.closePath();
+
+        let hp = heads[s.skin];
+        if (!hp) { hp = heads[s.skin] = new Path2D(); }
+        const hr = Math.max(0.8, u * 0.34);
+        hp.moveTo(base.x + hr, base.y - bh - hr * 0.75);
+        hp.arc(base.x, base.y - bh - hr * 0.75, hr, 0, Math.PI * 2);
+
+        if (local > 0.25 && u > 3) {
+          if (!arms) arms = new Path2D();
+          const ax = u * 0.55, ay = u * 1.05;
+          arms.moveTo(base.x - bw * 0.35, base.y - bh * 0.85);
+          arms.lineTo(base.x - ax, base.y - bh - ay * local);
+          arms.moveTo(base.x + bw * 0.35, base.y - bh * 0.85);
+          arms.lineTo(base.x + ax, base.y - bh - ay * local);
+        }
+      }
+
+      for (let i = 0; i < bodies.length; i++) {
+        if (!bodies[i]) continue;
+        ctx.fillStyle = COL.crowd[i];
+        ctx.globalAlpha = 0.85;
+        ctx.fill(bodies[i]);
+      }
+      for (let i = 0; i < heads.length; i++) {
+        if (!heads[i]) continue;
+        ctx.fillStyle = COL.crowdSkin[i];
+        ctx.globalAlpha = 0.9;
+        ctx.fill(heads[i]);
+      }
+      ctx.globalAlpha = 1;
+      if (arms) {
+        ctx.strokeStyle = 'rgba(240,225,200,0.85)';
+        ctx.lineWidth = Math.max(1, cam.proj(0, V.standLow, V.standZ).s * 0.16);
+        ctx.lineCap = 'round';
+        ctx.stroke(arms);
+      }
+    }
+
+    quad(ctx, cam, pts, fill) {
+      ctx.beginPath();
+      for (let i = 0; i < pts.length; i++) {
+        const p = cam.proj(pts[i][0], 0, pts[i][1]);
+        if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
+
+    line(ctx, cam, x1, z1, x2, z2, w) {
+      const hw = (w || C.LINE_W) / 2;
+      const dx = x2 - x1, dz = z2 - z1;
+      const len = Math.hypot(dx, dz) || 1;
+      const nx = (-dz / len) * hw, nz = (dx / len) * hw;
+      this.quad(ctx, cam, [
+        [x1 + nx, z1 + nz], [x2 + nx, z2 + nz], [x2 - nx, z2 - nz], [x1 - nx, z1 - nz],
+      ], COL.line);
+    }
+
+    drawCourt(ctx, cam) {
+      const W = C.HALF_W, L = C.HALF_L, K = C.KITCHEN;
+      this.quad(ctx, cam, [[-W, -L], [W, -L], [W, L], [-W, L]], COL.court);
+      this.quad(ctx, cam, [[-W, -K], [W, -K], [W, 0], [-W, 0]], COL.kitchen);
+      this.quad(ctx, cam, [[-W, 0], [W, 0], [W, K], [-W, K]], COL.kitchen);
+      // lines
+      this.line(ctx, cam, -W, -L, W, -L);
+      this.line(ctx, cam, -W, L, W, L);
+      this.line(ctx, cam, -W, -L, -W, L);
+      this.line(ctx, cam, W, -L, W, L);
+      this.line(ctx, cam, -W, -K, W, -K);
+      this.line(ctx, cam, -W, K, W, K);
+      this.line(ctx, cam, 0, -L, 0, -K);
+      this.line(ctx, cam, 0, K, 0, L);
+    }
+
+    highlightBox(ctx, cam, team, xSign, alpha) {
+      const s = C.teamSign(team);
+      const x0 = xSign > 0 ? 0 : -C.HALF_W, x1 = xSign > 0 ? C.HALF_W : 0;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      this.quad(ctx, cam, [
+        [x0, s * C.KITCHEN], [x1, s * C.KITCHEN], [x1, s * C.HALF_L], [x0, s * C.HALF_L],
+      ], 'rgba(255,255,255,0.18)');
+      ctx.restore();
+    }
+
+    drawNet(ctx, cam) {
+      const N = C.NET_HALF_W;
+      const steps = 28;
+      // net cloth
+      ctx.beginPath();
+      for (let i = 0; i <= steps; i++) {
+        const x = -N + (2 * N * i) / steps;
+        const p = cam.proj(x, C.netHeightAt(x), 0);
+        if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+      }
+      for (let i = steps; i >= 0; i--) {
+        const x = -N + (2 * N * i) / steps;
+        const p = cam.proj(x, 0, 0);
+        ctx.lineTo(p.x, p.y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(11,18,28,0.72)';
+      ctx.fill();
+
+      // mesh
+      ctx.strokeStyle = 'rgba(255,255,255,0.13)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i <= 22; i++) {
+        const x = -N + (2 * N * i) / 22;
+        const a = cam.proj(x, C.netHeightAt(x), 0), b = cam.proj(x, 0, 0);
+        ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+      }
+      for (let k = 1; k <= 5; k++) {
+        for (let i = 0; i <= steps; i++) {
+          const x = -N + (2 * N * i) / steps;
+          const p = cam.proj(x, (C.netHeightAt(x) * k) / 6, 0);
+          if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+        }
+      }
+      ctx.stroke();
+
+      // tape
+      ctx.strokeStyle = COL.tape;
+      ctx.lineWidth = Math.max(2, cam.proj(0, 0, 0).s * 0.11);
+      ctx.beginPath();
+      for (let i = 0; i <= steps; i++) {
+        const x = -N + (2 * N * i) / steps;
+        const p = cam.proj(x, C.netHeightAt(x), 0);
+        if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+      }
+      ctx.stroke();
+
+      // posts
+      for (const px of [-N, N]) {
+        const a = cam.proj(px, 0, 0), b = cam.proj(px, C.NET_H_POST + 0.15, 0);
+        ctx.strokeStyle = '#20303f';
+        ctx.lineWidth = Math.max(2, a.s * 0.22);
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      }
+    }
+
+    drawShadows(ctx, cam, m) {
+      for (const p of m.players) {
+        const q = cam.proj(p.x, 0, p.z);
+        ctx.save();
+        ctx.globalAlpha = 0.28;
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.ellipse(q.x, q.y, q.s * 1.0, q.s * 0.34, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      // Both bounce marks are the same circle on the ground, so they read as a
+      // pair: MARK_R across, flattened by the camera's own foreshortening.
+      const MARK_R = 0.42, MARK_FLAT = 0.353;
+
+      // where the ball actually landed: a solid white disc that fades out over two
+      // seconds, so the mark you see is the bounce that already happened, never
+      // the one still coming
+      if (m.marks && m.marks.length) {
+        ctx.save();
+        ctx.fillStyle = '#fff';
+        for (const k of m.marks) {
+          const q = cam.proj(k.x, 0.015, k.z);
+          if (q.s <= 0 || q.cz <= 1) continue;
+          // solid white for a beat so the bounce reads, then a clean fade out
+          ctx.globalAlpha = k.t > 1.75 ? 1 : k.t / 1.75;
+          ctx.beginPath();
+          ctx.ellipse(q.x, q.y, q.s * MARK_R, q.s * MARK_R * MARK_FLAT, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // predicted bounce marker
+      const pr = m.pred && m.pred.landing;
+      if (pr && m.ball.live) {
+        const q = cam.proj(pr.x, 0.02, pr.z);
+        const inb = C.inBounds(pr.x, pr.z);
+        ctx.save();
+        ctx.strokeStyle = inb ? 'rgba(255,255,255,0.75)' : 'rgba(255,120,110,0.85)';
+        ctx.lineWidth = Math.max(1.2, q.s * 0.045);
+        ctx.beginPath();
+        ctx.ellipse(q.x, q.y, q.s * MARK_R, q.s * MARK_R * MARK_FLAT, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    drawPlayer(ctx, cam, p, m, me) {
+      const base = cam.proj(p.x, 0, p.z);
+      const s = base.s;
+      if (s <= 0 || base.cz <= 1) return;
+      Char.draw(ctx, cam, p, base, s, p === me);
+      if (p.ctrl === 'human' && p !== me) {
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.font = `600 ${Math.max(9, s * 0.5)}px system-ui, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(p.name, base.x, base.y - s * 6.5);
+      }
+    }
+
+    drawBall(ctx, cam, m) {
+      const b = m.ball;
+      // shadow under the ball
+      const sh = cam.proj(b.x, 0.01, b.z);
+      ctx.save();
+      ctx.globalAlpha = Math.max(0.08, 0.34 - b.y * 0.03);
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.ellipse(sh.x, sh.y, sh.s * 0.22, sh.s * 0.09, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // faint drop line: the single cheapest depth cue in a perspective view
+      if (b.live && b.y > 0.6) {
+        const top = cam.proj(b.x, b.y, b.z);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath();
+        ctx.moveTo(top.x, top.y);
+        ctx.lineTo(sh.x, sh.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      for (let i = 0; i < this.trail.length; i++) {
+        const t = this.trail[i];
+        const q = cam.proj(t.x, t.y, t.z);
+        ctx.save();
+        ctx.globalAlpha = (i / this.trail.length) * 0.35;
+        ctx.fillStyle = COL.ball;
+        ctx.beginPath();
+        ctx.arc(q.x, q.y, Math.max(0.8, q.s * C.BALL_R * 0.9), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      const q = cam.proj(b.x, b.y, b.z);
+      const r = Math.max(3.0, q.s * C.BALL_R * 1.5);
+      const g = ctx.createRadialGradient(q.x - r * 0.35, q.y - r * 0.4, r * 0.1, q.x, q.y, r);
+      g.addColorStop(0, '#f4ffb0');
+      g.addColorStop(1, COL.ball);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(q.x, q.y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // ── overlays ───────────────────────────────────────────────────────────
+    drawViewHud(ctx, m, v, me) {
+      const r = v.rect;
+      this.drawScoreboard(ctx, m, r);
+      if (m.banner) this.drawBanner(ctx, m, r);
+      if (m.hint) {
+        ctx.save();
+        ctx.font = '600 13px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(255,225,120,0.95)';
+        ctx.shadowColor = 'rgba(0,0,0,0.7)';
+        ctx.shadowBlur = 6;
+        ctx.fillText(m.hint, r.x + r.w / 2, r.y + r.h - 18);
+        ctx.restore();
+      }
+      const prompt = (label, sub) => {
+        const cx = r.x + r.w / 2, cy = r.y + r.h * 0.56;
+        ctx.save();
+        ctx.font = `700 15px system-ui, sans-serif`;
+        const wpx = Math.max(ctx.measureText(label).width, sub ? 210 : 0) + 28;
+        ctx.fillStyle = 'rgba(8,14,22,0.62)';
+        this.roundRect(ctx, cx - wpx / 2, cy - 17, wpx, sub ? 44 : 28, 8);
+        ctx.fill();
+        ctx.restore();
+        this.centerText(ctx, r, label, cy, 15, 'rgba(255,255,255,0.95)');
+        if (sub) this.centerText(ctx, r, sub, cy + 18, 11, 'rgba(255,255,255,0.65)');
+      };
+      if (m.state === 'ready' && me && m.players[m.serverIdx] === me) {
+        prompt('DESLIZE PARA SACAR', 'ou toque  •  curto = curto, longo = fundo');
+      } else if (m.state === 'ready' && me && m.players[m.receiverIdx] === me) {
+        prompt('DEIXE O SAQUE QUICAR', null);
+      }
+    }
+
+    centerText(ctx, r, text, y, size, color) {
+      ctx.save();
+      ctx.font = `700 ${size}px system-ui, -apple-system, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = color;
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 6;
+      ctx.fillText(text, r.x + r.w / 2, y);
+      ctx.restore();
+    }
+
+    // Broadcast-style panel: title strip, one row per team with its score box,
+    // and a footer carrying the serve. Drawn per viewport, so split screen gives
+    // each player their own.
+    drawScoreboard(ctx, m, rect) {
+      const k = hudScale(rect);
+      const pad = 10 * k;
+      const w = Math.min(rect.w - pad * 2, 300 * k);
+      const head = 20 * k, row = 30 * k, foot = 15 * k;
+      const x = rect.x + pad;
+      const y = rect.y + pad;
+      const h = head + row * 2 + foot;
+      const box = 40 * k;
+
+      ctx.save();
+      ctx.textBaseline = 'middle';
+
+      // title strip
+      ctx.fillStyle = '#0c1622';
+      ctx.fillRect(x, y, w, head);
+      ctx.fillStyle = 'rgba(255,255,255,0.82)';
+      ctx.font = `700 ${9.5 * k}px system-ui, sans-serif`;
+      ctx.textAlign = 'left';
+      const title = (m.isDoubles() ? 'DUPLAS' : 'SIMPLES') + ': ATÉ ' + m.cfg.targetPoints + ' PONTOS';
+      ctx.fillText(spaced(title), x + 8 * k, y + head / 2);
+
+      // one row per team
+      for (let t = 0; t < 2; t++) {
+        const ry = y + head + row * t;
+        ctx.fillStyle = t === 0 ? 'rgba(14,24,36,0.94)' : 'rgba(20,32,46,0.94)';
+        ctx.fillRect(x, ry, w, row);
+        ctx.fillStyle = COL.team[t].shirt;
+        ctx.fillRect(x, ry, 3.5 * k, row);
+
+        const names = m.mates(t).map(p => p.name).join(' / ');
+        ctx.fillStyle = '#eef4f9';
+        ctx.font = `700 ${11.5 * k}px system-ui, sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.fillText(names, x + 12 * k, ry + row / 2);
+
+        // serve indicator, and the server number in doubles
+        if (m.servingTeam === t) {
+          const bx = x + w - box - 12 * k;
+          ctx.fillStyle = COL.ball;
+          ctx.beginPath();
+          ctx.arc(bx, ry + row / 2, 3.2 * k, 0, Math.PI * 2);
+          ctx.fill();
+          if (m.isDoubles()) {
+            ctx.fillStyle = 'rgba(255,255,255,0.55)';
+            ctx.font = `700 ${8.5 * k}px system-ui, sans-serif`;
+            ctx.textAlign = 'right';
+            ctx.fillText(String(m.serverNumber), bx - 5 * k, ry + row / 2);
+          }
+        }
+
+        // score box
+        ctx.fillStyle = t === 0 ? '#1b3552' : '#b4303f';
+        ctx.fillRect(x + w - box, ry + 1, box, row - 2);
+        ctx.fillStyle = '#fff';
+        ctx.font = `800 ${17 * k}px system-ui, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(String(m.score[t]), x + w - box / 2, ry + row / 2);
+      }
+
+      // footer
+      ctx.fillStyle = '#0c1622';
+      ctx.fillRect(x, y + head + row * 2, w, foot);
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = `700 ${8 * k}px system-ui, sans-serif`;
+      ctx.textAlign = 'left';
+      ctx.fillText(spaced('PICKLEBALL'), x + 8 * k, y + head + row * 2 + foot / 2);
+      ctx.textAlign = 'right';
+      ctx.fillText(m.scoreText(), x + w - 8 * k, y + head + row * 2 + foot / 2);
+      ctx.restore();
+      return h;
+    }
+
+    drawBanner(ctx, m, rect) {
+      const t = m.banner;
+      const bw = Math.min(236, rect.w - 24), bh = 62;
+      const bx = rect.x + rect.w / 2 - bw / 2;
+      const by = rect.y + rect.h * 0.42 - bh / 2;
+      ctx.save();
+      ctx.fillStyle = 'rgba(8,14,22,0.86)';
+      this.roundRect(ctx, bx, by, bw, bh, 12);
+      ctx.fill();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = COL.team[t.team].shirt;
+      ctx.font = '700 20px system-ui, sans-serif';
+      ctx.fillText(t.label, bx + bw / 2, by + 26);
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.font = '600 12px system-ui, sans-serif';
+      ctx.fillText(t.sideOut ? 'Troca de saque' : 'Ponto ' + (t.team === 0 ? 'Time 1' : 'Time 2'),
+        bx + bw / 2, by + 46);
+      ctx.restore();
+    }
+
+    drawTouch(ctx, input) {
+      for (const k in input.pointers) {
+        const p = input.pointers[k];
+        if (!p.active) continue;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 26, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+      for (const s of input.swipeFx) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, s.life);
+        ctx.strokeStyle = '#ffe27a';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(s.x0, s.y0);
+        ctx.lineTo(s.x1, s.y1);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+  }
+
+  Renderer.charStyle = 'boneco';
+  Renderer.COL = COL;
+  Renderer.Cam = Cam;
+  return Renderer;
+})();
+
+</script>
+<script>
+'use strict';
+// Touch model: drag anywhere to move your player, flick to strike.
+// A stroke is continuously read as movement; when its speed spikes upward it is
+// also read as a swing, so one thumb can do both and a second finger can flick
+// while the first keeps running.
+var PB = (function () {
+  var g = typeof window !== 'undefined' ? window : globalThis;
+  return g.PB || (g.PB = {});
+})();
+
+PB.Input = (function () {
+  const SAMPLE_MS = 150;
+
+  class Input {
+    constructor(canvas) {
+      this.canvas = canvas;
+      this.pointers = {};
+      this.swipeFx = [];
+      this.split = false;
+      this.coop = false;
+      this.coopFlip = false;
+      this.serveSlots = { p1: false, p2: false };
+      this.state = {
+        p1: { mx: 0, mz: 0, swipe: null },
+        p2: { mx: 0, mz: 0, swipe: null },
+      };
+      this.enabled = true;
+      this.bind();
+    }
+
+    bind() {
+      const c = this.canvas;
+      const opt = { passive: false };
+      c.addEventListener('pointerdown', e => this.down(e), opt);
+      c.addEventListener('pointermove', e => this.move(e), opt);
+      c.addEventListener('pointerup', e => this.up(e), opt);
+      c.addEventListener('pointercancel', e => this.up(e), opt);
+      c.addEventListener('touchstart', e => e.preventDefault(), opt);
+      c.addEventListener('touchmove', e => e.preventDefault(), opt);
+      c.addEventListener('contextmenu', e => e.preventDefault());
+      // keyboard fallback so the game is playable on a desktop too
+      this.keys = {};
+      window.addEventListener('keydown', e => {
+        if (!this.enabled) return;              // menus own the keyboard
+        this.keys[e.code] = true;
+        if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) >= 0) e.preventDefault();
+        if (e.code === 'Space') this.kbSwipe('p1', 0, 0.65, true, true);
+        if (e.code === 'KeyQ') this.kbSwipe('p1', -0.7, 0.4, false, false);
+        if (e.code === 'KeyE') this.kbSwipe('p1', 0.7, 0.4, false, false);
+        if (e.code === 'KeyW') this.kbSwipe('p1', 0, 0.9, false, true);
+      });
+      window.addEventListener('keyup', e => { this.keys[e.code] = false; });
+    }
+
+    kbSwipe(slot, lateral, depth, fast, long) {
+      this.state[slot].swipe = { lateral, depth, fast, long, power: fast ? 0.95 : 0.6 };
+    }
+
+    // Split screen: top half is P2. Shared screen with two humans on the same
+    // team: each half of the screen drives the partner standing on that side,
+    // and the mapping follows them when they switch courts after a point.
+    slotFor(x, y) {
+      if (this.split) return y < this.canvas.clientHeight / 2 ? 'p2' : 'p1';
+      if (!this.coop) return 'p1';
+      const left = x < this.canvas.clientWidth / 2;
+      return left === !!this.coopFlip ? 'p1' : 'p2';
+    }
+
+    local(e) {
+      const r = this.canvas.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    }
+
+    down(e) {
+      if (!this.enabled) return;
+      e.preventDefault();
+      const p = this.local(e);
+      const slot = this.slotFor(p.x, p.y);
+      const owner = Object.keys(this.pointers).some(k => this.pointers[k].slot === slot && this.pointers[k].mover);
+      this.pointers[e.pointerId] = {
+        id: e.pointerId, slot, x: p.x, y: p.y, x0: p.x, y0: p.y,
+        dx: 0, dy: 0, mover: !owner, active: true,
+        samples: [{ t: performance.now(), x: p.x, y: p.y }],
+        lock: 0,
+      };
+      try { this.canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    }
+
+    move(e) {
+      const pt = this.pointers[e.pointerId];
+      if (!pt || !this.enabled) return;
+      e.preventDefault();
+      const p = this.local(e);
+      pt.dx += p.x - pt.x;
+      pt.dy += p.y - pt.y;
+      pt.x = p.x; pt.y = p.y;
+      const now = performance.now();
+      pt.samples.push({ t: now, x: p.x, y: p.y });
+      while (pt.samples.length > 2 && now - pt.samples[0].t > SAMPLE_MS) pt.samples.shift();
+      this.detectSwipe(pt, now);
+    }
+
+    up(e) {
+      const pt = this.pointers[e.pointerId];
+      if (!pt) return;
+      this.detectSwipe(pt, performance.now(), true);
+      // The serve is not a timed shot, so it must not demand a fast flick: any
+      // deliberate upward stroke sends it, and a plain tap serves down the middle.
+      if (this.serveSlots[pt.slot] && !this.state[pt.slot].swipe) {
+        const dx = pt.x - pt.x0, dy = pt.y - pt.y0;
+        const H = this.canvas.clientHeight * (this.split ? 0.5 : 1);
+        const len = Math.hypot(dx, dy);
+        if (-dy > H * 0.02 || len < 16) {
+          const reach = Math.max(len, H * 0.18);
+          this.state[pt.slot].swipe = {
+            lateral: Math.max(-1, Math.min(1, dx / Math.max(Math.abs(dy), 1) / 1.4)),
+            depth: Math.max(0, Math.min(1, (reach / H - 0.05) / 0.30)),
+            fast: false, long: true, power: 0.7,
+          };
+        }
+      }
+      delete this.pointers[e.pointerId];
+    }
+
+    detectSwipe(pt, now, release) {
+      if (pt.lock > now) return;
+      const s0 = pt.samples[0];
+      if (!s0) return;
+      const dt = Math.max(0.016, (now - s0.t) / 1000);
+      const dx = pt.x - s0.x, dy = pt.y - s0.y;
+      const len = Math.hypot(dx, dy);
+      const H = this.canvas.clientHeight * (this.split ? 0.5 : 1);
+      const speed = len / dt / H;                  // screen heights per second
+      const upward = -dy;
+      if (upward < H * 0.055) return;              // must travel toward the net
+      if (speed < 0.75 && !(release && len > H * 0.16)) return;
+
+      const long = len > H * 0.19;
+      const fast = speed > 1.75;
+      const lateral = Math.max(-1, Math.min(1, dx / Math.max(Math.abs(dy), 1) / 1.4));
+      const depth = Math.max(0, Math.min(1, (len / H - 0.05) / 0.30));
+      this.state[pt.slot].swipe = {
+        lateral, depth, fast, long,
+        power: Math.max(0.25, Math.min(1, speed / 2.6)),
+      };
+      this.swipeFx.push({ x0: s0.x, y0: s0.y, x1: pt.x, y1: pt.y, life: 1 });
+      pt.lock = now + 260;
+      pt.dx = 0; pt.dy = 0;
+      pt.samples = [{ t: now, x: pt.x, y: pt.y }];
+    }
+
+    // Called once per frame: turn accumulated drag into a movement vector.
+    sample(dt) {
+      const H = this.canvas.clientHeight * (this.split ? 0.5 : 1);
+      const full = H * 0.5;                        // px/s that means "run flat out"
+      for (const slot of ['p1', 'p2']) { this.state[slot].mx = 0; this.state[slot].mz = 0; }
+      const now = performance.now();
+      for (const k in this.pointers) {
+        const pt = this.pointers[k];
+        if (!pt.mover) { pt.dx = 0; pt.dy = 0; continue; }
+        if (pt.lock > now) { pt.dx = 0; pt.dy = 0; continue; }
+        const st = this.state[pt.slot];
+        st.mx = Math.max(-1, Math.min(1, pt.dx / dt / full));
+        st.mz = Math.max(-1, Math.min(1, -pt.dy / dt / full));
+        pt.dx = 0; pt.dy = 0;
+      }
+      // keyboard
+      const k = this.keys || {};
+      let kx = 0, kz = 0;
+      if (k.ArrowLeft) kx -= 1;
+      if (k.ArrowRight) kx += 1;
+      if (k.ArrowUp) kz += 1;
+      if (k.ArrowDown) kz -= 1;
+      if (kx || kz) { this.state.p1.mx = kx; this.state.p1.mz = kz; }
+
+      for (let i = this.swipeFx.length - 1; i >= 0; i--) {
+        this.swipeFx[i].life -= dt * 3;
+        if (this.swipeFx[i].life <= 0) this.swipeFx.splice(i, 1);
+      }
+      return this.state;
+    }
+
+    reset() {
+      this.pointers = {};
+      this.swipeFx.length = 0;
+      this.state.p1 = { mx: 0, mz: 0, swipe: null };
+      this.state.p2 = { mx: 0, mz: 0, swipe: null };
+    }
+  }
+
+  return Input;
+})();
+
+</script>
+<script>
+'use strict';
+// Tiny synthesised sound bank — no assets, works offline.
+var PB = (function () {
+  var g = typeof window !== 'undefined' ? window : globalThis;
+  return g.PB || (g.PB = {});
+})();
+
+PB.Audio = (function () {
+  let ctx = null, master = null, muted = false;
+
+  // Audio is a nicety: if the context cannot be created (older iOS, a frame
+  // without permission, an autoplay policy) the game must carry on silently.
+  function init() {
+    if (ctx) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0.5;
+      master.connect(ctx.destination);
+    } catch (e) {
+      ctx = null;
+      master = null;
+    }
+  }
+
+  function resume() { try { if (ctx && ctx.state === 'suspended') ctx.resume(); } catch (e) { /* ignore */ } }
+
+  function noise(dur) {
+    const n = Math.floor(ctx.sampleRate * dur);
+    const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    return src;
+  }
+
+  function blip(freq, dur, type, vol, slideTo) {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, ctx.currentTime);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, ctx.currentTime + dur);
+    g.gain.setValueAtTime(vol, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+    o.connect(g); g.connect(master);
+    o.start(); o.stop(ctx.currentTime + dur + 0.02);
+  }
+
+  function play(kind, power) {
+    if (!ctx || muted) return;
+    try {
+      playInner(kind, power);
+    } catch (e) { /* never let a sound break the frame */ }
+  }
+
+  function playInner(kind, power) {
+    resume();
+    const p = Math.max(0.2, Math.min(1, power || 0.6));
+    if (kind === 'hit') {
+      const src = noise(0.05);
+      const f = ctx.createBiquadFilter();
+      f.type = 'bandpass'; f.frequency.value = 1500 + p * 1800; f.Q.value = 1.4;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.5 * p, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.06);
+      src.connect(f); f.connect(g); g.connect(master);
+      src.start();
+      blip(700 + p * 500, 0.05, 'square', 0.10 * p);
+    } else if (kind === 'bounce') {
+      blip(300 + p * 200, 0.06, 'sine', 0.16 * p, 180);
+    } else if (kind === 'net') {
+      const src = noise(0.09);
+      const f = ctx.createBiquadFilter();
+      f.type = 'lowpass'; f.frequency.value = 500;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.35, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
+      src.connect(f); f.connect(g); g.connect(master);
+      src.start();
+    } else if (kind === 'crowd') {
+      // a stand full of people: broadband noise that swells and falls, with
+      // a scatter of claps riding on top
+      const dur = 1.6 + p * 1.2;
+      const src = noise(dur);
+      const f = ctx.createBiquadFilter();
+      f.type = 'bandpass'; f.frequency.value = 900 + p * 500; f.Q.value = 0.7;
+      const g = ctx.createGain();
+      const now = ctx.currentTime;
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.16 * p + 0.02, now + 0.18);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      src.connect(f); f.connect(g); g.connect(master);
+      src.start();
+      const claps = Math.round(4 + p * 10);
+      for (let i = 0; i < claps; i++) {
+        const at = now + 0.1 + Math.random() * dur * 0.7;
+        const c = noise(0.04);
+        const cf = ctx.createBiquadFilter();
+        cf.type = 'highpass'; cf.frequency.value = 1800;
+        const cg = ctx.createGain();
+        cg.gain.setValueAtTime(0.05 * p, at);
+        cg.gain.exponentialRampToValueAtTime(0.0001, at + 0.05);
+        c.connect(cf); cf.connect(cg); cg.connect(master);
+        c.start(at);
+      }
+    } else if (kind === 'point') {
+      blip(520, 0.12, 'triangle', 0.2);
+      setTimeout(() => ctx && blip(780, 0.16, 'triangle', 0.18), 90);
+    } else if (kind === 'win') {
+      [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => ctx && blip(f, 0.22, 'triangle', 0.2), i * 110));
+    }
+  }
+
+  function setMuted(v) { muted = v; try { if (master) master.gain.value = v ? 0 : 0.5; } catch (e) { /* ignore */ } }
+  function isMuted() { return muted; }
+
+  return { init, play, setMuted, isMuted, resume };
+})();
+
+</script>
+<script>
+'use strict';
+// Menus, the frame loop and the glue between input, match and renderer.
+(function () {
+  const $ = id => document.getElementById(id);
+  const canvas = $('game');
+  const renderer = new PB.Renderer(canvas);
+  const input = new PB.Input(canvas);
+
+  const DEFAULTS = { format: 'singles', humans: '1', arrangement: 'coop', difficulty: 'normal', targetPoints: '11', charStyle: 'boneco' };
+  // Storage can throw outright (private mode, sandboxed frame, site data blocked),
+  // so every read and write goes through here.
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* not available */ } },
+  };
+  let cfg = load();
+  let match = null;
+  let last = 0;
+  let sound = store.get('pb.sound') !== '0';
+
+  function load() {
+    try {
+      const raw = JSON.parse(store.get('pb.cfg') || '{}');
+      return Object.assign({}, DEFAULTS, raw);
+    } catch (e) { return Object.assign({}, DEFAULTS); }
+  }
+  function save() { store.set('pb.cfg', JSON.stringify(cfg)); }
+
+  // ── screens ──────────────────────────────────────────────────────────────
+  const screens = ['scr-title', 'scr-setup', 'scr-how', 'scr-pause', 'scr-over'];
+  function show(id) {
+    for (const s of screens) $(s).classList.toggle('on', s === id);
+    $('pauseBtn').classList.toggle('on', id === null);
+    input.enabled = id === null;
+    if (id !== null) input.reset();
+  }
+
+  // ── option buttons ───────────────────────────────────────────────────────
+  document.querySelectorAll('.opts').forEach(grp => {
+    grp.addEventListener('click', e => {
+      const b = e.target.closest('.opt');
+      if (!b) return;
+      cfg[grp.dataset.group] = b.dataset.val;
+      if (grp.dataset.group === 'charStyle') PB.Renderer.charStyle = cfg.charStyle;
+      syncOpts();
+      save();
+      buzz(8);
+    });
+  });
+
+  function syncOpts() {
+    document.querySelectorAll('.opts').forEach(grp => {
+      const key = grp.dataset.group;
+      grp.querySelectorAll('.opt').forEach(b => b.setAttribute('aria-pressed', String(cfg[key] === b.dataset.val)));
+    });
+    const twoInDoubles = cfg.format === 'doubles' && cfg.humans === '2';
+    $('grp-arrangement').style.display = twoInDoubles ? 'flex' : 'none';
+  }
+
+  function buzz(ms) { if (navigator.vibrate) try { navigator.vibrate(ms); } catch (e) { /* ignore */ } }
+
+  // ── buttons ──────────────────────────────────────────────────────────────
+  $('btn-play').onclick = () => { PB.Audio.init(); syncOpts(); show('scr-setup'); };
+  $('btn-how').onclick = () => show('scr-how');
+  $('btn-how-back').onclick = () => show('scr-title');
+  $('btn-back').onclick = () => show('scr-title');
+  $('btn-sound').onclick = () => {
+    sound = !sound;
+    PB.Audio.init();
+    PB.Audio.setMuted(!sound);
+    store.set('pb.sound', sound ? '1' : '0');
+    $('btn-sound').textContent = sound ? '🔊 Som' : '🔇 Som';
+  };
+  $('btn-start').onclick = () => start();
+  $('pauseBtn').onclick = () => { if (match) { match.paused = true; show('scr-pause'); } };
+  $('btn-resume').onclick = () => { if (match) { match.paused = false; show(null); } };
+  $('btn-restart').onclick = () => start();
+  $('btn-quit').onclick = () => { match = null; show('scr-title'); };
+  $('btn-rematch').onclick = () => start();
+  $('btn-menu').onclick = () => { match = null; show('scr-title'); };
+
+  function start() {
+    PB.Renderer.charStyle = cfg.charStyle;
+    PB.Audio.init();
+    PB.Audio.setMuted(!sound);
+    match = new PB.Match({
+      format: cfg.format,
+      humans: parseInt(cfg.humans, 10),
+      arrangement: cfg.arrangement,
+      difficulty: cfg.difficulty,
+      targetPoints: parseInt(cfg.targetPoints, 10),
+    });
+    input.split = match.versus;
+    input.coop = !match.versus && match.cfg.humans === 2;
+    input.reset();
+    renderer.trail.length = 0;
+    show(null);
+  }
+
+  // ── loop ─────────────────────────────────────────────────────────────────
+  function frame(ts) {
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.05, (ts - last) / 1000 || 0.016);
+    last = ts;
+    if (!match) { return; }
+    if (!match.paused) {
+      if (input.coop) {
+        const a = match.players[match.slot.p1], b = match.players[match.slot.p2];
+        input.coopFlip = a.x < b.x;
+      }
+      // let the input layer know who is waiting to serve
+      if (match.state === 'ready') {
+        input.serveSlots.p1 = match.slot.p1 === match.serverIdx;
+        input.serveSlots.p2 = match.slot.p2 === match.serverIdx;
+      } else {
+        input.serveSlots.p1 = false;
+        input.serveSlots.p2 = false;
+      }
+      const state = input.sample(dt);
+      match.update(dt, state);
+      drain(match);
+    } else {
+      input.sample(dt);
+    }
+    renderer.draw(match, input);
+    if (match.state === 'gameover' && !$('scr-over').classList.contains('on')) gameOver();
+  }
+
+  function drain(m) {
+    for (const e of m.events) {
+      if (e.type === 'hit') { PB.Audio.play('hit', (e.power || 30) / 60); buzz(6); }
+      else if (e.type === 'bounce') PB.Audio.play('bounce', (e.impact || 8) / 20);
+      else if (e.type === 'net') PB.Audio.play('net');
+      else if (e.type === 'point') {
+        PB.Audio.play('point');
+        PB.Audio.play('crowd', e.cheer || 0.6);
+        buzz(28);
+      }
+    }
+    m.events.length = 0;
+  }
+
+  function gameOver() {
+    const m = match;
+    PB.Audio.play('win');
+    const s = m.score;
+    const humanTeams = new Set(m.players.filter(p => p.ctrl === 'human').map(p => p.team));
+    let title;
+    if (m.cfg.humans === 2 && humanTeams.size === 2) title = m.winner === 0 ? 'P1 venceu!' : 'P2 venceu!';
+    else if (humanTeams.has(m.winner)) title = 'Você venceu!';
+    else title = 'Você perdeu';
+    $('over-title').textContent = title;
+    $('over-score').textContent = `${s[0]} - ${s[1]}`;
+    $('over-sub').textContent = `${m.cfg.format === 'doubles' ? 'Duplas' : 'Simples'} • até ${m.cfg.targetPoints} pontos • ${labelDiff(m.cfg.difficulty)}`;
+    show('scr-over');
+  }
+
+  function labelDiff(d) { return d === 'facil' ? 'Fácil' : d === 'dificil' ? 'Difícil' : 'Normal'; }
+
+  // ── boot ─────────────────────────────────────────────────────────────────
+  function resize() { renderer.resize(); }
+  window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', () => setTimeout(resize, 120));
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && match && !match.paused && $('scr-pause') && !$('scr-title').classList.contains('on')) {
+      match.paused = true;
+      show('scr-pause');
+    }
+  });
+
+  // exposed for debugging and automated play-testing
+  window.PBGame = { get match() { return match; }, input, renderer, start, cfg: () => cfg };
+
+  $('btn-sound').textContent = sound ? '🔊 Som' : '🔇 Som';
+  syncOpts();
+  resize();
+  show('scr-title');
+  requestAnimationFrame(frame);
+})();
+
+</script>
+</body>
+</html>
