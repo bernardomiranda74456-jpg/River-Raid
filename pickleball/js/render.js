@@ -31,6 +31,12 @@ PB.Renderer = (function () {
   const BACK_ROOM = 4.5;   // how far behind the baseline a player may run
   const CROWD_ROWS = 16;      // generated; how many are used depends on the camera
   const ROW_STEP = 1.85;      // real stadium rows, so spectators stay person sized
+  // The ball is drawn a quarter over life size, and never under two pixels. A
+  // regulation ball is barely five pixels across at the far baseline on a phone,
+  // and a ball you cannot see is worse than one slightly too big.
+  function ballRadius(s) {
+    return Math.max(2.0, s * C.BALL_R * 1.25);
+  }
   const UI = (a, b, c) => `rgb(${Math.round(a*255)},${Math.round(b*255)},${Math.round(c*255)})`;
 
   // Scale and height of the broadcast scoreboard panel. The camera needs both so
@@ -1449,13 +1455,13 @@ PB.Renderer = (function () {
         ctx.globalAlpha = (i / this.trail.length) * 0.35;
         ctx.fillStyle = COL.ball;
         ctx.beginPath();
-        ctx.arc(q.x, q.y, Math.max(0.8, q.s * C.BALL_R * 0.9), 0, Math.PI * 2);
+        ctx.arc(q.x, q.y, ballRadius(q.s) * 0.72, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       }
 
       const q = cam.proj(b.x, b.y, b.z);
-      const r = Math.max(3.0, q.s * C.BALL_R * 1.5);
+      const r = ballRadius(q.s);
       const g = ctx.createRadialGradient(q.x - r * 0.35, q.y - r * 0.4, r * 0.1, q.x, q.y, r);
       g.addColorStop(0, '#f4ffb0');
       g.addColorStop(1, COL.ball);
