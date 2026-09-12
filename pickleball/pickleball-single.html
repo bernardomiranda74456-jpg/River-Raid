@@ -3061,7 +3061,7 @@ PB.Renderer = (function () {
     drawScoreboard(ctx, m, rect) {
       const k = hudScale(rect);
       const pad = 10 * k;
-      const w = Math.min(rect.w - pad * 2, 300 * k);
+      const w = Math.min(rect.w - pad * 2, 330 * k);
       const head = 20 * k, row = 30 * k, foot = 15 * k;
       const x = rect.x + pad;
       const y = rect.y + pad;
@@ -3088,25 +3088,40 @@ PB.Renderer = (function () {
         ctx.fillStyle = COL.team[t].shirt;
         ctx.fillRect(x, ry, 3.5 * k, row);
 
-        const names = m.mates(t).map(p => p.name).join(' / ');
-        ctx.fillStyle = '#eef4f9';
+        // Names, with whoever is actually holding the ball picked out in the
+        // serve colour. A joined string cannot say which partner is serving.
+        const server = m.players[m.serverIdx];
+        const mates = m.mates(t);
         ctx.font = `700 ${11.5 * k}px system-ui, sans-serif`;
         ctx.textAlign = 'left';
-        ctx.fillText(names, x + 12 * k, ry + row / 2);
-
-        // serve indicator, and the server number in doubles
-        if (m.servingTeam === t) {
-          const bx = x + w - box - 12 * k;
-          ctx.fillStyle = COL.ball;
-          ctx.beginPath();
-          ctx.arc(bx, ry + row / 2, 3.2 * k, 0, Math.PI * 2);
-          ctx.fill();
-          if (m.isDoubles()) {
-            ctx.fillStyle = 'rgba(255,255,255,0.55)';
-            ctx.font = `700 ${8.5 * k}px system-ui, sans-serif`;
-            ctx.textAlign = 'right';
-            ctx.fillText(String(m.serverNumber), bx - 5 * k, ry + row / 2);
+        let nx = x + 12 * k;
+        mates.forEach((p, i) => {
+          if (i) {
+            ctx.fillStyle = 'rgba(255,255,255,0.35)';
+            ctx.fillText(' / ', nx, ry + row / 2);
+            nx += ctx.measureText(' / ').width;
           }
+          const serving = m.servingTeam === t && p.id === server.id;
+          ctx.fillStyle = serving ? COL.ball : '#eef4f9';
+          ctx.fillText(p.name, nx, ry + row / 2);
+          nx += ctx.measureText(p.name).width;
+        });
+
+        // Serve badge: says out loud whether this is the first or the second
+        // server, which is the half of the call a player actually has to track.
+        if (m.servingTeam === t) {
+          const label = m.isDoubles() ? 'SAQUE ' + m.serverNumber : 'SAQUE';
+          ctx.font = `800 ${9 * k}px system-ui, sans-serif`;
+          const pw = ctx.measureText(label).width + 16 * k;
+          const ph = 15 * k;
+          const px = x + w - box - pw - 8 * k;
+          const py = ry + row / 2 - ph / 2;
+          ctx.fillStyle = COL.ball;
+          this.roundRect(ctx, px, py, pw, ph, ph / 2);
+          ctx.fill();
+          ctx.fillStyle = '#12202c';
+          ctx.textAlign = 'center';
+          ctx.fillText(label, px + pw / 2, ry + row / 2 + 0.5 * k);
         }
 
         // score box
@@ -3121,12 +3136,15 @@ PB.Renderer = (function () {
       // footer
       ctx.fillStyle = '#0c1622';
       ctx.fillRect(x, y + head + row * 2, w, foot);
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      const fy = y + head + row * 2 + foot / 2;
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
       ctx.font = `700 ${8 * k}px system-ui, sans-serif`;
       ctx.textAlign = 'left';
-      ctx.fillText(spaced('PICKLEBALL'), x + 8 * k, y + head + row * 2 + foot / 2);
+      ctx.fillText(spaced(m.isDoubles() ? 'CHAMADA' : 'PICKLEBALL'), x + 8 * k, fy);
       ctx.textAlign = 'right';
-      ctx.fillText(m.scoreText(), x + w - 8 * k, y + head + row * 2 + foot / 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.font = `800 ${9.5 * k}px system-ui, sans-serif`;
+      ctx.fillText(m.scoreText(), x + w - 8 * k, fy);
       ctx.restore();
       return h;
     }
