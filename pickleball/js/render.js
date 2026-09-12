@@ -1539,7 +1539,7 @@ PB.Renderer = (function () {
       ctx.fillStyle = '#0c1622';
       ctx.fillRect(x, y, w, head);
       ctx.fillStyle = 'rgba(255,255,255,0.82)';
-      ctx.font = `700 ${9.5 * k}px system-ui, sans-serif`;
+      ctx.font = `700 ${10.5 * k}px system-ui, sans-serif`;
       ctx.textAlign = 'left';
       const title = (m.isDoubles() ? 'DUPLAS' : 'SIMPLES') + ': ATÉ ' + m.cfg.targetPoints + ' PONTOS';
       ctx.fillText(spaced(title), x + 8 * k, y + head / 2);
@@ -1556,7 +1556,7 @@ PB.Renderer = (function () {
         // serve colour. A joined string cannot say which partner is serving.
         const server = m.players[m.serverIdx];
         const mates = m.mates(t);
-        ctx.font = `700 ${11.5 * k}px system-ui, sans-serif`;
+        ctx.font = `700 ${13 * k}px system-ui, sans-serif`;
         ctx.textAlign = 'left';
         let nx = x + 12 * k;
         mates.forEach((p, i) => {
@@ -1571,28 +1571,30 @@ PB.Renderer = (function () {
           nx += ctx.measureText(p.name).width;
         });
 
-        // Serve badge: says out loud whether this is the first or the second
-        // server, which is the half of the call a player actually has to track.
+        // Serve badge: the number alone, which is the half of the call a player
+        // actually has to track. Singles has no second server, so it gets a
+        // plain marker instead of a digit.
         if (m.servingTeam === t) {
-          const label = m.isDoubles() ? 'SAQUE ' + m.serverNumber : 'SAQUE';
-          ctx.font = `800 ${9 * k}px system-ui, sans-serif`;
-          const pw = ctx.measureText(label).width + 16 * k;
-          const ph = 15 * k;
-          const px = x + w - box - pw - 8 * k;
-          const py = ry + row / 2 - ph / 2;
+          const cx = x + w - box - 18 * k;
+          const cy = ry + row / 2;
+          const r = m.isDoubles() ? 10.5 * k : 5.5 * k;
           ctx.fillStyle = COL.ball;
-          this.roundRect(ctx, px, py, pw, ph, ph / 2);
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = '#12202c';
-          ctx.textAlign = 'center';
-          ctx.fillText(label, px + pw / 2, ry + row / 2 + 0.5 * k);
+          if (m.isDoubles()) {
+            ctx.fillStyle = '#12202c';
+            ctx.font = `800 ${14 * k}px system-ui, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText(String(m.serverNumber), cx, cy + 0.5 * k);
+          }
         }
 
         // score box
         ctx.fillStyle = t === 0 ? '#1b3552' : '#b4303f';
         ctx.fillRect(x + w - box, ry + 1, box, row - 2);
         ctx.fillStyle = '#fff';
-        ctx.font = `800 ${17 * k}px system-ui, sans-serif`;
+        ctx.font = `800 ${19 * k}px system-ui, sans-serif`;
         ctx.textAlign = 'center';
         ctx.fillText(String(m.score[t]), x + w - box / 2, ry + row / 2);
       }
@@ -1602,12 +1604,12 @@ PB.Renderer = (function () {
       ctx.fillRect(x, y + head + row * 2, w, foot);
       const fy = y + head + row * 2 + foot / 2;
       ctx.fillStyle = 'rgba(255,255,255,0.45)';
-      ctx.font = `700 ${8 * k}px system-ui, sans-serif`;
+      ctx.font = `700 ${8.5 * k}px system-ui, sans-serif`;
       ctx.textAlign = 'left';
       ctx.fillText(spaced(m.isDoubles() ? 'CHAMADA' : 'PICKLEBALL'), x + 8 * k, fy);
       ctx.textAlign = 'right';
       ctx.fillStyle = 'rgba(255,255,255,0.92)';
-      ctx.font = `800 ${9.5 * k}px system-ui, sans-serif`;
+      ctx.font = `800 ${11 * k}px system-ui, sans-serif`;
       ctx.fillText(m.scoreText(), x + w - 8 * k, fy);
       ctx.restore();
       return h;
