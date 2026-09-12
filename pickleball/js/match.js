@@ -195,7 +195,7 @@ PB.Match = (function () {
 
       const b = this.ball;
       b.x = server.x + sSign * 0.9; b.y = 1.95; b.z = server.z + C.teamSign(st) * 0.35;
-      b.vx = b.vy = b.vz = 0; b.spin = 0; b.live = false; b.resting = false;
+      b.vx = b.vy = b.vz = 0; b.spin = 0; b.live = false; b.resting = false; b.style = null;
 
       this.state = 'ready';
       this.stateT = 0;
@@ -233,6 +233,7 @@ PB.Match = (function () {
       b.x = from.x; b.y = from.y; b.z = from.z;
       b.vx = v.vx; b.vy = v.vy; b.vz = v.vz; b.spin = v.spin;
       b.live = true; b.resting = false;
+      b.style = 'serve';
       this.rally.shotCount = 1;
       this.rally.lastHitter = server.id;
       this.rally.bounces = 0;
@@ -501,6 +502,7 @@ PB.Match = (function () {
       if (!isFinite(v.vx) || !isFinite(v.vy) || !isFinite(v.vz)) { v.vx = 0; v.vy = 12; v.vz = oSign * 22; }
       b.vx = v.vx; b.vy = v.vy; b.vz = v.vz; b.spin = v.spin;
       b.live = true; b.resting = false;
+      b.style = style;                    // the renderer colours the flight by it
       b.z = from.z + Math.sign(v.vz) * 0.02;
 
       r.lastHitter = p.id;

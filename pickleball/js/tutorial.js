@@ -66,7 +66,9 @@ PB.Tutorial = (function () {
          <path d="M150,142 Q206,26 178,50" fill="none" stroke="#ffd166" stroke-width="2.6"
                stroke-dasharray="6 5" marker-end="url(#a3)"/>
          <line x1="150" y1="142" x2="124" y2="74" stroke="#ff9db1" stroke-width="2.6" marker-end="url(#a4)"/>` }),
-      body: `<p>A <b>velocidade</b> e o <b>tamanho</b> do deslize escolhem o golpe sozinhos.</p>
+      body: `<p>A <b>velocidade</b> e o <b>tamanho</b> do deslize escolhem o golpe sozinhos.
+             Durante a partida o <b>rastro da bola sai nesta mesma cor</b>, então dá para
+             ver qual golpe está vindo.</p>
              <div class="tut-grid">
                <div><b><i style="background:#d9ff3d"></i>Rápido e longo</b>Drive no fundo</div>
                <div><b><i style="background:#9fe4ff"></i>Rápido e curto</b>Voleio firme</div>

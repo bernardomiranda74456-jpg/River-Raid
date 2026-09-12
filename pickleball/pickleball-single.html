@@ -1057,7 +1057,7 @@ PB.Match = (function () {
 
       const b = this.ball;
       b.x = server.x + sSign * 0.9; b.y = 1.95; b.z = server.z + C.teamSign(st) * 0.35;
-      b.vx = b.vy = b.vz = 0; b.spin = 0; b.live = false; b.resting = false;
+      b.vx = b.vy = b.vz = 0; b.spin = 0; b.live = false; b.resting = false; b.style = null;
 
       this.state = 'ready';
       this.stateT = 0;
@@ -1095,6 +1095,7 @@ PB.Match = (function () {
       b.x = from.x; b.y = from.y; b.z = from.z;
       b.vx = v.vx; b.vy = v.vy; b.vz = v.vz; b.spin = v.spin;
       b.live = true; b.resting = false;
+      b.style = 'serve';
       this.rally.shotCount = 1;
       this.rally.lastHitter = server.id;
       this.rally.bounces = 0;
@@ -1363,6 +1364,7 @@ PB.Match = (function () {
       if (!isFinite(v.vx) || !isFinite(v.vy) || !isFinite(v.vz)) { v.vx = 0; v.vy = 12; v.vz = oSign * 22; }
       b.vx = v.vx; b.vy = v.vy; b.vz = v.vz; b.spin = v.spin;
       b.live = true; b.resting = false;
+      b.style = style;                    // the renderer colours the flight by it
       b.z = from.z + Math.sign(v.vz) * 0.02;
 
       r.lastHitter = p.id;
@@ -1650,6 +1652,20 @@ PB.Renderer = (function () {
   const BACK_ROOM = 4.5;   // how far behind the baseline a player may run
   const CROWD_ROWS = 16;      // generated; how many are used depends on the camera
   const ROW_STEP = 1.85;      // real stadium rows, so spectators stay person sized
+  // One colour per shot family, the same four the tutorial teaches. The flight
+  // wears the colour so a drive, a volley, a lob and a dink are told apart in
+  // the air rather than after they land. A serve belongs to no family.
+  const SHOT_COL = {
+    drive: '#d9ff3d', ret: '#d9ff3d', smash: '#d9ff3d',   // rápido e longo
+    punch: '#9fe4ff',                                     // rápido e curto
+    lob:   '#ffd166',                                     // lento e longo
+    dink:  '#ff9db1', drop: '#ff9db1',                    // lento e curto
+    serve: '#e8f2fb',                                     // fora das quatro famílias
+  };
+  function shotColor(b) {
+    return (b && SHOT_COL[b.style]) || '#e8f2fb';
+  }
+
   // The ball is drawn a quarter over life size, and never under two pixels. A
   // regulation ball is barely five pixels across at the far baseline on a phone,
   // and a ball you cannot see is worse than one slightly too big.
@@ -2618,7 +2634,7 @@ PB.Renderer = (function () {
       // ball trail
       if (m.ball.live) {
         this.trail.push({ x: m.ball.x, y: m.ball.y, z: m.ball.z });
-        if (this.trail.length > 9) this.trail.shift();
+        if (this.trail.length > 12) this.trail.shift();
       } else if (this.trail.length) this.trail.length = 0;
 
       for (const v of views) {
@@ -3071,10 +3087,13 @@ PB.Renderer = (function () {
         const t = this.trail[i];
         const q = cam.proj(t.x, t.y, t.z);
         ctx.save();
-        ctx.globalAlpha = (i / this.trail.length) * 0.35;
-        ctx.fillStyle = COL.ball;
+        // the streak thickens toward the ball, so the colour reads even on a
+        // short flight instead of being a row of faint specks
+        const f = (i + 1) / this.trail.length;
+        ctx.globalAlpha = f * 0.6;
+        ctx.fillStyle = shotColor(b);
         ctx.beginPath();
-        ctx.arc(q.x, q.y, ballRadius(q.s) * 0.72, 0, Math.PI * 2);
+        ctx.arc(q.x, q.y, ballRadius(q.s) * (0.35 + 0.6 * f), 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       }
@@ -3686,7 +3705,9 @@ PB.Tutorial = (function () {
          <path d="M150,142 Q206,26 178,50" fill="none" stroke="#ffd166" stroke-width="2.6"
                stroke-dasharray="6 5" marker-end="url(#a3)"/>
          <line x1="150" y1="142" x2="124" y2="74" stroke="#ff9db1" stroke-width="2.6" marker-end="url(#a4)"/>` }),
-      body: `<p>A <b>velocidade</b> e o <b>tamanho</b> do deslize escolhem o golpe sozinhos.</p>
+      body: `<p>A <b>velocidade</b> e o <b>tamanho</b> do deslize escolhem o golpe sozinhos.
+             Durante a partida o <b>rastro da bola sai nesta mesma cor</b>, então dá para
+             ver qual golpe está vindo.</p>
              <div class="tut-grid">
                <div><b><i style="background:#d9ff3d"></i>Rápido e longo</b>Drive no fundo</div>
                <div><b><i style="background:#9fe4ff"></i>Rápido e curto</b>Voleio firme</div>

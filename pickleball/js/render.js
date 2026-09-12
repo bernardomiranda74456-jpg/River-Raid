@@ -31,6 +31,20 @@ PB.Renderer = (function () {
   const BACK_ROOM = 4.5;   // how far behind the baseline a player may run
   const CROWD_ROWS = 16;      // generated; how many are used depends on the camera
   const ROW_STEP = 1.85;      // real stadium rows, so spectators stay person sized
+  // One colour per shot family, the same four the tutorial teaches. The flight
+  // wears the colour so a drive, a volley, a lob and a dink are told apart in
+  // the air rather than after they land. A serve belongs to no family.
+  const SHOT_COL = {
+    drive: '#d9ff3d', ret: '#d9ff3d', smash: '#d9ff3d',   // rápido e longo
+    punch: '#9fe4ff',                                     // rápido e curto
+    lob:   '#ffd166',                                     // lento e longo
+    dink:  '#ff9db1', drop: '#ff9db1',                    // lento e curto
+    serve: '#e8f2fb',                                     // fora das quatro famílias
+  };
+  function shotColor(b) {
+    return (b && SHOT_COL[b.style]) || '#e8f2fb';
+  }
+
   // The ball is drawn a quarter over life size, and never under two pixels. A
   // regulation ball is barely five pixels across at the far baseline on a phone,
   // and a ball you cannot see is worse than one slightly too big.
@@ -999,7 +1013,7 @@ PB.Renderer = (function () {
       // ball trail
       if (m.ball.live) {
         this.trail.push({ x: m.ball.x, y: m.ball.y, z: m.ball.z });
-        if (this.trail.length > 9) this.trail.shift();
+        if (this.trail.length > 12) this.trail.shift();
       } else if (this.trail.length) this.trail.length = 0;
 
       for (const v of views) {
@@ -1452,10 +1466,13 @@ PB.Renderer = (function () {
         const t = this.trail[i];
         const q = cam.proj(t.x, t.y, t.z);
         ctx.save();
-        ctx.globalAlpha = (i / this.trail.length) * 0.35;
-        ctx.fillStyle = COL.ball;
+        // the streak thickens toward the ball, so the colour reads even on a
+        // short flight instead of being a row of faint specks
+        const f = (i + 1) / this.trail.length;
+        ctx.globalAlpha = f * 0.6;
+        ctx.fillStyle = shotColor(b);
         ctx.beginPath();
-        ctx.arc(q.x, q.y, ballRadius(q.s) * 0.72, 0, Math.PI * 2);
+        ctx.arc(q.x, q.y, ballRadius(q.s) * (0.35 + 0.6 * f), 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       }
