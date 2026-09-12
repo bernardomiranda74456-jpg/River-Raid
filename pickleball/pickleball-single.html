@@ -60,6 +60,92 @@
     background: #d9ff3d; color: #12202c; cursor: pointer; letter-spacing: .5px; width: 100%;
   }
   .btn.ghost { background: transparent; border: 1.5px solid #2c4258; color: #cfe0ee; font-weight: 600; }
+  .btn.outline { background: #14293a; border: 1.5px solid #4fd0ff; color: #9fe4ff; letter-spacing: 1.5px; }
+
+  /* ── tutorial ───────────────────────────────────────────────────────── */
+  #scr-tutorial { justify-content: flex-start; gap: 0; padding-top: calc(14px + env(safe-area-inset-top)); }
+  .tut { width: min(460px, 100%); display: flex; flex-direction: column; gap: 12px; margin: auto 0; }
+  .tut-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .tut-step { font-size: 11px; letter-spacing: 1.6px; font-weight: 800; color: #7f9ab1; }
+  .tut-home {
+    padding: 8px 13px; border-radius: 999px; border: 1.5px solid #2c4258;
+    background: rgba(12,22,34,.8); color: #cfe0ee; font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .tut-home:active { transform: scale(.97); }
+  .tut-dots { display: flex; gap: 5px; justify-content: center; }
+  .tut-dots i { width: 6px; height: 6px; border-radius: 50%; background: #263d52; transition: background .2s, width .2s; }
+  .tut-dots i.on { background: #d9ff3d; width: 18px; border-radius: 3px; }
+
+  .tut-card { background: #101c28; border: 1px solid #1e3346; border-radius: 16px; overflow: hidden; }
+  .tut-stage {
+    position: relative; height: 168px; background:
+      radial-gradient(120% 140% at 50% 0%, #1b3a55 0%, #0d1a26 78%);
+    border-bottom: 1px solid #1e3346; overflow: hidden;
+  }
+  /* the art box keeps the court's aspect, so the animated finger lines up with
+     the drawing instead of drifting onto the letterboxing */
+  .tut-art {
+    position: absolute; inset: 0; margin: auto;
+    aspect-ratio: 300 / 168; max-width: 100%; max-height: 100%;
+  }
+  .tut-art svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .tut-body { padding: 13px 15px 15px; }
+  .tut-body h3 { font-size: 17px; font-weight: 800; margin-bottom: 6px; }
+  .tut-body p { font-size: 13.5px; line-height: 1.5; color: #cfe0ee; }
+  .tut-body p + p { margin-top: 7px; }
+  .tut-body b { color: #d9ff3d; }
+  .tut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 9px; }
+  .tut-grid div {
+    background: #0c1622; border: 1px solid #1e3346; border-radius: 9px;
+    padding: 8px 9px; font-size: 12px; line-height: 1.4; color: #b6cadb;
+  }
+  .tut-grid b { display: block; color: #d9ff3d; font-size: 12.5px; margin-bottom: 1px; }
+  .tut-grid b i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+  .tut-nav { display: flex; gap: 9px; }
+  .tut-nav .btn { padding: 13px 16px; font-size: 14.5px; }
+  .tut-nav .btn:disabled { opacity: .35; }
+
+  /* animated finger */
+  .hand {
+    position: absolute; width: 24px; height: 24px; margin: -12px 0 0 -12px;
+    border-radius: 50%; background: rgba(217,255,61,.92);
+    box-shadow: 0 0 0 9px rgba(217,255,61,.14), 0 0 16px rgba(217,255,61,.5);
+  }
+  .hand.drag { top: 66%; animation: h-drag 2.8s ease-in-out infinite; }
+  @keyframes h-drag { 0%,100% { left: 26% } 50% { left: 74% } }
+  .hand.flick { left: 50%; animation: h-flick 1.9s cubic-bezier(.3,0,.2,1) infinite; }
+  @keyframes h-flick {
+    0%, 18% { top: 78%; opacity: 1 }
+    45% { top: 30%; opacity: 1 }
+    62% { top: 26%; opacity: 0 }
+    63%, 100% { top: 78%; opacity: 0 }
+  }
+  .hand.tap { left: 50%; top: 62%; animation: h-tap 1.8s ease-out infinite; }
+  @keyframes h-tap { 0%, 60% { transform: scale(1); opacity: .95 } 75% { transform: scale(1.9); opacity: .25 } 100% { transform: scale(1); opacity: .95 } }
+  .streak { position: absolute; opacity: .45; }
+  .ball-dot {
+    position: absolute; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px;
+    border-radius: 50%; background: #d9ff3d; box-shadow: 0 0 10px rgba(217,255,61,.6);
+  }
+  .ball-dot.hop { animation: b-hop 2.4s ease-in-out infinite; }
+  @keyframes b-hop {
+    0% { left: 50%; top: 18% } 22% { left: 50%; top: 72% }
+    34% { left: 50%; top: 52% } 50% { left: 50%; top: 74% }
+    68% { left: 50%; top: 60% } 100% { left: 50%; top: 74% }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hand, .ball-dot.hop { animation: none !important; }
+  }
+  /* a short landscape window has no room for a stacked card, so the art moves
+     beside the text and the buttons stay on screen */
+  @media (orientation: landscape) and (max-height: 560px) {
+    .tut { width: min(760px, 100%); gap: 9px; }
+    .tut-card { display: grid; grid-template-columns: 46% 1fr; }
+    .tut-stage { height: 100%; min-height: 148px; border-bottom: none; border-right: 1px solid #1e3346; }
+    .tut-body { padding: 11px 13px; }
+    .tut-body h3 { font-size: 15.5px; }
+    .tut-body p { font-size: 12.5px; }
+  }
   .btn:active { transform: scale(.98); }
   .row { display: flex; gap: 10px; width: min(400px, 100%); }
 
@@ -88,11 +174,9 @@
     <h1>PICKLE<span>BALL</span></h1>
     <p class="tag">Simples ou duplas, sozinho ou com um amigo no mesmo aparelho. Regras oficiais, cozinha e tudo.</p>
     <div class="card">
+      <button class="btn outline" id="btn-tutorial">TUTORIAL</button>
       <button class="btn" id="btn-play">JOGAR</button>
-      <div class="row">
-        <button class="btn ghost" id="btn-how">Como jogar</button>
-        <button class="btn ghost" id="btn-sound">🔊 Som</button>
-      </div>
+      <button class="btn ghost" id="btn-sound">🔊 Som</button>
     </div>
     <div class="foot">Dica: vire o celular na horizontal para uma visão mais ampla</div>
   </section>
@@ -152,23 +236,22 @@
     </div>
   </section>
 
-  <!-- como jogar -->
-  <section id="scr-how" class="screen">
-    <div class="how">
-      <h2>Como jogar</h2>
-      <div><b>Mover:</b> arraste o dedo em qualquer lugar da sua metade da tela. O jogador acompanha o dedo.</div>
-      <div><b>Golpear:</b> dê um <b>flick</b> (deslize rápido) para cima na hora da bola.<br>
-        • rápido e longo = <b>drive</b> no fundo<br>
-        • rápido e curto = <b>voleio</b> firme<br>
-        • lento e longo = <b>lob</b> por cima<br>
-        • lento e curto = <b>dink</b> na cozinha<br>
-        A direção do flick define para onde a bola vai.</div>
-      <div><b>Sacar:</b> deslize para cima — no saque não precisa ser rápido, e um toque simples também saca. O saque é por baixo, na diagonal, e precisa passar da cozinha.</div>
-      <div><b>Regra dos dois quiques:</b> o saque tem que quicar, e a devolução também. Só depois vale voleio.</div>
-      <div><b>Cozinha (zona de não-voleio):</b> os 2,13 m junto à rede. Não dá para bater na bola antes do quique estando lá dentro — nem entrar por impulso logo depois do voleio.</div>
-      <div><b>Pontuação:</b> só quem saca pontua. Nas duplas, os dois parceiros sacam antes de passar o saque (o jogo começa em 0-0-2). Partida com 2 de vantagem.</div>
-      <div class="muted">Dois jogadores no mesmo aparelho: no modo “um contra o outro” a tela divide em duas, cada um com a sua visão. No modo “juntos”, quem toca a metade esquerda controla o jogador da esquerda.</div>
-      <button class="btn ghost" id="btn-how-back">Voltar</button>
+  <!-- tutorial -->
+  <section id="scr-tutorial" class="screen">
+    <div class="tut">
+      <div class="tut-top">
+        <span class="tut-step" id="tut-step">PASSO 1 DE 8</span>
+        <button class="tut-home" id="btn-tut-home">Menu principal</button>
+      </div>
+      <div class="tut-dots" id="tut-dots"></div>
+      <div class="tut-card">
+        <div class="tut-stage" id="tut-stage"></div>
+        <div class="tut-body" id="tut-body"></div>
+      </div>
+      <div class="tut-nav">
+        <button class="btn ghost" id="btn-tut-prev">Voltar</button>
+        <button class="btn" id="btn-tut-next">Próximo</button>
+      </div>
     </div>
   </section>
 
@@ -3536,6 +3619,163 @@ PB.Audio = (function () {
 </script>
 <script>
 'use strict';
+// Eight-step tutorial. Every step draws its own little stage so the gesture is
+// shown rather than described, and the way back to the menu never moves.
+var PB = (function () {
+  var g = typeof window !== 'undefined' ? window : globalThis;
+  return g.PB || (g.PB = {});
+})();
+
+PB.Tutorial = (function () {
+  // A court seen from the game's own angle: near half wide at the bottom, far
+  // half narrow at the top, kitchen bands either side of the net.
+  function court(opts) {
+    const o = opts || {};
+    const kitchen = o.kitchen ? 'fill="#b8442f"' : 'fill="#2f79b8"';
+    return `
+      <svg viewBox="0 0 300 168" preserveAspectRatio="xMidYMid meet">
+        <polygon points="118,34 182,34 268,150 32,150" fill="#3a8fd0"/>
+        <polygon points="129,55 171,55 186,82 114,82" ${kitchen}/>
+        <polygon points="110,82 190,82 206,110 94,110" ${kitchen}/>
+        <polygon points="118,34 182,34 268,150 32,150" fill="none" stroke="#fff" stroke-width="2.4"/>
+        <line x1="114" y1="82" x2="186" y2="82" stroke="#e9f3fb" stroke-width="2.4"/>
+        <line x1="129" y1="55" x2="171" y2="55" stroke="#fff" stroke-width="1.8" opacity=".85"/>
+        <line x1="94" y1="110" x2="206" y2="110" stroke="#fff" stroke-width="1.8" opacity=".85"/>
+        <line x1="150" y1="34" x2="150" y2="55" stroke="#fff" stroke-width="1.6" opacity=".7"/>
+        <line x1="150" y1="110" x2="150" y2="150" stroke="#fff" stroke-width="1.6" opacity=".7"/>
+        <rect x="100" y="72" width="100" height="11" rx="2" fill="#0d1a26" opacity=".75"/>
+        ${o.extra || ''}
+      </svg>`;
+  }
+
+  const ARROW = `<defs><marker id="ah" markerWidth="7" markerHeight="7" refX="5.4" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 z" fill="#d9ff3d"/></marker></defs>`;
+
+  const STEPS = [
+    {
+      title: 'Mover',
+      stage: court({ extra: `<ellipse cx="150" cy="132" rx="17" ry="6" fill="#0b1a26" opacity=".45"/>` })
+             + `<div class="hand drag"></div>`,
+      body: `<p>Arraste o dedo em <b>qualquer lugar da sua metade da tela</b>. O jogador
+             acompanha o dedo, então você não precisa tocar nele.</p>
+             <p>Não existe botão de correr. Quanto mais longe você leva o dedo, mais longe
+             o jogador vai.</p>`,
+    },
+    {
+      title: 'Golpear',
+      stage: court({ extra: ARROW +
+        `<line x1="150" y1="140" x2="150" y2="70" stroke="#d9ff3d" stroke-width="3"
+               stroke-dasharray="7 6" marker-end="url(#ah)" opacity=".9"/>` })
+             + `<div class="hand flick"></div>`,
+      body: `<p>Na hora da bola, dê um <b>deslize para cima</b>. É o mesmo dedo, só que
+             num movimento curto e decidido.</p>
+             <p>A <b>direção</b> do deslize é para onde a bola vai. Deslizar na diagonal
+             manda a bola na diagonal.</p>`,
+    },
+    {
+      title: 'Os quatro golpes',
+      stage: court({ extra:
+        `<defs>
+           <marker id="a1" markerWidth="7" markerHeight="7" refX="5.4" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#d9ff3d"/></marker>
+           <marker id="a2" markerWidth="7" markerHeight="7" refX="5.4" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#9fe4ff"/></marker>
+           <marker id="a3" markerWidth="7" markerHeight="7" refX="5.4" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#ffd166"/></marker>
+           <marker id="a4" markerWidth="7" markerHeight="7" refX="5.4" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#ff9db1"/></marker>
+         </defs>
+         <line x1="150" y1="142" x2="126" y2="42" stroke="#d9ff3d" stroke-width="2.6" marker-end="url(#a1)"/>
+         <line x1="150" y1="142" x2="196" y2="90" stroke="#9fe4ff" stroke-width="2.6" marker-end="url(#a2)"/>
+         <path d="M150,142 Q206,26 178,50" fill="none" stroke="#ffd166" stroke-width="2.6"
+               stroke-dasharray="6 5" marker-end="url(#a3)"/>
+         <line x1="150" y1="142" x2="124" y2="74" stroke="#ff9db1" stroke-width="2.6" marker-end="url(#a4)"/>` }),
+      body: `<p>A <b>velocidade</b> e o <b>tamanho</b> do deslize escolhem o golpe sozinhos.</p>
+             <div class="tut-grid">
+               <div><b><i style="background:#d9ff3d"></i>Rápido e longo</b>Drive no fundo</div>
+               <div><b><i style="background:#9fe4ff"></i>Rápido e curto</b>Voleio firme</div>
+               <div><b><i style="background:#ffd166"></i>Lento e longo</b>Lob por cima</div>
+               <div><b><i style="background:#ff9db1"></i>Lento e curto</b>Dink na cozinha</div>
+             </div>`,
+    },
+    {
+      title: 'Sacar',
+      stage: court({ extra: ARROW +
+        `<line x1="112" y1="142" x2="178" y2="62" stroke="#d9ff3d" stroke-width="3"
+               stroke-dasharray="7 6" marker-end="url(#ah)" opacity=".9"/>` })
+             + `<div class="hand tap"></div>`,
+      body: `<p>No saque, <b>um toque simples já serve</b>. Um deslize para cima também saca,
+             e aí não precisa ser rápido.</p>
+             <p>O saque é por baixo e sai na <b>diagonal</b>. Ele tem que passar da cozinha,
+             senão é falta.</p>`,
+    },
+    {
+      title: 'Regra dos dois quiques',
+      stage: court({ extra:
+        `<ellipse cx="132" cy="64" rx="12" ry="4.5" fill="#fff" opacity=".9"/>
+         <text x="152" y="67" fill="#eef4f9" font-size="10" font-weight="700"
+               font-family="system-ui">1º quique</text>
+         <ellipse cx="118" cy="134" rx="15" ry="5.5" fill="#fff" opacity=".9"/>
+         <text x="142" y="137" fill="#eef4f9" font-size="10" font-weight="700"
+               font-family="system-ui">2º quique</text>` })
+             + `<div class="ball-dot hop"></div>`,
+      body: `<p>O <b>saque precisa quicar</b> antes de ser devolvido. A <b>devolução também</b>.</p>
+             <p>Só a partir do terceiro golpe alguém pode bater na bola sem deixar quicar.
+             Antes disso, voleio é falta.</p>`,
+    },
+    {
+      title: 'A cozinha',
+      stage: court({ kitchen: true, extra:
+        `<text x="150" y="98" fill="#ffe0d6" font-size="11" font-weight="800"
+               text-anchor="middle" font-family="system-ui" letter-spacing="1">COZINHA</text>` }),
+      body: `<p>A faixa vermelha junto à rede tem <b>2,13 m</b> e é a zona de não-voleio.</p>
+             <p>Dentro dela você <b>não pode bater na bola antes do quique</b>. Depois do
+             quique, pode. E se você voleia perto da linha, o impulso não pode te levar
+             para dentro.</p>`,
+    },
+    {
+      title: 'Placar e saque',
+      stage: `<svg viewBox="0 0 300 168" preserveAspectRatio="xMidYMid meet">
+        `+`<rect x="66" y="46" width="168" height="74" rx="8" fill="#0c1622" stroke="#1e3346"/>
+         <rect x="66" y="46" width="4" height="74" fill="#d9ff3d"/>
+         <text x="82" y="72" fill="#d9ff3d" font-size="13" font-weight="800" font-family="system-ui">VOCÊ</text>
+         <text x="82" y="104" fill="#eef4f9" font-size="13" font-weight="800" font-family="system-ui">REIS</text>
+         <circle cx="186" cy="67" r="11" fill="#d9ff3d"/>
+         <text x="186" y="72" fill="#12202c" font-size="14" font-weight="800"
+               text-anchor="middle" font-family="system-ui">2</text>
+         <rect x="200" y="54" width="30" height="26" fill="#1b3552"/>
+         <rect x="200" y="86" width="30" height="26" fill="#b4303f"/>
+         <text x="215" y="72" fill="#fff" font-size="15" font-weight="800"
+               text-anchor="middle" font-family="system-ui">0</text>
+         <text x="215" y="104" fill="#fff" font-size="15" font-weight="800"
+               text-anchor="middle" font-family="system-ui">0</text>
+         <text x="150" y="140" fill="#7f9ab1" font-size="9.5" font-weight="700"
+               text-anchor="middle" font-family="system-ui" letter-spacing="1">CHAMADA  0 - 0 - 2</text>
+      </svg>`,
+      body: `<p><b>Só quem saca pontua.</b> Perdeu o ponto sacando, o saque passa, mas o
+             placar não muda.</p>
+             <p>O disco amarelo diz se é o <b>primeiro ou o segundo sacador</b> da dupla, e o
+             nome aceso é quem está com a bola. Nas duplas os dois parceiros sacam antes de
+             o saque passar, e por isso o jogo começa em <b>0-0-2</b>.</p>`,
+    },
+    {
+      title: 'Dois no mesmo aparelho',
+      stage: court({ extra:
+        `<line x1="150" y1="10" x2="150" y2="158" stroke="#d9ff3d" stroke-width="2"
+               stroke-dasharray="6 6" opacity=".8"/>
+         <text x="96" y="24" fill="#d9ff3d" font-size="12" font-weight="800"
+               text-anchor="middle" font-family="system-ui">P1</text>
+         <text x="204" y="24" fill="#d9ff3d" font-size="12" font-weight="800"
+               text-anchor="middle" font-family="system-ui">P2</text>` }),
+      body: `<p>Em <b>um contra o outro</b>, a tela divide em duas e cada um joga com a sua
+             própria visão da quadra.</p>
+             <p>Em <b>jogar juntos</b>, vocês dividem a mesma tela: quem toca a metade
+             esquerda controla o jogador da esquerda.</p>`,
+    },
+  ];
+
+  return { STEPS };
+})();
+
+</script>
+<script>
+'use strict';
 // Menus, the frame loop and the glue between input, match and renderer.
 (function () {
   const $ = id => document.getElementById(id);
@@ -3564,7 +3804,7 @@ PB.Audio = (function () {
   function save() { store.set('pb.cfg', JSON.stringify(cfg)); }
 
   // ── screens ──────────────────────────────────────────────────────────────
-  const screens = ['scr-title', 'scr-setup', 'scr-how', 'scr-pause', 'scr-over'];
+  const screens = ['scr-title', 'scr-setup', 'scr-tutorial', 'scr-pause', 'scr-over'];
   function show(id) {
     for (const s of screens) $(s).classList.toggle('on', s === id);
     $('pauseBtn').classList.toggle('on', id === null);
@@ -3598,8 +3838,31 @@ PB.Audio = (function () {
 
   // ── buttons ──────────────────────────────────────────────────────────────
   $('btn-play').onclick = () => { PB.Audio.init(); syncOpts(); show('scr-setup'); };
-  $('btn-how').onclick = () => show('scr-how');
-  $('btn-how-back').onclick = () => show('scr-title');
+  // ── tutorial ─────────────────────────────────────────────────────────────
+  const steps = PB.Tutorial.STEPS;
+  let tutAt = 0;
+  $('tut-dots').innerHTML = steps.map(() => '<i></i>').join('');
+  const dots = Array.from($('tut-dots').children);
+
+  function paintTutorial() {
+    const st = steps[tutAt];
+    $('tut-step').textContent = `PASSO ${tutAt + 1} DE ${steps.length}`;
+    dots.forEach((d, i) => d.classList.toggle('on', i === tutAt));
+    $('tut-stage').innerHTML = `<div class="tut-art">${st.stage}</div>`;
+    $('tut-body').innerHTML = `<h3>${st.title}</h3>${st.body}`;
+    $('btn-tut-prev').disabled = tutAt === 0;
+    $('btn-tut-next').textContent = tutAt === steps.length - 1 ? 'Jogar agora' : 'Próximo';
+    $('scr-tutorial').scrollTop = 0;
+  }
+  function openTutorial() { tutAt = 0; paintTutorial(); show('scr-tutorial'); }
+
+  $('btn-tutorial').onclick = openTutorial;
+  $('btn-tut-home').onclick = () => show('scr-title');
+  $('btn-tut-prev').onclick = () => { if (tutAt > 0) { tutAt--; paintTutorial(); } };
+  $('btn-tut-next').onclick = () => {
+    if (tutAt < steps.length - 1) { tutAt++; paintTutorial(); }
+    else { PB.Audio.init(); syncOpts(); show('scr-setup'); }
+  };
   $('btn-back').onclick = () => show('scr-title');
   $('btn-sound').onclick = () => {
     sound = !sound;

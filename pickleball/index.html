@@ -60,6 +60,92 @@
     background: #d9ff3d; color: #12202c; cursor: pointer; letter-spacing: .5px; width: 100%;
   }
   .btn.ghost { background: transparent; border: 1.5px solid #2c4258; color: #cfe0ee; font-weight: 600; }
+  .btn.outline { background: #14293a; border: 1.5px solid #4fd0ff; color: #9fe4ff; letter-spacing: 1.5px; }
+
+  /* ── tutorial ───────────────────────────────────────────────────────── */
+  #scr-tutorial { justify-content: flex-start; gap: 0; padding-top: calc(14px + env(safe-area-inset-top)); }
+  .tut { width: min(460px, 100%); display: flex; flex-direction: column; gap: 12px; margin: auto 0; }
+  .tut-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .tut-step { font-size: 11px; letter-spacing: 1.6px; font-weight: 800; color: #7f9ab1; }
+  .tut-home {
+    padding: 8px 13px; border-radius: 999px; border: 1.5px solid #2c4258;
+    background: rgba(12,22,34,.8); color: #cfe0ee; font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .tut-home:active { transform: scale(.97); }
+  .tut-dots { display: flex; gap: 5px; justify-content: center; }
+  .tut-dots i { width: 6px; height: 6px; border-radius: 50%; background: #263d52; transition: background .2s, width .2s; }
+  .tut-dots i.on { background: #d9ff3d; width: 18px; border-radius: 3px; }
+
+  .tut-card { background: #101c28; border: 1px solid #1e3346; border-radius: 16px; overflow: hidden; }
+  .tut-stage {
+    position: relative; height: 168px; background:
+      radial-gradient(120% 140% at 50% 0%, #1b3a55 0%, #0d1a26 78%);
+    border-bottom: 1px solid #1e3346; overflow: hidden;
+  }
+  /* the art box keeps the court's aspect, so the animated finger lines up with
+     the drawing instead of drifting onto the letterboxing */
+  .tut-art {
+    position: absolute; inset: 0; margin: auto;
+    aspect-ratio: 300 / 168; max-width: 100%; max-height: 100%;
+  }
+  .tut-art svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .tut-body { padding: 13px 15px 15px; }
+  .tut-body h3 { font-size: 17px; font-weight: 800; margin-bottom: 6px; }
+  .tut-body p { font-size: 13.5px; line-height: 1.5; color: #cfe0ee; }
+  .tut-body p + p { margin-top: 7px; }
+  .tut-body b { color: #d9ff3d; }
+  .tut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 9px; }
+  .tut-grid div {
+    background: #0c1622; border: 1px solid #1e3346; border-radius: 9px;
+    padding: 8px 9px; font-size: 12px; line-height: 1.4; color: #b6cadb;
+  }
+  .tut-grid b { display: block; color: #d9ff3d; font-size: 12.5px; margin-bottom: 1px; }
+  .tut-grid b i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+  .tut-nav { display: flex; gap: 9px; }
+  .tut-nav .btn { padding: 13px 16px; font-size: 14.5px; }
+  .tut-nav .btn:disabled { opacity: .35; }
+
+  /* animated finger */
+  .hand {
+    position: absolute; width: 24px; height: 24px; margin: -12px 0 0 -12px;
+    border-radius: 50%; background: rgba(217,255,61,.92);
+    box-shadow: 0 0 0 9px rgba(217,255,61,.14), 0 0 16px rgba(217,255,61,.5);
+  }
+  .hand.drag { top: 66%; animation: h-drag 2.8s ease-in-out infinite; }
+  @keyframes h-drag { 0%,100% { left: 26% } 50% { left: 74% } }
+  .hand.flick { left: 50%; animation: h-flick 1.9s cubic-bezier(.3,0,.2,1) infinite; }
+  @keyframes h-flick {
+    0%, 18% { top: 78%; opacity: 1 }
+    45% { top: 30%; opacity: 1 }
+    62% { top: 26%; opacity: 0 }
+    63%, 100% { top: 78%; opacity: 0 }
+  }
+  .hand.tap { left: 50%; top: 62%; animation: h-tap 1.8s ease-out infinite; }
+  @keyframes h-tap { 0%, 60% { transform: scale(1); opacity: .95 } 75% { transform: scale(1.9); opacity: .25 } 100% { transform: scale(1); opacity: .95 } }
+  .streak { position: absolute; opacity: .45; }
+  .ball-dot {
+    position: absolute; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px;
+    border-radius: 50%; background: #d9ff3d; box-shadow: 0 0 10px rgba(217,255,61,.6);
+  }
+  .ball-dot.hop { animation: b-hop 2.4s ease-in-out infinite; }
+  @keyframes b-hop {
+    0% { left: 50%; top: 18% } 22% { left: 50%; top: 72% }
+    34% { left: 50%; top: 52% } 50% { left: 50%; top: 74% }
+    68% { left: 50%; top: 60% } 100% { left: 50%; top: 74% }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hand, .ball-dot.hop { animation: none !important; }
+  }
+  /* a short landscape window has no room for a stacked card, so the art moves
+     beside the text and the buttons stay on screen */
+  @media (orientation: landscape) and (max-height: 560px) {
+    .tut { width: min(760px, 100%); gap: 9px; }
+    .tut-card { display: grid; grid-template-columns: 46% 1fr; }
+    .tut-stage { height: 100%; min-height: 148px; border-bottom: none; border-right: 1px solid #1e3346; }
+    .tut-body { padding: 11px 13px; }
+    .tut-body h3 { font-size: 15.5px; }
+    .tut-body p { font-size: 12.5px; }
+  }
   .btn:active { transform: scale(.98); }
   .row { display: flex; gap: 10px; width: min(400px, 100%); }
 
@@ -88,11 +174,9 @@
     <h1>PICKLE<span>BALL</span></h1>
     <p class="tag">Simples ou duplas, sozinho ou com um amigo no mesmo aparelho. Regras oficiais, cozinha e tudo.</p>
     <div class="card">
+      <button class="btn outline" id="btn-tutorial">TUTORIAL</button>
       <button class="btn" id="btn-play">JOGAR</button>
-      <div class="row">
-        <button class="btn ghost" id="btn-how">Como jogar</button>
-        <button class="btn ghost" id="btn-sound">🔊 Som</button>
-      </div>
+      <button class="btn ghost" id="btn-sound">🔊 Som</button>
     </div>
     <div class="foot">Dica: vire o celular na horizontal para uma visão mais ampla</div>
   </section>
@@ -152,23 +236,22 @@
     </div>
   </section>
 
-  <!-- como jogar -->
-  <section id="scr-how" class="screen">
-    <div class="how">
-      <h2>Como jogar</h2>
-      <div><b>Mover:</b> arraste o dedo em qualquer lugar da sua metade da tela. O jogador acompanha o dedo.</div>
-      <div><b>Golpear:</b> dê um <b>flick</b> (deslize rápido) para cima na hora da bola.<br>
-        • rápido e longo = <b>drive</b> no fundo<br>
-        • rápido e curto = <b>voleio</b> firme<br>
-        • lento e longo = <b>lob</b> por cima<br>
-        • lento e curto = <b>dink</b> na cozinha<br>
-        A direção do flick define para onde a bola vai.</div>
-      <div><b>Sacar:</b> deslize para cima — no saque não precisa ser rápido, e um toque simples também saca. O saque é por baixo, na diagonal, e precisa passar da cozinha.</div>
-      <div><b>Regra dos dois quiques:</b> o saque tem que quicar, e a devolução também. Só depois vale voleio.</div>
-      <div><b>Cozinha (zona de não-voleio):</b> os 2,13 m junto à rede. Não dá para bater na bola antes do quique estando lá dentro — nem entrar por impulso logo depois do voleio.</div>
-      <div><b>Pontuação:</b> só quem saca pontua. Nas duplas, os dois parceiros sacam antes de passar o saque (o jogo começa em 0-0-2). Partida com 2 de vantagem.</div>
-      <div class="muted">Dois jogadores no mesmo aparelho: no modo “um contra o outro” a tela divide em duas, cada um com a sua visão. No modo “juntos”, quem toca a metade esquerda controla o jogador da esquerda.</div>
-      <button class="btn ghost" id="btn-how-back">Voltar</button>
+  <!-- tutorial -->
+  <section id="scr-tutorial" class="screen">
+    <div class="tut">
+      <div class="tut-top">
+        <span class="tut-step" id="tut-step">PASSO 1 DE 8</span>
+        <button class="tut-home" id="btn-tut-home">Menu principal</button>
+      </div>
+      <div class="tut-dots" id="tut-dots"></div>
+      <div class="tut-card">
+        <div class="tut-stage" id="tut-stage"></div>
+        <div class="tut-body" id="tut-body"></div>
+      </div>
+      <div class="tut-nav">
+        <button class="btn ghost" id="btn-tut-prev">Voltar</button>
+        <button class="btn" id="btn-tut-next">Próximo</button>
+      </div>
     </div>
   </section>
 
@@ -202,6 +285,7 @@
 <script src="js/render.js"></script>
 <script src="js/input.js"></script>
 <script src="js/audio.js"></script>
+<script src="js/tutorial.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

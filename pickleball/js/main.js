@@ -27,7 +27,7 @@
   function save() { store.set('pb.cfg', JSON.stringify(cfg)); }
 
   // ── screens ──────────────────────────────────────────────────────────────
-  const screens = ['scr-title', 'scr-setup', 'scr-how', 'scr-pause', 'scr-over'];
+  const screens = ['scr-title', 'scr-setup', 'scr-tutorial', 'scr-pause', 'scr-over'];
   function show(id) {
     for (const s of screens) $(s).classList.toggle('on', s === id);
     $('pauseBtn').classList.toggle('on', id === null);
@@ -61,8 +61,31 @@
 
   // ── buttons ──────────────────────────────────────────────────────────────
   $('btn-play').onclick = () => { PB.Audio.init(); syncOpts(); show('scr-setup'); };
-  $('btn-how').onclick = () => show('scr-how');
-  $('btn-how-back').onclick = () => show('scr-title');
+  // ── tutorial ─────────────────────────────────────────────────────────────
+  const steps = PB.Tutorial.STEPS;
+  let tutAt = 0;
+  $('tut-dots').innerHTML = steps.map(() => '<i></i>').join('');
+  const dots = Array.from($('tut-dots').children);
+
+  function paintTutorial() {
+    const st = steps[tutAt];
+    $('tut-step').textContent = `PASSO ${tutAt + 1} DE ${steps.length}`;
+    dots.forEach((d, i) => d.classList.toggle('on', i === tutAt));
+    $('tut-stage').innerHTML = `<div class="tut-art">${st.stage}</div>`;
+    $('tut-body').innerHTML = `<h3>${st.title}</h3>${st.body}`;
+    $('btn-tut-prev').disabled = tutAt === 0;
+    $('btn-tut-next').textContent = tutAt === steps.length - 1 ? 'Jogar agora' : 'Próximo';
+    $('scr-tutorial').scrollTop = 0;
+  }
+  function openTutorial() { tutAt = 0; paintTutorial(); show('scr-tutorial'); }
+
+  $('btn-tutorial').onclick = openTutorial;
+  $('btn-tut-home').onclick = () => show('scr-title');
+  $('btn-tut-prev').onclick = () => { if (tutAt > 0) { tutAt--; paintTutorial(); } };
+  $('btn-tut-next').onclick = () => {
+    if (tutAt < steps.length - 1) { tutAt++; paintTutorial(); }
+    else { PB.Audio.init(); syncOpts(); show('scr-setup'); }
+  };
   $('btn-back').onclick = () => show('scr-title');
   $('btn-sound').onclick = () => {
     sound = !sound;
