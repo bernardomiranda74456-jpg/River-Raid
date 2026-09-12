@@ -1,15 +1,21 @@
 'use strict';
 // Bundles index.html + js/*.js into one self-contained HTML file.
-//   node build-single.js              -> pickleball-single.html (standalone page)
+//   node build-single.js              -> pickleball-v<N>.html (standalone page)
 //   node build-single.js --fragment X -> same page without the html/head/body
 //                                        wrapper, for hosts that supply their own
 const fs = require('fs');
 const path = require('path');
 
+// Bump this and the game names its own build. It is the one place the version
+// lives: the file name and the line under the title screen both read it.
+const VERSION = 1;
+
 const dir = __dirname;
 const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 
-const inlined = html.replace(/<script src="js\/([^"]+)"><\/script>/g, (_, file) => {
+const stamped = html.replace('<!--VERSION-->', `v${VERSION}`);
+
+const inlined = stamped.replace(/<script src="js\/([^"]+)"><\/script>/g, (_, file) => {
   const code = fs.readFileSync(path.join(dir, 'js', file), 'utf8');
   if (code.includes('</script')) throw new Error(`${file} contains a closing script tag`);
   return `<script>\n${code}\n</script>`;
@@ -28,7 +34,7 @@ if (fragIdx >= 0) {
   fs.writeFileSync(out, head.trim() + '\n' + body.trim() + '\n');
   console.log('fragmento escrito em', out);
 } else {
-  const out = path.join(dir, 'pickleball-single.html');
+  const out = path.join(dir, `pickleball-v${VERSION}.html`);
   fs.writeFileSync(out, inlined);
   console.log('arquivo único escrito em', out, (inlined.length / 1024).toFixed(0) + ' KB');
 }
