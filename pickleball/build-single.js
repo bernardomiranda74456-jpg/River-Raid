@@ -8,7 +8,7 @@ const path = require('path');
 
 // Bump this and the game names its own build. It is the one place the version
 // lives: the file name and the line under the title screen both read it.
-const VERSION = 1;
+const VERSION = 2;
 
 const dir = __dirname;
 const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');

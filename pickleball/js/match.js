@@ -190,7 +190,7 @@ PB.Match = (function () {
       this.receiverIdx = receiver.id;
       this.rally = {
         shotCount: 0, lastHitter: -1, bounces: 0, over: false, softCount: 0,
-        serveXSign: sSign, servedBy: server.id, netTouch: false,
+        serveXSign: sSign, servedBy: server.id, netTouch: false, lastStyle: null,
       };
 
       const b = this.ball;
@@ -237,6 +237,7 @@ PB.Match = (function () {
       this.rally.shotCount = 1;
       this.rally.lastHitter = server.id;
       this.rally.bounces = 0;
+      this.rally.lastStyle = 'serve';
       server.swingT = 0.3; server.swingType = 'serve';
       this.state = 'live';
       this.stateT = 0;
@@ -477,8 +478,10 @@ PB.Match = (function () {
       if (!style) style = this.pickStyleFromSwipe(p, swing, volley, from);
 
       const q = (swing.quality === undefined ? 1 : swing.quality) * this.contactQuality(p);
-      // off balance: the aggressive shot is simply not available
-      if (q < 0.52 && (style === 'drive' || style === 'smash' || style === 'punch')) {
+      // Off balance, the CPU simply cannot play the aggressive shot. A human
+      // stroke is never rewritten: what you drew is what you asked for, and bad
+      // contact costs accuracy further down instead of changing the shot.
+      if (!swing.human && q < 0.52 && (style === 'drive' || style === 'smash' || style === 'punch')) {
         style = Math.abs(p.z) > 12 ? 'lob' : 'drop';
         swing = Object.assign({}, swing, {
           target: { x: (Math.random() * 2 - 1) * 4.5, z: oSign * (style === 'lob' ? 18.5 : 4.8) },
@@ -487,9 +490,16 @@ PB.Match = (function () {
       let tx = swing.target ? swing.target.x : 0;
       let tz = swing.target ? swing.target.z : oSign * 15;
       if (!swing.target) {
-        const depth = this.depthForStyle(style, swing.depth);
+        // The stroke itself is the aim: how far you pulled is how deep it lands,
+        // and how far sideways is how wide. Pull past the line and it goes out.
+        const depth = swing.human !== undefined
+          ? PB.Stroke.depthAt(swing.power)
+          : this.depthForStyle(style, swing.depth);
         tz = oSign * depth;
-        tx = Math.max(-9.4, Math.min(9.4, swing.lateral * 9.4));
+        // A full sideways pull paints the sideline, never past it: the colour
+        // ramp warns about depth, and nothing warns about width, so width must
+        // not be able to fault on its own.
+        tx = Math.max(-9.7, Math.min(9.7, swing.lateral * 9.7));
       }
       // timing/skill scatter
       const jitter = (1 - q) * 5.0;
@@ -510,6 +520,7 @@ PB.Match = (function () {
       r.bounces = 0;
       r.netTouch = false;
       r.softCount = (style === 'dink' || style === 'drop') ? r.softCount + 1 : 0;
+      r.lastStyle = style;                 // what the next player is receiving
       p.hitCd = HIT_CD;
       p.swingType = style;
       p.swingKind = (style === 'serve' || style === 'smash') ? 'over'
@@ -539,13 +550,25 @@ PB.Match = (function () {
       }
     }
 
+    // The stroke names the shot. A bowed path is a lob; a very short pull is a
+    // soft ball; everything else is a drive, or a volley when it is taken out of
+    // the air near the net. The smash is not one of these: it is earned, and
+    // `smashable` decides that separately.
     pickStyleFromSwipe(p, sw, volley, from) {
       const nearNet = Math.abs(p.z) < 10.5;
-      if (sw.fast && from.y > 3.3 && Math.abs(from.z) < 13 && volley) return 'smash';
-      if (sw.fast && sw.long) return 'drive';
-      if (sw.fast && !sw.long) return 'punch';
-      if (!sw.fast && sw.long) return 'lob';
-      return nearNet ? 'dink' : 'drop';
+      if (sw.lob) return 'lob';
+      if (this.smashable(p, volley, from)) return 'smash';
+      if (sw.power <= 0.16) return nearNet ? 'dink' : 'drop';
+      return volley && nearNet ? 'punch' : 'drive';
+    }
+
+    // A smash is only available against a lob taken early and high. Let it drop
+    // and it is an ordinary stroke, however hard you pull.
+    smashable(p, volley, from) {
+      return volley
+        && this.rally.lastStyle === 'lob'
+        && from.y > 4.2
+        && Math.abs(from.z) < 16;
     }
 
     // ── human control ──────────────────────────────────────────────────────
@@ -558,18 +581,19 @@ PB.Match = (function () {
       if (inp.swipe) {
         const sw = inp.swipe;
         const lateral = Math.max(-1, Math.min(1, sw.lateral));
+        const power = Math.max(0, Math.min(1.15, sw.power || 0));
         if (this.state === 'ready' && p.id === this.serverIdx) {
-          // lateral is in view space; the target lives in world space
-          const aim = this.serveTarget(lateral * sign, Math.max(0, Math.min(1, sw.depth)), this.assistRules);
-          this.doServe(aim, 0.75 + 0.25 * sw.power);
+          // The serve reads the same stroke: how far you pulled is how deep it
+          // goes, and the box is the only thing keeping it honest.
+          const depth = Math.max(0, Math.min(1, power / 0.78));
+          const aim = this.serveTarget(lateral * sign, depth, this.assistRules);
+          this.doServe(aim, 0.7 + 0.3 * Math.min(1, power));
           inputs[slot].swipe = null;
           return;
         }
         this.pendingSwing[p.id] = {
-          lateral: lateral * sign,
-          depth: Math.max(0, Math.min(1, sw.depth)),
-          fast: sw.fast, long: sw.long, power: sw.power,
-          quality: 1, t: 0,
+          lateral: lateral * sign, power, lob: !!sw.lob,
+          human: true, quality: 1, t: 0,
         };
         inputs[slot].swipe = null;
       }

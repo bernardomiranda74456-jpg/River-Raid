@@ -5,6 +5,26 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v2
+
+Os controles refeitos. A tela de cada jogador se divide em duas: o lado direito
+corre, o lado esquerdo golpeia, e nada é lido como as duas coisas.
+
+- O deslize esquerdo carrega força e direção juntos. O comprimento é a força e o
+  quanto foi para o lado é o quanto a bola abre.
+- O traçado do dedo aparece na tela e muda de cor pelo comprimento, do verde
+  claro ao vermelho escuro. Laranja cai bem funda, rosa pinta a linha de fundo e
+  vermelho já saiu.
+- Lob é um arco acentuado. O lado do arco é o lado do lob e o tamanho do arco é a
+  profundidade.
+- O smash deixou de ser um acidente: ele só existe contra um lob pego no alto e
+  antes do quique. Baixou, é rebatida normal.
+- O saque usa o mesmo deslize, com força e direção. Um toque ainda saca fraco.
+- Duas pessoas dividindo uma tela no modo "jogar juntos" continuam no esquema da
+  v1, porque lá as duas metades já são os dois jogadores.
+
+Calibrado para o nível normal. O nível fácil ainda vai ser simplificado.
+
 ## v1
 
 Primeira versão nomeada. O jogo como ficou depois de:

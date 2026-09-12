@@ -1,6 +1,6 @@
 const vm = require('vm'), fs = require('fs');
 const base = '/home/user/River-Raid/pickleball/js/';
-for (const f of ['court','physics','shots','match','ai']) vm.runInThisContext(fs.readFileSync(base+f+'.js','utf8'));
+for (const f of ['court','physics','shots','stroke','match','ai']) vm.runInThisContext(fs.readFileSync(base+f+'.js','utf8'));
 const C = PB.Court;
 
 const stats = {

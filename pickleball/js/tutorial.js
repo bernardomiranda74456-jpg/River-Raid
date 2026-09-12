@@ -33,59 +33,84 @@ PB.Tutorial = (function () {
 
   const STEPS = [
     {
-      title: 'Mover',
-      stage: court({ extra: `<ellipse cx="150" cy="132" rx="17" ry="6" fill="#0b1a26" opacity=".45"/>` })
-             + `<div class="hand drag"></div>`,
-      body: `<p>Arraste o dedo em <b>qualquer lugar da sua metade da tela</b>. O jogador
-             acompanha o dedo, então você não precisa tocar nele.</p>
-             <p>Não existe botão de correr. Quanto mais longe você leva o dedo, mais longe
-             o jogador vai.</p>`,
-    },
-    {
-      title: 'Golpear',
-      stage: court({ extra: ARROW +
-        `<line x1="150" y1="140" x2="150" y2="70" stroke="#d9ff3d" stroke-width="3"
-               stroke-dasharray="7 6" marker-end="url(#ah)" opacity=".9"/>` })
-             + `<div class="hand flick"></div>`,
-      body: `<p>Na hora da bola, dê um <b>deslize para cima</b>. É o mesmo dedo, só que
-             num movimento curto e decidido.</p>
-             <p>A <b>direção</b> do deslize é para onde a bola vai. Deslizar na diagonal
-             manda a bola na diagonal.</p>`,
-    },
-    {
-      title: 'Os quatro golpes',
+      title: 'Dois dedos',
       stage: court({ extra:
-        `<defs>
-           <marker id="a1" markerWidth="7" markerHeight="7" refX="5.4" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#d9ff3d"/></marker>
-           <marker id="a2" markerWidth="7" markerHeight="7" refX="5.4" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#9fe4ff"/></marker>
-           <marker id="a3" markerWidth="7" markerHeight="7" refX="5.4" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#ffd166"/></marker>
-           <marker id="a4" markerWidth="7" markerHeight="7" refX="5.4" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#ff9db1"/></marker>
-         </defs>
-         <line x1="150" y1="142" x2="126" y2="42" stroke="#d9ff3d" stroke-width="2.6" marker-end="url(#a1)"/>
-         <line x1="150" y1="142" x2="196" y2="90" stroke="#9fe4ff" stroke-width="2.6" marker-end="url(#a2)"/>
-         <path d="M150,142 Q206,26 178,50" fill="none" stroke="#ffd166" stroke-width="2.6"
-               stroke-dasharray="6 5" marker-end="url(#a3)"/>
-         <line x1="150" y1="142" x2="124" y2="74" stroke="#ff9db1" stroke-width="2.6" marker-end="url(#a4)"/>` }),
-      body: `<p>A <b>velocidade</b> e o <b>tamanho</b> do deslize escolhem o golpe sozinhos.
-             Durante a partida o <b>rastro da bola sai nesta mesma cor</b>, então dá para
-             ver qual golpe está vindo.</p>
-             <div class="tut-grid">
-               <div><b><i style="background:#d9ff3d"></i>Rápido e longo</b>Drive no fundo</div>
-               <div><b><i style="background:#9fe4ff"></i>Rápido e curto</b>Voleio firme</div>
-               <div><b><i style="background:#ffd166"></i>Lento e longo</b>Lob por cima</div>
-               <div><b><i style="background:#ff9db1"></i>Lento e curto</b>Dink na cozinha</div>
-             </div>`,
+        `<line x1="150" y1="4" x2="150" y2="164" stroke="#fff" stroke-width="2"
+               stroke-dasharray="7 7" opacity=".5"/>
+         <text x="76" y="22" fill="#d9ff3d" font-size="11" font-weight="800"
+               text-anchor="middle" font-family="system-ui">ESQUERDO</text>
+         <text x="76" y="36" fill="#cfe0ee" font-size="10" font-weight="700"
+               text-anchor="middle" font-family="system-ui">golpe</text>
+         <text x="224" y="22" fill="#9fe4ff" font-size="11" font-weight="800"
+               text-anchor="middle" font-family="system-ui">DIREITO</text>
+         <text x="224" y="36" fill="#cfe0ee" font-size="10" font-weight="700"
+               text-anchor="middle" font-family="system-ui">mover</text>` })
+             + `<div class="hand drag" style="top:74%"></div>`,
+      body: `<p>A sua metade da tela se divide em duas. O <b>dedo direito corre</b> e o
+             <b>dedo esquerdo golpeia</b>.</p>
+             <p>Nada é lido como as duas coisas, então o golpe nunca empurra o jogador e
+             correr nunca dispara um golpe.</p>`,
     },
     {
-      title: 'Sacar',
+      title: 'A força é o tamanho do deslize',
+      stage: `<svg viewBox="0 0 300 168" preserveAspectRatio="xMidYMid meet">
+        <defs><linearGradient id="ramp" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0" stop-color="#9ef01a"/><stop offset="0.13" stop-color="#2b9348"/>
+          <stop offset="0.26" stop-color="#b5a300"/><stop offset="0.40" stop-color="#ffd60a"/>
+          <stop offset="0.53" stop-color="#ff8800"/><stop offset="0.66" stop-color="#ff5da2"/>
+          <stop offset="0.78" stop-color="#e01e1e"/><stop offset="1" stop-color="#7a0b0b"/>
+        </linearGradient></defs>
+        <rect x="126" y="18" width="24" height="132" rx="12" fill="url(#ramp)"/>
+        <text x="160" y="30" fill="#7a0b0b" font-size="10" font-weight="800" font-family="system-ui">vermelho: sai</text>
+        <text x="160" y="66" fill="#ff5da2" font-size="10" font-weight="800" font-family="system-ui">rosa: na linha</text>
+        <text x="160" y="88" fill="#ff8800" font-size="10" font-weight="800" font-family="system-ui">laranja: bem funda</text>
+        <text x="160" y="140" fill="#9ef01a" font-size="10" font-weight="800" font-family="system-ui">verde: bola curta</text>
+        <text x="60" y="86" fill="#cfe0ee" font-size="10" font-weight="700"
+              text-anchor="middle" font-family="system-ui">quanto mais</text>
+        <text x="60" y="100" fill="#cfe0ee" font-size="10" font-weight="700"
+              text-anchor="middle" font-family="system-ui">você puxa,</text>
+        <text x="60" y="114" fill="#cfe0ee" font-size="10" font-weight="700"
+              text-anchor="middle" font-family="system-ui">mais forte</text>
+      </svg>`,
+      body: `<p>O <b>traçado do seu dedo aparece na tela</b> e muda de cor conforme cresce.
+             A cor é a força que a bola vai levar.</p>
+             <p>Laranja é uma bola bem funda. Rosa pinta a linha de fundo. <b>No vermelho
+             você passou do ponto</b> e a bola sai.</p>`,
+    },
+    {
+      title: 'A direção é o lado do deslize',
       stage: court({ extra: ARROW +
-        `<line x1="112" y1="142" x2="178" y2="62" stroke="#d9ff3d" stroke-width="3"
-               stroke-dasharray="7 6" marker-end="url(#ah)" opacity=".9"/>` })
-             + `<div class="hand tap"></div>`,
-      body: `<p>No saque, <b>um toque simples já serve</b>. Um deslize para cima também saca,
-             e aí não precisa ser rápido.</p>
-             <p>O saque é por baixo e sai na <b>diagonal</b>. Ele tem que passar da cozinha,
-             senão é falta.</p>`,
+        `<line x1="150" y1="142" x2="52" y2="66" stroke="#ffd60a" stroke-width="3" marker-end="url(#ah)"/>
+         <line x1="150" y1="142" x2="150" y2="40" stroke="#ffd60a" stroke-width="3" marker-end="url(#ah)" opacity=".55"/>
+         <line x1="150" y1="142" x2="248" y2="66" stroke="#ffd60a" stroke-width="3" marker-end="url(#ah)"/>` }),
+      body: `<p>Puxar para a esquerda manda a bola para a esquerda, e o mesmo vale para a
+             direita. <b>Quanto mais para o lado, mais aberta</b> ela vai.</p>
+             <p>É o mesmo deslize: o comprimento dá a força e a inclinação dá o lado.</p>`,
+    },
+    {
+      title: 'Lob é um arco',
+      stage: court({ extra: ARROW +
+        `<path d="M150,142 Q60,90 96,44" fill="none" stroke="#ffd166" stroke-width="3.4"
+               stroke-dasharray="8 6" marker-end="url(#ah)"/>
+         <path d="M150,142 Q240,90 204,44" fill="none" stroke="#ffd166" stroke-width="3.4"
+               stroke-dasharray="8 6" marker-end="url(#ah)" opacity=".55"/>` }),
+      body: `<p>Um deslize <b>em arco acentuado</b> vira lob. Arco para a esquerda é lob
+             para a esquerda, arco para a direita é lob para a direita.</p>
+             <p>O tamanho do arco também conta: arco maior joga o lob mais para o fundo.</p>`,
+    },
+    {
+      title: 'Smash se conquista',
+      stage: court({ extra: ARROW +
+        `<path d="M120,150 Q150,10 186,52" fill="none" stroke="#ffd166" stroke-width="2.6"
+               stroke-dasharray="6 5" opacity=".8"/>
+         <circle cx="186" cy="52" r="6" fill="#d9ff3d"/>
+         <line x1="186" y1="58" x2="186" y2="128" stroke="#d9ff3d" stroke-width="3.4" marker-end="url(#ah)"/>
+         <text x="186" y="44" fill="#eef4f9" font-size="10" font-weight="800"
+               text-anchor="middle" font-family="system-ui">pegou no alto</text>` }),
+      body: `<p>Não existe botão de smash. Ele acontece quando o adversário <b>tenta um lob
+             e você pega a bola no alto</b>, antes dela quicar.</p>
+             <p>Deixou baixar, sai rebatida normal. A força e a direção do seu deslize
+             valem igual no smash.</p>`,
     },
     {
       title: 'Regra dos dois quiques',
@@ -130,7 +155,9 @@ PB.Tutorial = (function () {
          <text x="150" y="140" fill="#7f9ab1" font-size="9.5" font-weight="700"
                text-anchor="middle" font-family="system-ui" letter-spacing="1">CHAMADA  0 - 0 - 2</text>
       </svg>`,
-      body: `<p><b>Só quem saca pontua.</b> Perdeu o ponto sacando, o saque passa, mas o
+      body: `<p>O saque usa o mesmo deslize do dedo esquerdo, com força e direção. Um
+             toque simples também saca, fraco e no meio.</p>
+             <p><b>Só quem saca pontua.</b> Perdeu o ponto sacando, o saque passa, mas o
              placar não muda.</p>
              <p>O disco amarelo diz se é o <b>primeiro ou o segundo sacador</b> da dupla, e o
              nome aceso é quem está com a bola. Nas duplas os dois parceiros sacam antes de

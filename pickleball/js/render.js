@@ -1519,7 +1519,7 @@ PB.Renderer = (function () {
         if (sub) this.centerText(ctx, r, sub, cy + 18, 11, 'rgba(255,255,255,0.65)');
       };
       if (m.state === 'ready' && me && m.players[m.serverIdx] === me) {
-        prompt('DESLIZE PARA SACAR', 'ou toque  •  curto = curto, longo = fundo');
+        prompt('DESLIZE PARA SACAR', 'comprimento = força  •  lado = direção');
       } else if (m.state === 'ready' && me && m.players[m.receiverIdx] === me) {
         prompt('DEIXE O SAQUE QUICAR', null);
       }
@@ -1652,10 +1652,45 @@ PB.Renderer = (function () {
       ctx.restore();
     }
 
+    // The stroke is the only gauge the player gets: while the thumb is down the
+    // path is drawn in the colour its own length has earned, so you watch the
+    // shot get stronger under your finger and stop before it sails.
+    strokePath(ctx, pts, power, alpha) {
+      if (!pts || pts.length < 2) return;
+      const S = PB.Stroke;
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      // walk the path once, colouring each piece by how much of the pull it is
+      let run = 0;
+      const total = pts.reduce((acc, q, i) =>
+        i ? acc + Math.hypot(q.x - pts[i - 1].x, q.y - pts[i - 1].y) : 0, 0) || 1;
+      for (let i = 1; i < pts.length; i++) {
+        const a = pts[i - 1], b = pts[i];
+        run += Math.hypot(b.x - a.x, b.y - a.y);
+        const f = run / total;
+        ctx.strokeStyle = S.colorAt(power * f);
+        ctx.globalAlpha = alpha * (0.45 + 0.55 * f);
+        ctx.lineWidth = 4 + 6 * f;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+      // the head of the stroke carries the colour the shot will actually get
+      const tip = pts[pts.length - 1];
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = S.colorAt(power);
+      ctx.beginPath();
+      ctx.arc(tip.x, tip.y, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
     drawTouch(ctx, input) {
       for (const k in input.pointers) {
         const p = input.pointers[k];
-        if (!p.active) continue;
+        if (!p.active || p.path) continue;         // striking fingers draw a path
         ctx.save();
         ctx.strokeStyle = 'rgba(255,255,255,0.25)';
         ctx.lineWidth = 2;
@@ -1664,17 +1699,15 @@ PB.Renderer = (function () {
         ctx.stroke();
         ctx.restore();
       }
+      // live strokes, then the ghost of the one just released
+      if (input.strokes) {
+        for (const slot of ['p1', 'p2']) {
+          const st = input.strokes[slot];
+          if (st) this.strokePath(ctx, st.pts, st.power, 1);
+        }
+      }
       for (const s of input.swipeFx) {
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, s.life);
-        ctx.strokeStyle = '#ffe27a';
-        ctx.lineWidth = 4;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(s.x0, s.y0);
-        ctx.lineTo(s.x1, s.y1);
-        ctx.stroke();
-        ctx.restore();
+        this.strokePath(ctx, s.pts, s.power, Math.max(0, s.life) * 0.8);
       }
     }
 

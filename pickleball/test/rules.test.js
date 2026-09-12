@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const dir = path.join(__dirname, '..', 'js');
-for (const f of ['court', 'physics', 'shots', 'match', 'ai']) {
+for (const f of ['court', 'physics', 'shots', 'stroke', 'match', 'ai']) {
   vm.runInThisContext(fs.readFileSync(path.join(dir, f + '.js'), 'utf8'), { filename: f + '.js' });
 }
 const C = PB.Court;
@@ -452,6 +452,133 @@ test('a bola quica e perde altura, e a rede segura a bola baixa', () => {
   const ev = {};
   for (let i = 0; i < 40; i++) PB.Physics.step(n, 1 / 240, ev);
   ok(n.z < 1, 'bola baixa não atravessa a rede');
+});
+
+// ── o gesto do golpe (v2) ─────────────────────────────────────────────────
+const S = PB.Stroke;
+
+test('o degradê caminha do verde claro ao vermelho escuro sem repetir cor', () => {
+  const seen = new Set();
+  for (let p = 0; p <= 1.15; p += 0.01) seen.add(S.colorAt(p));
+  ok(seen.size > 60, 'o degradê é contínuo');
+  eq(S.nameAt(0), 'verde claro', 'começo do degradê');
+  eq(S.nameAt(1.1), 'vermelho escuro', 'fim do degradê');
+});
+
+test('laranja é bola funda, rosa pinta a linha, vermelho já saiu', () => {
+  const laranja = 0.58, rosa = 0.72, vermelho = 0.85;
+  eq(S.nameAt(laranja), 'laranja', 'faixa laranja');
+  eq(S.nameAt(rosa), 'rosa', 'faixa rosa');
+  eq(S.nameAt(vermelho), 'vermelho', 'faixa vermelha');
+  ok(S.depthAt(laranja) > 18 && S.depthAt(laranja) < 22, 'laranja cai funda e dentro');
+  ok(S.depthAt(rosa) > S.depthAt(laranja) && S.depthAt(rosa) <= 22, 'rosa na linha');
+  ok(!S.goesOut(laranja) && !S.goesOut(rosa), 'laranja e rosa entram');
+  ok(S.goesOut(vermelho), 'vermelho sai');
+});
+
+test('a profundidade cresce sempre com a força', () => {
+  let last = -1;
+  for (let p = 0; p <= 1.15; p += 0.02) {
+    const d = S.depthAt(p);
+    ok(d >= last - 1e-9, 'profundidade nunca diminui em p=' + p.toFixed(2));
+    last = d;
+  }
+});
+
+test('deslize reto não é lob, arco acentuado é', () => {
+  const H = 800;
+  const reto = [];
+  for (let i = 0; i <= 10; i++) reto.push({ x: 100, y: 600 - i * 30 });
+  const m1 = S.measure(reto, H);
+  ok(m1 && !m1.lob, 'reto vira rebatida');
+
+  const arco = [];
+  for (let i = 0; i <= 10; i++) {
+    const t = i / 10;
+    arco.push({ x: 100 + Math.sin(t * Math.PI) * 120, y: 600 - t * 300 });
+  }
+  const m2 = S.measure(arco, H);
+  ok(m2 && m2.lob, 'arco vira lob');
+});
+
+test('o lado do deslize é o lado da bola', () => {
+  const H = 800;
+  const esq = S.measure([{ x: 300, y: 600 }, { x: 150, y: 380 }], H);
+  const dir = S.measure([{ x: 300, y: 600 }, { x: 450, y: 380 }], H);
+  ok(esq.lateral < -0.3, 'deslize para a esquerda mira à esquerda');
+  ok(dir.lateral > 0.3, 'deslize para a direita mira à direita');
+});
+
+test('deslize mais longo é mais forte', () => {
+  const H = 800;
+  const curto = S.measure([{ x: 300, y: 600 }, { x: 300, y: 540 }], H);
+  const longo = S.measure([{ x: 300, y: 600 }, { x: 300, y: 260 }], H);
+  ok(longo.power > curto.power * 2, 'força acompanha o comprimento');
+});
+
+test('um toque não vira golpe', () => {
+  eq(S.measure([{ x: 300, y: 600 }, { x: 302, y: 599 }], 800), null, 'toque mínimo');
+});
+
+// ── o gesto decide o golpe ────────────────────────────────────────────────
+function humanSwing(m, p, over) {
+  return Object.assign({ lateral: 0, power: 0.5, lob: false, human: true, quality: 1 }, over);
+}
+
+test('deslize curtíssimo vira bola curta, longo vira drive', () => {
+  const m = mk({});
+  const p = m.players[0];
+  midRally(m, 1, 3, 1);
+  eq(m.pickStyleFromSwipe(p, humanSwing(m, p, { power: 0.08 }), false, { x: 0, y: 2, z: -5 }),
+     Math.abs(p.z) < 10.5 ? 'dink' : 'drop', 'deslize curto');
+  eq(m.pickStyleFromSwipe(p, humanSwing(m, p, { power: 0.6 }), false, { x: 0, y: 2, z: -18 }),
+     'drive', 'deslize longo');
+});
+
+test('lob só sai do arco', () => {
+  const m = mk({});
+  const p = m.players[0];
+  midRally(m, 1, 3, 1);
+  eq(m.pickStyleFromSwipe(p, humanSwing(m, p, { power: 0.9 }), false, { x: 0, y: 2, z: -18 }),
+     'drive', 'deslize reto e longo não é lob');
+  eq(m.pickStyleFromSwipe(p, humanSwing(m, p, { power: 0.5, lob: true }), false, { x: 0, y: 2, z: -18 }),
+     'lob', 'arco é lob');
+});
+
+test('smash só contra um lob pego alto e no ar', () => {
+  const m = mk({});
+  const p = m.players[0];
+  midRally(m, 1, 3, 0);
+  const alto = { x: 0, y: 5.2, z: -10 };
+  m.rally.lastStyle = 'drive';
+  ok(!m.smashable(p, true, alto), 'bola alta que não veio de lob não dá smash');
+  m.rally.lastStyle = 'lob';
+  ok(m.smashable(p, true, alto), 'lob pego alto e no ar dá smash');
+  ok(!m.smashable(p, false, alto), 'depois do quique não é mais smash');
+  ok(!m.smashable(p, true, { x: 0, y: 2.4, z: -10 }), 'lob pego baixo não é smash');
+});
+
+test('uma força vermelha manda a bola para fora de verdade', () => {
+  const m = mk({});
+  const p = m.players[0];
+  m.state = 'live';
+  midRally(m, 1, 3, 1);
+  m.ball.x = 0; m.ball.y = 2.2; m.ball.z = -16; m.ball.live = true;
+  m.executeHit(p, humanSwing(m, p, { power: 0.95 }));
+  const land = PB.Physics.predictLanding(m.ball, 5);
+  ok(land && Math.abs(land.z) > C.HALF_L, 'a bola cai além da linha de fundo');
+});
+
+test('uma força laranja cai funda e dentro', () => {
+  const m = mk({});
+  const p = m.players[0];
+  m.state = 'live';
+  midRally(m, 1, 3, 1);
+  m.ball.x = 0; m.ball.y = 2.2; m.ball.z = -16; m.ball.live = true;
+  m.executeHit(p, humanSwing(m, p, { power: 0.58 }));
+  const land = PB.Physics.predictLanding(m.ball, 5);
+  ok(land && Math.abs(land.z) < C.HALF_L, 'a bola cai dentro');
+  ok(land && Math.abs(land.z) > 14, 'e cai funda');
 });
 
 // ── report ────────────────────────────────────────────────────────────────

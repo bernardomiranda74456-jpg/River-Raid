@@ -1,8 +1,11 @@
 'use strict';
-// Touch model: drag anywhere to move your player, flick to strike.
-// A stroke is continuously read as movement; when its speed spikes upward it is
-// also read as a swing, so one thumb can do both and a second finger can flick
-// while the first keeps running.
+// Touch model, v2: the screen is split down the middle for each player. The
+// RIGHT side runs, the LEFT side strikes. Nothing is read as both, so a stroke
+// never shoves the player and a run never fires a shot.
+//
+// Two humans sharing one screen cannot use that split, because there the two
+// halves are already the two players. That mode keeps the v1 model: the first
+// finger in a half runs, any finger flicks.
 var PB = (function () {
   var g = typeof window !== 'undefined' ? window : globalThis;
   return g.PB || (g.PB = {});
@@ -24,6 +27,8 @@ PB.Input = (function () {
         p1: { mx: 0, mz: 0, swipe: null },
         p2: { mx: 0, mz: 0, swipe: null },
       };
+      // the live path under the striking thumb, read by the renderer
+      this.strokes = { p1: null, p2: null };
       this.enabled = true;
       this.bind();
     }
@@ -44,16 +49,37 @@ PB.Input = (function () {
         if (!this.enabled) return;              // menus own the keyboard
         this.keys[e.code] = true;
         if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) >= 0) e.preventDefault();
-        if (e.code === 'Space') this.kbSwipe('p1', 0, 0.65, true, true);
-        if (e.code === 'KeyQ') this.kbSwipe('p1', -0.7, 0.4, false, false);
-        if (e.code === 'KeyE') this.kbSwipe('p1', 0.7, 0.4, false, false);
-        if (e.code === 'KeyW') this.kbSwipe('p1', 0, 0.9, false, true);
+        if (e.code === 'Space') this.kbSwipe('p1', 0, 0.58);          // rebatida funda
+        if (e.code === 'KeyQ') this.kbSwipe('p1', -0.7, 0.5);
+        if (e.code === 'KeyE') this.kbSwipe('p1', 0.7, 0.5);
+        if (e.code === 'KeyS') this.kbSwipe('p1', 0, 0.12);            // bola curta
+        if (e.code === 'KeyW') this.kbSwipe('p1', 0, 0.6, true);       // lob
       });
       window.addEventListener('keyup', e => { this.keys[e.code] = false; });
     }
 
-    kbSwipe(slot, lateral, depth, fast, long) {
-      this.state[slot].swipe = { lateral, depth, fast, long, power: fast ? 0.95 : 0.6 };
+    kbSwipe(slot, lateral, power, lob) {
+      this.state[slot].swipe = { lateral, power, lob: !!lob, arc: lob ? 0.4 : 0 };
+    }
+
+    // Which viewport belongs to this slot, in canvas pixels.
+    rectFor(slot) {
+      const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+      if (this.split) return { x: 0, y: slot === 'p2' ? 0 : h / 2, w, h: h / 2 };
+      if (this.coop) {
+        const leftIsP1 = !this.coopFlip;
+        const left = (slot === 'p1') === leftIsP1;
+        return { x: left ? 0 : w / 2, y: 0, w: w / 2, h };
+      }
+      return { x: 0, y: 0, w, h };
+    }
+
+    // Right half runs, left half strikes. Shared-screen co-op has no room for
+    // the split, so there every finger keeps the old double duty.
+    roleFor(x, slot) {
+      if (this.coop) return null;
+      const r = this.rectFor(slot);
+      return x < r.x + r.w / 2 ? 'strike' : 'move';
     }
 
     // Split screen: top half is P2. Shared screen with two humans on the same
@@ -76,13 +102,18 @@ PB.Input = (function () {
       e.preventDefault();
       const p = this.local(e);
       const slot = this.slotFor(p.x, p.y);
+      const role = this.roleFor(p.x, slot);
+      // co-op falls back to the old rule: the first finger in a half runs
       const owner = Object.keys(this.pointers).some(k => this.pointers[k].slot === slot && this.pointers[k].mover);
+      const mover = role ? role === 'move' : !owner;
       this.pointers[e.pointerId] = {
-        id: e.pointerId, slot, x: p.x, y: p.y, x0: p.x, y0: p.y,
-        dx: 0, dy: 0, mover: !owner, active: true,
+        id: e.pointerId, slot, role, x: p.x, y: p.y, x0: p.x, y0: p.y,
+        dx: 0, dy: 0, mover, active: true,
         samples: [{ t: performance.now(), x: p.x, y: p.y }],
+        path: role === 'strike' ? [{ x: p.x, y: p.y }] : null,
         lock: 0,
       };
+      if (role === 'strike') this.strokes[slot] = { pts: this.pointers[e.pointerId].path, power: 0 };
       try { this.canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
     }
 
@@ -97,31 +128,65 @@ PB.Input = (function () {
       const now = performance.now();
       pt.samples.push({ t: now, x: p.x, y: p.y });
       while (pt.samples.length > 2 && now - pt.samples[0].t > SAMPLE_MS) pt.samples.shift();
-      this.detectSwipe(pt, now);
+      if (pt.path) {
+        const last = pt.path[pt.path.length - 1];
+        if (Math.hypot(p.x - last.x, p.y - last.y) > 2) pt.path.push({ x: p.x, y: p.y });
+        if (pt.path.length > 220) pt.path.shift();
+        const m = PB.Stroke.measure(pt.path, this.strokeH());
+        const st = this.strokes[pt.slot];
+        if (st) { st.power = m ? m.power : 0; st.lob = !!(m && m.lob); }
+      } else {
+        this.detectSwipe(pt, now);
+      }
+    }
+
+    // Gestures are measured against the height of one player's viewport, so a
+    // stroke means the same thing on a phone, a tablet and a split screen.
+    strokeH() {
+      return this.canvas.clientHeight * (this.split ? 0.5 : 1);
     }
 
     up(e) {
       const pt = this.pointers[e.pointerId];
       if (!pt) return;
+      if (pt.path) {
+        // The stroke reads on release: the whole path is the gesture, and only
+        // then is its power and its bow settled.
+        const m = PB.Stroke.measure(pt.path, this.strokeH());
+        if (m && (m.up > 0 || m.lob)) {
+          this.state[pt.slot].swipe = {
+            lateral: m.lateral, power: m.power, lob: m.lob, arc: m.arc,
+          };
+          this.swipeFx.push({ pts: pt.path.slice(), power: m.power, life: 1 });
+        } else if (this.serveSlots[pt.slot]) {
+          // a plain tap still serves, gently, down the middle
+          this.state[pt.slot].swipe = { lateral: 0, power: 0.42, lob: false, arc: 0 };
+        }
+        this.strokes[pt.slot] = null;
+        delete this.pointers[e.pointerId];
+        return;
+      }
       this.detectSwipe(pt, performance.now(), true);
-      // The serve is not a timed shot, so it must not demand a fast flick: any
-      // deliberate upward stroke sends it, and a plain tap serves down the middle.
+      // A serve is not a timed shot, so a deliberate stroke or a plain tap both
+      // send it, at whatever power the stroke carried.
       if (this.serveSlots[pt.slot] && !this.state[pt.slot].swipe) {
         const dx = pt.x - pt.x0, dy = pt.y - pt.y0;
-        const H = this.canvas.clientHeight * (this.split ? 0.5 : 1);
+        const H = this.strokeH();
         const len = Math.hypot(dx, dy);
         if (-dy > H * 0.02 || len < 16) {
-          const reach = Math.max(len, H * 0.18);
           this.state[pt.slot].swipe = {
-            lateral: Math.max(-1, Math.min(1, dx / Math.max(Math.abs(dy), 1) / 1.4)),
-            depth: Math.max(0, Math.min(1, (reach / H - 0.05) / 0.30)),
-            fast: false, long: true, power: 0.7,
+            lateral: Math.max(-1, Math.min(1, dx / (H * PB.Stroke.SIDE))),
+            power: Math.max(0.3, Math.min(1.15, len / (H * PB.Stroke.FULL))),
+            lob: false, arc: 0,
           };
         }
       }
       delete this.pointers[e.pointerId];
     }
 
+    // Co-op on a shared screen only: one finger does both jobs, so the swing is
+    // still read from a speed spike. Power and direction follow the same scale
+    // as the two-thumb stroke, and a slow long flick stands in for the arc.
     detectSwipe(pt, now, release) {
       if (pt.lock > now) return;
       const s0 = pt.samples[0];
@@ -129,21 +194,23 @@ PB.Input = (function () {
       const dt = Math.max(0.016, (now - s0.t) / 1000);
       const dx = pt.x - s0.x, dy = pt.y - s0.y;
       const len = Math.hypot(dx, dy);
-      const H = this.canvas.clientHeight * (this.split ? 0.5 : 1);
-      const speed = len / dt / H;                  // screen heights per second
-      const upward = -dy;
-      if (upward < H * 0.055) return;              // must travel toward the net
+      const H = this.strokeH();
+      const speed = len / dt / H;
+      if (-dy < H * 0.055) return;
       if (speed < 0.75 && !(release && len > H * 0.16)) return;
 
-      const long = len > H * 0.19;
-      const fast = speed > 1.75;
-      const lateral = Math.max(-1, Math.min(1, dx / Math.max(Math.abs(dy), 1) / 1.4));
-      const depth = Math.max(0, Math.min(1, (len / H - 0.05) / 0.30));
+      const S = PB.Stroke;
       this.state[pt.slot].swipe = {
-        lateral, depth, fast, long,
-        power: Math.max(0.25, Math.min(1, speed / 2.6)),
+        lateral: Math.max(-1, Math.min(1, dx / (H * S.SIDE))),
+        power: Math.max(0, Math.min(1.15, len / (H * S.FULL))),
+        lob: speed < 1.75 && len > H * 0.19,
+        arc: 0,
       };
-      this.swipeFx.push({ x0: s0.x, y0: s0.y, x1: pt.x, y1: pt.y, life: 1 });
+      this.swipeFx.push({
+        pts: [{ x: s0.x, y: s0.y }, { x: pt.x, y: pt.y }],
+        power: Math.max(0, Math.min(1.15, len / (H * S.FULL))),
+        life: 1,
+      });
       pt.lock = now + 260;
       pt.dx = 0; pt.dy = 0;
       pt.samples = [{ t: now, x: pt.x, y: pt.y }];
@@ -183,6 +250,7 @@ PB.Input = (function () {
     reset() {
       this.pointers = {};
       this.swipeFx.length = 0;
+      this.strokes = { p1: null, p2: null };
       this.state.p1 = { mx: 0, mz: 0, swipe: null };
       this.state.p2 = { mx: 0, mz: 0, swipe: null };
     }
