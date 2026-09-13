@@ -74,8 +74,8 @@ PB.Renderer = (function () {
     // television, so more of the court reads from above without going top-down.
     // The narrow rig sits higher still, otherwise the court is a thin strip and
     // the stands eat most of a portrait frame.
-    const camY = wide ? 24 : 40;
-    const camZ = wide ? -71 : -50;
+    const camY = wide ? 24 : 48;
+    const camZ = wide ? -71 : -44;
     const aimY = 2.0, aimZ = 6;
     const pitch = Math.atan2(camY - aimY, aimZ - camZ);
     const sin = Math.sin(pitch), cos = Math.cos(pitch);
@@ -89,9 +89,12 @@ PB.Renderer = (function () {
     // A narrow frame is width-bound already; fitting the side room there shrinks
     // the court to a stamp, so portrait keeps fitting the court itself.
     const czGround = z => camY * sin + (z - camZ) * cos;
+    // Portrait is the phone held upright, which is where most play happens: a
+    // higher camera so the court fills the height instead of the stands, three
+    // feet of room past each sideline, fitted a step behind the baseline.
     const halfNear = wide
       ? (C.HALF_W + C.SIDE_ROOM) / czGround(-BACK)
-      : (C.HALF_W + 2) / czGround(-C.HALF_L);
+      : (C.HALF_W + 3) / czGround(-C.HALF_L - 2);
     // Vertical extent measured between what actually has to be on screen: the
     // feet of the deepest near player and the HEAD of the deepest far one.
     const czAt = (y, z) => (y - camY) * -sin + (z - camZ) * cos;

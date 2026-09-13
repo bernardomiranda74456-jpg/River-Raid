@@ -5,6 +5,15 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v11
+
+Retrato calibrado como uso principal. A câmera do celular em pé sobe de 40 para
+48 pés e chega mais perto (de 50 para 44 pés atrás), então a quadra lê mais de
+cima e ocupa mais da altura da tela em vez da torcida. A largura passa a caber
+três pés além de cada lateral, ajustados dois pés atrás da linha de fundo, e a
+quadra fica com 73% da largura (era 82%, sem lateral nenhuma). A relação
+perto/longe cai de 1,80 para 1,67. A paisagem não muda.
+
 ## v10
 
 A v9 arruinou o retrato: o ajuste de largura com os cinco pés de folga lateral,
