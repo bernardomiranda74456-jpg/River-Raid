@@ -360,7 +360,10 @@ PB.Renderer = (function () {
       const fore = p.swingFore !== false;
       const coil = coilAmt * (fore ? 0.55 : -0.42) * hand;
 
-      const turn = yaw + coil;
+      // Serving, the body turns side-on to the net, non-paddle shoulder leading,
+      // the way a server actually stands. Squares up again once the ball is hit.
+      const serveTurn = (p.serveStance && !(p.swingT > 0)) ? hand * 1.3 : 0;
+      const turn = yaw + coil + serveTurn;
       const shHalf = BODY.shoulderHalf * (0.70 + 0.30 * Math.cos(turn * 1.25));
       const shOff = Math.sin(turn) * 0.36 + lean * 0.55;
       const hipTurn = yaw * 0.55 + coil * 0.25;
@@ -386,8 +389,11 @@ PB.Renderer = (function () {
         const serving = !!p.serveStance && !swinging;
         const ahead = serving ? (side === -hand ? 0.55 : -0.35) : sw * strideDep;
         const lift = serving ? 0 : Math.max(0, sw) * stride * 0.55;
-        const footX = side * stanceHalf + sw * strideLat * 1.15 + lean * 0.8 + ahead * 0.18;
-        const footY = BODY.ankle + lift * 0.42 + Math.max(0, ahead) * 0.30;
+        // side-on, the feet line up along the depth axis instead of across it
+        const footX = serving ? side * 0.34 + ahead * 0.18
+                              : side * stanceHalf + sw * strideLat * 1.15 + lean * 0.8 + ahead * 0.18;
+        const footY = serving ? BODY.ankle + ahead * 0.45
+                              : BODY.ankle + lift * 0.42 + Math.max(0, ahead) * 0.30;
         const knee = ik(hipJ.x, hipJ.y, footX, footY, BODY.thigh, BODY.shin, side * 0.42);
         legs.push({ side, hip: hipJ, knee, foot: { x: footX, y: footY }, depth: ahead });
       }
@@ -463,7 +469,7 @@ PB.Renderer = (function () {
       // ball sits in it rather than near it.
       const serveAmt = p.serveStance && !swinging ? 1 : 0;
       if (serveAmt) {
-        handP = reachable(shPad, { x: hand * 0.98, y: hipY - 0.05 }, armLen);
+        handP = reachable(shPad, { x: hand * 0.55, y: hipY - 0.55 }, armLen);
         elbow = ik(shPad.x, shPad.y, handP.x, handP.y, BODY.upperArm, BODY.foreArm, -hand * 0.55);
         let hold = { x: -hand * 0.55, y: shY - 1.15 };
         if (p.serveHold) {
@@ -1105,10 +1111,26 @@ PB.Renderer = (function () {
       const order = cam.side === 0 ? [far, near] : [near, far];
 
       this.drawShadows(ctx, cam, m);
-      for (const p of order[0]) this.drawPlayer(ctx, cam, p, m, me);
+      // The ball is depth-sorted with the players on its side of the net, so a
+      // ball behind a player is hidden by that player instead of painted over
+      // them. The near server's held ball is the everyday case.
+      // Order comes from position along the court, not camera depth: a held
+      // ball is higher than the feet, which the steep camera would read as
+      // nearer, when it is in fact a step in front of the player.
+      const ballTeam = C.sideOf(m.ball.z);
+      const deep = z => cam.side === 1 ? -z : z;        // bigger = further from the camera
+      const drawGroup = (list) => {
+        const items = list.map(p => ({ cz: deep(p.z), p }));
+        if (list.length && list[0].team === ballTeam) items.push({ cz: deep(m.ball.z), ball: true });
+        items.sort((a, b) => b.cz - a.cz);
+        for (const it of items) {
+          if (it.ball) this.drawBall(ctx, cam, m);
+          else this.drawPlayer(ctx, cam, it.p, m, me);
+        }
+      };
+      drawGroup(order[0]);
       this.drawNet(ctx, cam);
-      for (const p of order[1]) this.drawPlayer(ctx, cam, p, m, me);
-      this.drawBall(ctx, cam, m);
+      drawGroup(order[1]);
     }
 
     // How much screen room is left above the far edge of the ground, and how the

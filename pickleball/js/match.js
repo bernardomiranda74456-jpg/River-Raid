@@ -217,7 +217,7 @@ PB.Match = (function () {
     serveHold(server) {
       const padSide = server.team === 0 ? 1 : -1;      // right-handed, facing the net
       return {
-        x: server.x - padSide * 0.55,
+        x: server.x - padSide * 0.25,
         y: 2.55,
         z: server.z - C.teamSign(server.team) * 0.9,   // a step toward the net
       };

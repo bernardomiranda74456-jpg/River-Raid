@@ -5,6 +5,19 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v13
+
+Saque de lado. O sacador gira o corpo para ficar de perfil para a rede, ombro
+sem raquete à frente, pés alinhados na profundidade e não na largura, raquete
+baixa atrás e a mão da bola estendida à frente. Só depois de bater na bola ele
+volta a ficar de frente, na postura de espera.
+
+A bola passou a ser ordenada em profundidade junto com os jogadores do seu lado
+da rede, pela posição na quadra. Uma bola atrás de um jogador fica escondida por
+ele em vez de pintada por cima. A bola na mão do sacador de perto, que está um
+passo à frente dele, some atrás do corpo, como deve; a do sacador de longe, que
+está de frente para a câmera, continua visível.
+
 ## v12
 
 Postura de saque. Quem vai sacar fica como um sacador de verdade: raquete
