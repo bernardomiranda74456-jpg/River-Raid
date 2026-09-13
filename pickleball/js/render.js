@@ -74,8 +74,8 @@ PB.Renderer = (function () {
     // television, so more of the court reads from above without going top-down.
     // The narrow rig sits higher still, otherwise the court is a thin strip and
     // the stands eat most of a portrait frame.
-    const camY = wide ? 20 : 40;
-    const camZ = wide ? -75 : -50;
+    const camY = wide ? 24 : 40;
+    const camZ = wide ? -71 : -50;
     const aimY = 2.0, aimZ = 6;
     const pitch = Math.atan2(camY - aimY, aimZ - camZ);
     const sin = Math.sin(pitch), cos = Math.cos(pitch);
@@ -83,7 +83,11 @@ PB.Renderer = (function () {
     const vOf = z => -((-camY) * cos + (z - camZ) * sin) / czOf(z);
 
     const BACK = C.HALF_L + BACK_ROOM;
-    const halfNear = C.HALF_W / czOf(-C.HALF_L);
+    // Width is fitted on the ground at the near run-back, sideline plus the room
+    // a player may chase into. That is where a wide ball gets played, and it has
+    // to be on screen whichever side the player is standing on.
+    const czGround = z => camY * sin + (z - camZ) * cos;
+    const halfNear = (C.HALF_W + C.SIDE_ROOM) / czGround(-BACK);
     // Vertical extent measured between what actually has to be on screen: the
     // feet of the deepest near player and the HEAD of the deepest far one.
     const czAt = (y, z) => (y - camY) * -sin + (z - camZ) * cos;
@@ -93,16 +97,16 @@ PB.Renderer = (function () {
     // Room the scoreboard needs at the top of this viewport; nothing that must
     // stay legible is framed under it.
     const top = hudBand(vp) + 0.005;
-    // The near baseline takes 56% of a wide frame (66% in v5, 60% in v7): a touch further
-    // back than v5, enough to keep the whole court comfortably in view.
     let focal = Math.min(
-      (wide ? 0.56 : 0.98) * vp.w / (2 * halfNear),
+      (wide ? 0.96 : 0.98) * vp.w / (2 * halfNear),
       (0.995 - top) * vp.h / (botV - topV)
     );
 
     this.side = side; this.sin = sin; this.cos = cos; this.focal = focal;
     this.y = camY; this.z = camZ;
-    this.x = (side === 1 ? -1 : 1) * focusX * 0.25;
+    // A whisper of follow, no more: the sides beyond the court must stay in view
+    // wherever the player stands.
+    this.x = (side === 1 ? -1 : 1) * focusX * 0.06;
     this.cx = vp.x + vp.w / 2;
     // Preferred framing: the near baseline low in a wide frame, the run-back at
     // the bottom for a narrow one — then slid until nobody is cut off at either

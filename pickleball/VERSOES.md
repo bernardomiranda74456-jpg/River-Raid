@@ -5,6 +5,17 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v9
+
+A câmera sobe um pouco (de 20 para 24 pés, um pouco mais perto) para a quadra
+ser vista mais de cima, e a largura passa a ser ajustada onde uma bola larga é
+realmente jogada: no chão, no recuo de perto, incluindo os cinco pés além da
+linha lateral. O acompanhamento lateral da câmera cai de 25% para 6% da posição
+do jogador, então as laterais além da quadra ficam visíveis dos dois lados
+independentemente de onde o jogador está. No iPad a quadra ocupa 59% da
+largura, entre a v7 e a v8, com mais céu sobre a linha de fundo distante e mais
+chão fora das linhas.
+
 ## v8
 
 Ligeiramente mais afastada que a v7: a linha de fundo de perto passa de 60% para
