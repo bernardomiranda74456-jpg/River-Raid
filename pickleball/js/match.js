@@ -16,7 +16,7 @@ PB.Match = (function () {
     dificil: { opp: 0.86, mate: 0.80, assist: false, autoSwing: false },
   };
 
-  const MOVE_SPEED = 13.2;   // ft/s, roughly a quick club player
+  const MOVE_SPEED = 14.52;   // ft/s, a step quicker than a club player
   const REACH      = 3.05;   // paddle + arm
   const HIT_CD     = 0.22;
   const MARK_FADE  = 2.0;    // seconds a bounce mark takes to fade off the court

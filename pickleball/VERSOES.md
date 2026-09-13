@@ -5,6 +5,15 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v3
+
+Jogador 10% mais rápido: a velocidade de corrida sobe de 13,2 para 14,52 pés por
+segundo. A CPU acompanha, porque a velocidade dela é uma fração da mesma
+constante, então o equilíbrio entre vocês não muda: o que muda é que a quadra
+inteira ficou menor para os dois. Medido em dez partidas simuladas, o rali
+continua na casa dos quatorze golpes e os pontos que acabavam em dois quiques
+caíram de 29% para 23%.
+
 ## v2
 
 Os controles refeitos. A tela de cada jogador se divide em duas: o lado direito
