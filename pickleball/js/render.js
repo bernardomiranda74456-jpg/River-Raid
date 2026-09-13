@@ -382,8 +382,10 @@ PB.Renderer = (function () {
         const phase = ph + (i === 0 ? Math.PI : 0);
         const sw = Math.sin(phase);
         const hipJ = side < 0 ? hipL : hipR;
-        const ahead = sw * strideDep;
-        const lift = Math.max(0, sw) * stride * 0.55;
+        // Serving: a staggered stance, non-paddle foot forward, feet planted.
+        const serving = !!p.serveStance && !swinging;
+        const ahead = serving ? (side === -hand ? 0.55 : -0.35) : sw * strideDep;
+        const lift = serving ? 0 : Math.max(0, sw) * stride * 0.55;
         const footX = side * stanceHalf + sw * strideLat * 1.15 + lean * 0.8 + ahead * 0.18;
         const footY = BODY.ankle + lift * 0.42 + Math.max(0, ahead) * 0.30;
         const knee = ik(hipJ.x, hipJ.y, footX, footY, BODY.thigh, BODY.shin, side * 0.42);
@@ -447,20 +449,37 @@ PB.Renderer = (function () {
         y: shY - 0.58,
       };
       const freeHand = mix(freeSwing, freeReady, readyAmt);
-      const freeHandR = reachable(shFree, freeHand, armLen);
-      const freeElbow = mix(
+      let freeHandR = reachable(shFree, freeHand, armLen);
+      let freeElbow = mix(
         ik(shFree.x, shFree.y, freeHandR.x, freeHandR.y, BODY.upperArm, BODY.foreArm, hand * 0.75),
         freeReadyElbow, readyAmt);
-      const elbow = mix(
+      let elbow = mix(
         ik(shPad.x, shPad.y, handP.x, handP.y, BODY.upperArm, BODY.foreArm, -hand * 0.8),
         readyElbow, readyAmt);
+
+      // The serve posture: paddle drawn back and low beside the hip, tip toward
+      // the ground, and the free hand out in front holding the ball at the
+      // waist. The hand goes exactly where the match keeps the ball, so the
+      // ball sits in it rather than near it.
+      const serveAmt = p.serveStance && !swinging ? 1 : 0;
+      if (serveAmt) {
+        handP = reachable(shPad, { x: hand * 0.98, y: hipY - 0.05 }, armLen);
+        elbow = ik(shPad.x, shPad.y, handP.x, handP.y, BODY.upperArm, BODY.foreArm, -hand * 0.55);
+        let hold = { x: -hand * 0.55, y: shY - 1.15 };
+        if (p.serveHold) {
+          const q = cam.proj(p.serveHold.x, p.serveHold.y, p.serveHold.z);
+          hold = { x: (q.x - base.x) / s, y: (base.y - q.y) / s };
+        }
+        freeHandR = reachable(shFree, hold, armLen);
+        freeElbow = ik(shFree.x, shFree.y, freeHandR.x, freeHandR.y, BODY.upperArm, BODY.foreArm, hand * 0.5);
+      }
 
       // Seen from behind, everything the player holds in front of their chest is
       // behind their back — arms and paddle go under the torso, and only what
       // sticks out past the silhouette shows. Facing the camera, they go on top.
       const fromBehind = facing > 0;
       const drawPaddle = () =>
-        this.paddle(ctx, P, elbow, handP, look, hand, swinging, prog, readyAmt);
+        this.paddle(ctx, P, elbow, handP, look, hand, swinging, prog, serveAmt ? 0 : readyAmt, serveAmt);
 
       this.shadow(ctx, P, base, s, stanceHalf, isMe, p);
       if (STYLE.kind === 'mii') {
@@ -926,10 +945,17 @@ PB.Renderer = (function () {
     },
 
     // A pickleball paddle: rounded face, throat, grip with a butt cap.
-    paddle(ctx, P, elbow, hand, look, side, swinging, prog, readyAmt) {
+    paddle(ctx, P, elbow, hand, look, side, swinging, prog, readyAmt, serveAmt) {
       const dx = hand.x - elbow.x, dy = hand.y - elbow.y;
       const len = Math.hypot(dx, dy) || 1;
       let ux = dx / len, uy = dy / len;
+      // Serving: the paddle hangs back, face down, ready to swing up under the ball.
+      if (serveAmt) {
+        ux = lerp(ux, side * 0.40, serveAmt);
+        uy = lerp(uy, -0.92, serveAmt);
+        const n = Math.hypot(ux, uy) || 1;
+        ux /= n; uy /= n;
+      }
       // Waiting: the face points at the sky, barely tilted off vertical.
       if (readyAmt > 0.001) {
         ux = lerp(ux, side * 0.28, readyAmt);

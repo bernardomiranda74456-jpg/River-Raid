@@ -20,6 +20,8 @@ PB.Match = (function () {
   const HUMAN_SPEED = 14.52;  // the player runs 10% above that, on purpose
   const REACH      = 3.05;   // paddle + arm
   const HIT_CD     = 0.22;
+  const SERVE_WAIT   = 3.0;  // s standing at the line before the server starts bouncing the ball
+  const BOUNCE_PERIOD = 0.8; // s per bounce, hand to floor and back
   const MARK_FADE  = 2.0;    // seconds a bounce mark takes to fade off the court
 
   // A paddle held in front of the chest cannot sweep the floor at arm's length.
@@ -207,6 +209,18 @@ PB.Match = (function () {
       this.state = 'ready';
       this.stateT = 0;
       this.pred = null;
+      this.serveBounceN = -1;
+    }
+
+    // Where the free hand holds the ball before the serve: a little to the
+    // non-paddle side, a step toward the net, waist high.
+    serveHold(server) {
+      const padSide = server.team === 0 ? 1 : -1;      // right-handed, facing the net
+      return {
+        x: server.x - padSide * 0.55,
+        y: 2.55,
+        z: server.z - C.teamSign(server.team) * 0.9,   // a step toward the net
+      };
     }
 
     doServe(aim, power) {
@@ -297,10 +311,25 @@ PB.Match = (function () {
 
       if (this.state === 'ready') {
         const server = this.players[this.serverIdx];
-        // keep the ball in the server's hand
-        this.ball.x = server.x + this.serveXSign * 0.9;
-        this.ball.z = server.z + C.teamSign(server.team) * 0.35;
-        this.ball.y = 1.95;
+        // The ball waits in the server's free hand, held out in front at waist
+        // height the way a real server stands. Kept waiting long enough, a human
+        // server starts bouncing it on the court, as players do.
+        const hold = this.serveHold(server);
+        server.serveHold = hold;
+        const b = this.ball;
+        b.x = hold.x; b.z = hold.z; b.y = hold.y;
+        const waited = this.stateT - SERVE_WAIT;
+        server.serveBouncing = server.ctrl === 'human' && waited > 0;
+        if (server.serveBouncing) {
+          const phase = (waited % BOUNCE_PERIOD) / BOUNCE_PERIOD;
+          const k = 2 * phase - 1;                     // -1 at the hand, 0 on the floor, 1 back
+          b.y = C.BALL_R + (hold.y - C.BALL_R) * k * k;
+          const n = Math.floor(waited / BOUNCE_PERIOD + 0.5);
+          if (n !== this.serveBounceN) {
+            this.serveBounceN = n;
+            this.events.push({ type: 'bounce', x: b.x, z: b.z, impact: 5 });
+          }
+        }
         if (server.ctrl === 'cpu' && this.stateT > 0.6) {
           PB.AI.serve(this, server);
         }
@@ -677,7 +706,11 @@ PB.Match = (function () {
       if (p.prep > 0.25 || p.swingT > 0) yawWant *= 0.35;   // squaring up to hit
       p.yaw += (yawWant - p.yaw) * Math.min(1, dt * 7);
       // waiting between points: a small split-step bounce
-      p.hop = this.state === 'ready' ? (Math.sin(this.stateT * 6.5) * 0.5 + 0.5) * 0.06 : 0;
+      // the server stands in the serve posture, ball out front; nobody bounces
+      // on their toes while holding the ball
+      p.serveStance = this.state === 'ready' && p.id === this.serverIdx;
+      if (!p.serveStance) { p.serveHold = null; p.serveBouncing = false; }
+      p.hop = this.state === 'ready' && !p.serveStance ? (Math.sin(this.stateT * 6.5) * 0.5 + 0.5) * 0.06 : 0;
       // Ready position is a real athletic stance: knees bent and weight forward
       // even before the ball comes, deeper still at the kitchen line.
       let wantCrouch = 0.46 + p.prep * 0.36 + (Math.abs(p.z) < 10 ? 0.12 : 0);

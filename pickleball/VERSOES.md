@@ -5,6 +5,19 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v12
+
+Postura de saque. Quem vai sacar fica como um sacador de verdade: raquete
+recolhida atrás do quadril com a face para o chão, mão livre estendida à frente
+segurando a bola na altura da cintura, pés em passada com o pé do lado sem
+raquete à frente. A mão livre é desenhada exatamente onde a partida guarda a
+bola, então a bola fica na mão e não perto dela. Vale para os dois lados da
+quadra, humano ou CPU.
+
+Se o sacador humano levar mais de três segundos, ele começa a quicar a bola na
+quadra, uma vez a cada 0,8 s, com o som do quique, até sacar. A CPU saca em
+menos de um segundo e por isso nunca chega a quicar.
+
 ## v11
 
 Retrato calibrado como uso principal. A câmera do celular em pé sobe de 40 para
