@@ -11,21 +11,44 @@ PB.Audio = (function () {
   // Audio is a nicety: if the context cannot be created (older iOS, a frame
   // without permission, an autoplay policy) the game must carry on silently.
   function init() {
-    if (ctx) return;
-    try {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      ctx = new AC();
-      master = ctx.createGain();
-      master.gain.value = 0.5;
-      master.connect(ctx.destination);
-    } catch (e) {
-      ctx = null;
-      master = null;
+    if (!ctx) {
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        ctx = new AC();
+        master = ctx.createGain();
+        master.gain.value = muted ? 0 : 0.7;
+        master.connect(ctx.destination);
+      } catch (e) {
+        ctx = null;
+        master = null;
+        return;
+      }
     }
+    unlock();
+  }
+
+  // iOS keeps a fresh context suspended and only honours resume() from inside a
+  // user gesture, so this runs on every tap until the context reports running.
+  // Playing one silent sample in the same gesture is the classic unlock for
+  // older WebKit, and it is harmless everywhere else.
+  let unlocked = false;
+  function unlock() {
+    if (!ctx || unlocked) return;
+    try {
+      if (ctx.state === 'suspended') ctx.resume();
+      const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+      if (ctx.state === 'running') unlocked = true;
+      else ctx.resume().then(() => { unlocked = ctx.state === 'running'; }).catch(() => {});
+    } catch (e) { /* ignore */ }
   }
 
   function resume() { try { if (ctx && ctx.state === 'suspended') ctx.resume(); } catch (e) { /* ignore */ } }
+  function state() { return ctx ? ctx.state : 'none'; }
 
   function noise(dur) {
     const n = Math.floor(ctx.sampleRate * dur);
@@ -81,30 +104,42 @@ PB.Audio = (function () {
       src.connect(f); f.connect(g); g.connect(master);
       src.start();
     } else if (kind === 'crowd') {
-      // a stand full of people: broadband noise that swells and falls, with
-      // a scatter of claps riding on top
-      const dur = 1.6 + p * 1.2;
-      const src = noise(dur);
-      const f = ctx.createBiquadFilter();
-      f.type = 'bandpass'; f.frequency.value = 900 + p * 500; f.Q.value = 0.7;
-      const g = ctx.createGain();
+      // A stand full of people at the end of a point: a low roar and a brighter
+      // hiss that swell and fall together, a scatter of claps on top, and on the
+      // big points a whistle or two. Loud enough to be heard on a phone speaker.
+      const dur = 2.0 + p * 1.3;
       const now = ctx.currentTime;
-      g.gain.setValueAtTime(0.0001, now);
-      g.gain.exponentialRampToValueAtTime(0.16 * p + 0.02, now + 0.18);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-      src.connect(f); f.connect(g); g.connect(master);
-      src.start();
-      const claps = Math.round(4 + p * 10);
+      const layer = (freq, q, peak) => {
+        const src = noise(dur);
+        const f = ctx.createBiquadFilter();
+        f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(peak, now + 0.22);
+        g.gain.setValueAtTime(peak, now + 0.22 + dur * 0.25);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+        src.connect(f); f.connect(g); g.connect(master);
+        src.start();
+      };
+      layer(420, 0.6, 0.30 * p + 0.06);          // the roar
+      layer(1400 + p * 600, 0.8, 0.20 * p + 0.04); // the hiss of many voices
+      const claps = Math.round(10 + p * 16);
       for (let i = 0; i < claps; i++) {
-        const at = now + 0.1 + Math.random() * dur * 0.7;
-        const c = noise(0.04);
+        const at = now + 0.12 + Math.random() * dur * 0.75;
+        const c = noise(0.035);
         const cf = ctx.createBiquadFilter();
-        cf.type = 'highpass'; cf.frequency.value = 1800;
+        cf.type = 'highpass'; cf.frequency.value = 1600;
         const cg = ctx.createGain();
-        cg.gain.setValueAtTime(0.05 * p, at);
+        cg.gain.setValueAtTime(0.09 * p + 0.02, at);
         cg.gain.exponentialRampToValueAtTime(0.0001, at + 0.05);
         c.connect(cf); cf.connect(cg); cg.connect(master);
         c.start(at);
+      }
+      if (p > 0.7) {
+        const whistles = p > 0.9 ? 2 : 1;
+        for (let i = 0; i < whistles; i++) {
+          setTimeout(() => ctx && blip(2300 + Math.random() * 400, 0.35, 'sine', 0.06, 1900), 250 + i * 420);
+        }
       }
     } else if (kind === 'point') {
       blip(520, 0.12, 'triangle', 0.2);
@@ -114,8 +149,8 @@ PB.Audio = (function () {
     }
   }
 
-  function setMuted(v) { muted = v; try { if (master) master.gain.value = v ? 0 : 0.5; } catch (e) { /* ignore */ } }
+  function setMuted(v) { muted = v; try { if (master) master.gain.value = v ? 0 : 0.7; } catch (e) { /* ignore */ } }
   function isMuted() { return muted; }
 
-  return { init, play, setMuted, isMuted, resume };
+  return { init, play, setMuted, isMuted, resume, unlock, state };
 })();

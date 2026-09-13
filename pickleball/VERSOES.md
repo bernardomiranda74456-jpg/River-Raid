@@ -5,6 +5,23 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v14
+
+Som destravado no iPhone. O contexto de áudio era criado no toque, mas nunca era
+retomado dentro de um toque, e o iOS só aceita a retomada dentro de um gesto do
+usuário: o jogo ficava mudo do início ao fim. Agora todo toque na tela retoma o
+áudio até ele reportar que está rodando, tocando um sample silencioso no mesmo
+gesto, que é o destravamento clássico do WebKit. Voltar ao app depois de sair
+também retoma o áudio.
+
+A torcida a cada ponto ficou cheia: um rugido grave e um chiado de vozes que
+sobem e descem juntos, entre 10 e 26 palmas espalhadas e, nos pontos grandes,
+um ou dois assobios. O volume geral subiu de 0,5 para 0,7. A intensidade
+continua crescendo com o tamanho do rali, e o fim de partida toca mais alto.
+
+Lembrete de iOS: a chave lateral de silêncio do iPhone cala o áudio do
+navegador. Com ela ligada, não há som nenhum, do jogo ou de qualquer página.
+
 ## v13
 
 Saque de lado. O sacador gira o corpo para ficar de perfil para a rede, ombro

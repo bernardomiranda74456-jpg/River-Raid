@@ -60,6 +60,10 @@
   function buzz(ms) { if (navigator.vibrate) try { navigator.vibrate(ms); } catch (e) { /* ignore */ } }
 
   // ── buttons ──────────────────────────────────────────────────────────────
+  // Every tap is a chance to unlock audio on iOS, and to wake it after the
+  // page was backgrounded. Cheap, and it makes the first sound reliable.
+  document.addEventListener('pointerdown', () => PB.Audio.unlock(), { passive: true });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) PB.Audio.resume(); });
   $('btn-play').onclick = () => { PB.Audio.init(); syncOpts(); show('scr-setup'); };
   // ── tutorial ─────────────────────────────────────────────────────────────
   const steps = PB.Tutorial.STEPS;
