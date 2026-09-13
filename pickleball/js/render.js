@@ -1588,22 +1588,26 @@ PB.Renderer = (function () {
           nx += ctx.measureText(p.name).width;
         });
 
-        // Serve badge: the number alone, which is the half of the call a player
-        // actually has to track. Singles has no second server, so it gets a
-        // plain marker instead of a digit.
+        // Serve badge: one ball for the first server, two for the second. A
+        // count reads faster than a digit, and it is the same ball they are
+        // about to hit. Singles has no second server, so it always shows one.
         if (m.servingTeam === t) {
-          const cx = x + w - box - 18 * k;
+          const n = m.isDoubles() ? m.serverNumber : 1;
+          const r = 7 * k, gap = 5.5 * k;
+          const right = x + w - box - 11 * k;
           const cy = ry + row / 2;
-          const r = m.isDoubles() ? 10.5 * k : 5.5 * k;
-          ctx.fillStyle = COL.ball;
-          ctx.beginPath();
-          ctx.arc(cx, cy, r, 0, Math.PI * 2);
-          ctx.fill();
-          if (m.isDoubles()) {
-            ctx.fillStyle = '#12202c';
-            ctx.font = `800 ${14 * k}px system-ui, sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.fillText(String(m.serverNumber), cx, cy + 0.5 * k);
+          for (let i = 0; i < n; i++) {
+            const cx = right - r - i * (r * 2 + gap);
+            const g = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.4, r * 0.15, cx, cy, r);
+            g.addColorStop(0, '#f4ffb0');
+            g.addColorStop(1, COL.ball);
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+            ctx.lineWidth = Math.max(1, k);
+            ctx.stroke();
           }
         }
 

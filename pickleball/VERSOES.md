@@ -5,6 +5,18 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v5
+
+O número do sacador vira contagem de bolas: **uma bola é o primeiro sacador da
+dupla, duas bolas é o segundo**. Uma contagem se lê mais rápido que um dígito, e
+é a mesma bola que o jogador está prestes a bater. Em simples aparece sempre uma.
+O tutorial passou a mostrar e explicar as duas bolinhas.
+
+Também consertei um teste instável: os dois testes de força colocavam o jogador
+longe da bola, então o espalhamento do contato ruim às vezes jogava para fora um
+golpe laranja que deveria cair dentro. Eles passaram a medir o mapa de força sem
+o espalhamento por cima.
+
 ## v4
 
 A velocidade extra passa a ser sua, e não de todo mundo. A v3 subiu a constante

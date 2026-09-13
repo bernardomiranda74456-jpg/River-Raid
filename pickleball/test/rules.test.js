@@ -558,12 +558,21 @@ test('smash só contra um lob pego alto e no ar', () => {
   ok(!m.smashable(p, true, { x: 0, y: 2.4, z: -10 }), 'lob pego baixo não é smash');
 });
 
+// Stand the player on the ball: these tests are about the power-to-depth map,
+// not about the scatter that bad contact adds on top of it.
+function cleanContact(m, p) {
+  p.x = 0; p.z = -16; p.vx = 0; p.vz = 0; p.lunge = 0; p.speedN = 0;
+  m.ball.x = 0; m.ball.y = 2.2; m.ball.z = -16;
+  m.ball.vx = m.ball.vy = m.ball.vz = 0;
+  m.ball.live = true; m.ball.resting = false;
+}
+
 test('uma força vermelha manda a bola para fora de verdade', () => {
   const m = mk({});
   const p = m.players[0];
   m.state = 'live';
   midRally(m, 1, 3, 1);
-  m.ball.x = 0; m.ball.y = 2.2; m.ball.z = -16; m.ball.live = true;
+  cleanContact(m, p);
   m.executeHit(p, humanSwing(m, p, { power: 0.95 }));
   const land = PB.Physics.predictLanding(m.ball, 5);
   ok(land && Math.abs(land.z) > C.HALF_L, 'a bola cai além da linha de fundo');
@@ -574,7 +583,7 @@ test('uma força laranja cai funda e dentro', () => {
   const p = m.players[0];
   m.state = 'live';
   midRally(m, 1, 3, 1);
-  m.ball.x = 0; m.ball.y = 2.2; m.ball.z = -16; m.ball.live = true;
+  cleanContact(m, p);
   m.executeHit(p, humanSwing(m, p, { power: 0.58 }));
   const land = PB.Physics.predictLanding(m.ball, 5);
   ok(land && Math.abs(land.z) < C.HALF_L, 'a bola cai dentro');

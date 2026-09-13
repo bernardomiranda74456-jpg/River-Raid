@@ -143,9 +143,8 @@ PB.Tutorial = (function () {
          <rect x="66" y="46" width="4" height="74" fill="#d9ff3d"/>
          <text x="82" y="72" fill="#d9ff3d" font-size="13" font-weight="800" font-family="system-ui">VOCÊ</text>
          <text x="82" y="104" fill="#eef4f9" font-size="13" font-weight="800" font-family="system-ui">REIS</text>
-         <circle cx="186" cy="67" r="11" fill="#d9ff3d"/>
-         <text x="186" y="72" fill="#12202c" font-size="14" font-weight="800"
-               text-anchor="middle" font-family="system-ui">2</text>
+         <circle cx="172" cy="67" r="7" fill="#d9ff3d" stroke="rgba(0,0,0,.35)"/>
+         <circle cx="190" cy="67" r="7" fill="#d9ff3d" stroke="rgba(0,0,0,.35)"/>
          <rect x="200" y="54" width="30" height="26" fill="#1b3552"/>
          <rect x="200" y="86" width="30" height="26" fill="#b4303f"/>
          <text x="215" y="72" fill="#fff" font-size="15" font-weight="800"
@@ -159,9 +158,10 @@ PB.Tutorial = (function () {
              toque simples também saca, fraco e no meio.</p>
              <p><b>Só quem saca pontua.</b> Perdeu o ponto sacando, o saque passa, mas o
              placar não muda.</p>
-             <p>O disco amarelo diz se é o <b>primeiro ou o segundo sacador</b> da dupla, e o
-             nome aceso é quem está com a bola. Nas duplas os dois parceiros sacam antes de
-             o saque passar, e por isso o jogo começa em <b>0-0-2</b>.</p>`,
+             <p>As bolinhas dizem quem saca: <b>uma bola é o primeiro sacador</b> da dupla,
+             <b>duas bolas é o segundo</b>. O nome aceso é quem está com a bola. Os dois
+             parceiros sacam antes de o saque passar, e por isso o jogo começa em
+             <b>0-0-2</b>.</p>`,
     },
     {
       title: 'Dois no mesmo aparelho',
