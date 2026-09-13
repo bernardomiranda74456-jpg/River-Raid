@@ -5,6 +5,21 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v4
+
+A velocidade extra passa a ser sua, e não de todo mundo. A v3 subiu a constante
+que a CPU também usa, então a quadra encolhia para os dois e a diferença entre
+vocês continuava a mesma. Agora a base da CPU volta aos 13,2 pés por segundo e o
+jogador humano fica nos 14,52.
+
+No nível normal, você corre a 14,52 contra 11,83 do rival, ou seja, 23% mais
+rápido. Antes da v3 a vantagem era de 12%. No difícil ela fica em 14% e no fácil
+em 32%.
+
+A conta de "quão rápido estou indo", que alimenta a passada da animação, a
+inclinação do corpo e a pegada dos pés na cozinha, passou a usar o teto de cada
+jogador em vez da constante comum. Correndo a fundo, todo mundo lê como a fundo.
+
 ## v3
 
 Jogador 10% mais rápido: a velocidade de corrida sobe de 13,2 para 14,52 pés por

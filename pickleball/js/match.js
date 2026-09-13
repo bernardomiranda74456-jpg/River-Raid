@@ -16,7 +16,8 @@ PB.Match = (function () {
     dificil: { opp: 0.86, mate: 0.80, assist: false, autoSwing: false },
   };
 
-  const MOVE_SPEED = 14.52;   // ft/s, a step quicker than a club player
+  const MOVE_SPEED = 13.2;    // ft/s: the baseline the CPU is built on
+  const HUMAN_SPEED = 14.52;  // the player runs 10% above that, on purpose
   const REACH      = 3.05;   // paddle + arm
   const HIT_CD     = 0.22;
   const MARK_FADE  = 2.0;    // seconds a bounce mark takes to fade off the court
@@ -27,6 +28,12 @@ PB.Match = (function () {
   // players from scooping the ball the instant it touches down.
   function reachFactor(y) {
     return Math.max(0.06, Math.min(1, 0.06 + 0.94 * (y - 0.15) / 1.15));
+  }
+
+  // How fast this player can run. The CPU is a fraction of the baseline by
+  // skill; the human sits above it, so the edge is theirs rather than shared.
+  function topSpeed(p) {
+    return p.ctrl === 'cpu' ? MOVE_SPEED * (0.72 + 0.28 * p.skill) : HUMAN_SPEED;
   }
 
   let nextId = 0;
@@ -425,7 +432,7 @@ PB.Match = (function () {
       q -= Math.max(0, Math.min(1, (P.speed(b) - 34) / 42)) * 0.22;
       if (b.y < 1.0) q -= 0.16;
       if (b.y > 5.6) q -= 0.10;
-      const cross = Math.hypot(p.vx, p.vz) / MOVE_SPEED;
+      const cross = Math.hypot(p.vx, p.vz) / topSpeed(p);
       q -= Math.max(0, cross - 0.75) * 0.35;
       return Math.max(0.18, Math.min(1, q));
     }
@@ -616,7 +623,7 @@ PB.Match = (function () {
       }
       const mag = Math.hypot(dx, dz);
       if (mag > 1) { dx /= mag; dz /= mag; }
-      const speed = MOVE_SPEED * (p.ctrl === 'cpu' ? 0.72 + 0.28 * p.skill : 1);
+      const speed = topSpeed(p);
       const tvx = dx * speed, tvz = dz * speed;
       const k = Math.min(1, dt * 11);
       p.vx += (tvx - p.vx) * k;
@@ -654,11 +661,11 @@ PB.Match = (function () {
     // Visual state only: gait, stance and how loaded the swing looks.
     animate(p, dt) {
       const spd = Math.hypot(p.vx, p.vz);
-      p.speedN = Math.min(1, spd / MOVE_SPEED);
+      p.speedN = Math.min(1, spd / topSpeed(p));
       p.runPhase += dt * (5.2 + p.speedN * 12.5);
       if (p.runPhase > Math.PI * 2) p.runPhase -= Math.PI * 2;
       // lean into the run, and square up again when standing
-      const target = -(p.vx / MOVE_SPEED) * 0.22 * (p.team === 0 ? 1 : -1);
+      const target = -(p.vx / topSpeed(p)) * 0.22 * (p.team === 0 ? 1 : -1);
       p.lean += (target - p.lean) * Math.min(1, dt * 6);
       // turn the body toward where it is running: a player who never turns
       // reads as a crab shuffling sideways
@@ -776,5 +783,7 @@ PB.Match = (function () {
 
   Match.SKILL = SKILL;
   Match.MOVE_SPEED = MOVE_SPEED;
+  Match.HUMAN_SPEED = HUMAN_SPEED;
+  Match.topSpeed = topSpeed;
   return Match;
 })();
