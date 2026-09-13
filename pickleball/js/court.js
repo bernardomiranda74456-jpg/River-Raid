@@ -76,9 +76,11 @@ PB.Court = {
   // Players stay inside what the camera can show: 5 ft wide of the sideline and
   // 4.5 ft behind the baseline, and never across the net plane.
   BACK_ROOM: 4.5,
+  SIDE_ROOM: 5,            // how far wide of the sideline a player may chase
   clampToPlayArea(p, team) {
     const s = this.teamSign(team);
-    p.x = Math.max(-this.HALF_W - 5, Math.min(this.HALF_W + 5, p.x));
+    const wide = this.HALF_W + this.SIDE_ROOM;
+    p.x = Math.max(-wide, Math.min(wide, p.x));
     if (s < 0) p.z = Math.max(-this.HALF_L - this.BACK_ROOM, Math.min(-0.7, p.z));
     else       p.z = Math.min(this.HALF_L + this.BACK_ROOM, Math.max(0.7, p.z));
     return p;

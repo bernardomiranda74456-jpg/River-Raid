@@ -83,24 +83,32 @@ PB.Renderer = (function () {
     const vOf = z => -((-camY) * cos + (z - camZ) * sin) / czOf(z);
 
     const BACK = C.HALF_L + BACK_ROOM;
-    const halfNear = C.HALF_W / czOf(-C.HALF_L);
+    // Frame the whole play area, not just the court: a player may chase the ball
+    // five feet wide of the sideline and four and a half behind the baseline, and
+    // none of that is worth anything if it happens off screen. The widest point
+    // on screen is a head at the near corner of the run-back, so that is what the
+    // width is fitted to.
+    const PLAY_X = C.HALF_W + C.SIDE_ROOM;
     // Vertical extent measured between what actually has to be on screen: the
     // feet of the deepest near player and the HEAD of the deepest far one.
     const czAt = (y, z) => (y - camY) * -sin + (z - camZ) * cos;
     const vAt = (y, z) => -((y - camY) * cos + (z - camZ) * sin) / czAt(y, z);
     const topV = vAt(6.4, BACK);
     const botV = vAt(0, -BACK);
+    const halfNear = PLAY_X / czAt(6.4, -BACK);
     // Room the scoreboard needs at the top of this viewport; nothing that must
     // stay legible is framed under it.
     const top = hudBand(vp) + 0.005;
     let focal = Math.min(
-      (wide ? 0.66 : 0.98) * vp.w / (2 * halfNear),
+      0.94 * vp.w / (2 * halfNear),
       (0.995 - top) * vp.h / (botV - topV)
     );
 
     this.side = side; this.sin = sin; this.cos = cos; this.focal = focal;
     this.y = camY; this.z = camZ;
-    this.x = (side === 1 ? -1 : 1) * focusX * 0.25;
+    // No lateral pan any more: the whole play area is in frame, so following the
+    // player sideways could only push the far side of it out.
+    this.x = 0;
     this.cx = vp.x + vp.w / 2;
     // Preferred framing: the near baseline low in a wide frame, the run-back at
     // the bottom for a narrow one — then slid until nobody is cut off at either
@@ -976,6 +984,10 @@ PB.Renderer = (function () {
 
   function spaced(s) { return s.split('').join(' '); }
 
+  // test hook: build the near-side camera for an arbitrary rect so a check can
+  // ask where a world point actually lands on screen
+  function probeCam(rect) { return new Cam(rect, 0, 0); }
+
   class Renderer {
     constructor(canvas) {
       this.canvas = canvas;
@@ -984,6 +996,8 @@ PB.Renderer = (function () {
       this.dpr = 1;
       this.shake = 0;
     }
+
+    __probeCam(rect) { return probeCam(rect); }
 
     resize() {
       const dpr = Math.min(2, window.devicePixelRatio || 1);

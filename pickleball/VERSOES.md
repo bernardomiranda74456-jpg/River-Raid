@@ -5,6 +5,23 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v6
+
+A câmera passou a enquadrar a **área de jogo inteira**, e não só a quadra. Um
+jogador pode perseguir a bola cinco pés além da linha lateral e quatro e meio
+atrás da linha de fundo, e nada disso vale se acontecer fora da tela. No iPad a
+quadra passa a ocupar 56% da largura em vez de 66%.
+
+O ponto mais largo na tela é a cabeça de um jogador no canto de perto do recuo,
+e é nele que a largura é ajustada. Antes o ajuste era feito na linha de fundo,
+que é mais distante e mais estreita, e por isso os extremos escapavam: no iPad os
+cantos da área de jogo caíam a 44 pixels fora de cada lado.
+
+A câmera também deixou de acompanhar o jogador de lado. Com a área inteira em
+quadro, seguir alguém para o lado só empurrava o outro lado para fora. Com o
+enquadramento fixo, nenhum ponto da área de jogo sai da tela em nenhuma
+proporção de tela nem com o jogador em qualquer posição.
+
 ## v5
 
 O número do sacador vira contagem de bolas: **uma bola é o primeiro sacador da
