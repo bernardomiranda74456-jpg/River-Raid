@@ -5,6 +5,14 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v7
+
+A v6 afastou demais. Esta volta ao enquadramento da v5 e só recua um pouco: a
+linha de fundo de perto passa a ocupar 60% da largura de uma tela larga, em vez
+dos 66% da v5. A câmera volta a acompanhar o jogador de lado, como na v5. As
+quatro quinas da quadra ficam dentro da tela em todas as proporções, mesmo com o
+jogador encostado na lateral.
+
 ## v6
 
 A câmera passou a enquadrar a **área de jogo inteira**, e não só a quadra. Um
