@@ -5,6 +5,14 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v10
+
+A v9 arruinou o retrato: o ajuste de largura com os cinco pés de folga lateral,
+feito no recuo de perto, encolhia a quadra a um selo no celular em pé, e a
+torcida tomava a tela. O retrato volta a ajustar a própria quadra, agora com
+dois pés de folga de cada lado para a lateral aparecer sem a quadra encolher. A
+paisagem continua exatamente como na v9.
+
 ## v9
 
 A câmera sobe um pouco (de 20 para 24 pés, um pouco mais perto) para a quadra
