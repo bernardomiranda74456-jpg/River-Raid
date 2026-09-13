@@ -5,6 +5,11 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v8
+
+Ligeiramente mais afastada que a v7: a linha de fundo de perto passa de 60% para
+56% da largura de uma tela larga. Nada mais muda.
+
 ## v7
 
 A v6 afastou demais. Esta volta ao enquadramento da v5 e só recua um pouco: a

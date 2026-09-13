@@ -93,10 +93,10 @@ PB.Renderer = (function () {
     // Room the scoreboard needs at the top of this viewport; nothing that must
     // stay legible is framed under it.
     const top = hudBand(vp) + 0.005;
-    // The near baseline takes 60% of a wide frame (it was 66%): a touch further
+    // The near baseline takes 56% of a wide frame (66% in v5, 60% in v7): a touch further
     // back than v5, enough to keep the whole court comfortably in view.
     let focal = Math.min(
-      (wide ? 0.60 : 0.98) * vp.w / (2 * halfNear),
+      (wide ? 0.56 : 0.98) * vp.w / (2 * halfNear),
       (0.995 - top) * vp.h / (botV - topV)
     );
 
