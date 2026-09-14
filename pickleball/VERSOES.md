@@ -5,6 +5,23 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v15
+
+A torcida agora é uma gravação de verdade. Em vez de qualquer palma
+sintetizada, o jogo toca o efeito sonoro pedido pelo autor, "[APLAUSOS] EFEITO
+SONORO PARA EDIÇÃO" (canal SONORA TUBE, https://youtu.be/3sqk7dRqidY), cortado
+para os 9,7 s em que há som, em mono a 22 kHz e MP3 de 48 kbps (58 KB). O
+áudio vai embutido no próprio arquivo do jogo, então continua funcionando
+offline e em arquivo único.
+
+Como ele toca: num ponto comum entram entre 2,6 e 4,8 s da gravação (mais
+tempo quanto maior o rali), começando de um instante levemente aleatório para
+dois pontos seguidos não soarem idênticos, com um fade de saída de 0,7 s. Nos
+pontos grandes (rali longo ou fim de partida) toca a gravação inteira, que já
+cresce e morre sozinha. O volume acompanha a intensidade do ponto. Se o
+navegador não conseguir decodificar o MP3, a torcida sintetizada da v14 entra
+no lugar.
+
 ## v14
 
 Som destravado no iPhone. O contexto de áudio era criado no toque, mas nunca era

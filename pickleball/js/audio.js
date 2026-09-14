@@ -7,6 +7,9 @@ var PB = (function () {
 
 PB.Audio = (function () {
   let ctx = null, master = null, muted = false;
+  // The recorded applause, decoded once per context. Until it is ready (or if
+  // the browser cannot decode MP3) the synthesised crowd stands in.
+  let applause = null, applauseTried = false;
 
   // Audio is a nicety: if the context cannot be created (older iOS, a frame
   // without permission, an autoplay policy) the game must carry on silently.
@@ -26,7 +29,22 @@ PB.Audio = (function () {
       }
     }
     unlock();
+    loadApplause();
   }
+
+  function loadApplause() {
+    if (applauseTried || !ctx || !PB.APPLAUSE_MP3) return;
+    applauseTried = true;
+    try {
+      const b64 = PB.APPLAUSE_MP3;
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      // Callback form: older Safari returns no promise from decodeAudioData.
+      ctx.decodeAudioData(bytes.buffer, buf => { applause = buf; }, () => { applause = null; });
+    } catch (e) { applause = null; }
+  }
+  function hasApplause() { return !!applause; }
 
   // iOS keeps a fresh context suspended and only honours resume() from inside a
   // user gesture, so this runs on every tap until the context reports running.
@@ -103,8 +121,31 @@ PB.Audio = (function () {
       g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
       src.connect(f); f.connect(g); g.connect(master);
       src.start();
+    } else if (kind === 'crowd' && applause) {
+      // The recorded applause. A routine point gets a few seconds of it, with a
+      // random start so two points in a row never sound identical; the biggest
+      // points (a long rally, the end of the game) get the whole clip, which
+      // already swells and dies away on its own.
+      const now = ctx.currentTime;
+      const full = p >= 0.999;
+      const offset = full ? 0 : 0.25 + Math.random() * 0.8;
+      const dur = full ? applause.duration - offset : 2.6 + p * 2.2;
+      const peak = 0.55 + 0.45 * p;
+      const src = ctx.createBufferSource();
+      src.buffer = applause;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(peak, now + 0.12);
+      if (!full) {
+        g.gain.setValueAtTime(peak, now + dur - 0.7);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      }
+      src.connect(g); g.connect(master);
+      src.start(now, offset);
+      src.stop(now + dur + 0.05);
     } else if (kind === 'crowd') {
-      // A stand full of people at the end of a point: a low roar and a brighter
+      // Fallback while the recording is not decoded: a stand full of people at
+      // the end of a point: a low roar and a brighter
       // hiss that swell and fall together, a scatter of claps on top, and on the
       // big points a whistle or two. Loud enough to be heard on a phone speaker.
       const dur = 2.0 + p * 1.3;
@@ -152,5 +193,5 @@ PB.Audio = (function () {
   function setMuted(v) { muted = v; try { if (master) master.gain.value = v ? 0 : 0.7; } catch (e) { /* ignore */ } }
   function isMuted() { return muted; }
 
-  return { init, play, setMuted, isMuted, resume, unlock, state };
+  return { init, play, setMuted, isMuted, resume, unlock, state, hasApplause };
 })();
