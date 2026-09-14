@@ -1453,13 +1453,15 @@ PB.Renderer = (function () {
         ctx.fill();
         ctx.restore();
       }
-      // Both bounce marks are the same circle on the ground, so they read as a
-      // pair: MARK_R across, flattened by the camera's own foreshortening.
+      // The predicted ring is MARK_R across; the landed disc is exactly the
+      // ball's drawn radius, so a ball on the line reads as on the line and a
+      // mark never claims more ground than the ball covered. Both are flattened
+      // by the camera's own foreshortening.
       const MARK_R = 0.42, MARK_FLAT = 0.353;
 
-      // where the ball actually landed: a solid white disc that fades out over two
-      // seconds, so the mark you see is the bounce that already happened, never
-      // the one still coming
+      // where the ball actually landed: a solid white disc the size of the
+      // ball that fades out over two seconds, so the mark you see is the bounce
+      // that already happened, never the one still coming
       if (m.marks && m.marks.length) {
         ctx.save();
         ctx.fillStyle = '#fff';
@@ -1468,8 +1470,9 @@ PB.Renderer = (function () {
           if (q.s <= 0 || q.cz <= 1) continue;
           // solid white for a beat so the bounce reads, then a clean fade out
           ctx.globalAlpha = k.t > 1.75 ? 1 : k.t / 1.75;
+          const r = ballRadius(q.s);
           ctx.beginPath();
-          ctx.ellipse(q.x, q.y, q.s * MARK_R, q.s * MARK_R * MARK_FLAT, 0, 0, Math.PI * 2);
+          ctx.ellipse(q.x, q.y, r, r * MARK_FLAT, 0, 0, Math.PI * 2);
           ctx.fill();
         }
         ctx.restore();

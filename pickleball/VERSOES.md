@@ -5,6 +5,14 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v19
+
+A marca de onde a bola caiu passou a ter exatamente o raio da bola desenhada
+(2,4× o raio real, com o mesmo mínimo de 3,5 px), em vez do círculo de 0,42 ft
+que era maior que a bola. Assim a marca nunca cobre mais chão do que a bola
+cobriu, e fica nítido se ela quicou dentro ou fora, em cima da linha inclusive.
+O anel de onde a bola vai cair continua do tamanho de antes.
+
 ## v18
 
 Bola maior. O raio desenhado passou de 1,25× para 2,4× o raio real da bola
