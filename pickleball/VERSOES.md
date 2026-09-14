@@ -5,6 +5,13 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v18
+
+Bola maior. O raio desenhado passou de 1,25× para 2,4× o raio real da bola
+(0,121 ft), com mínimo de 3,5 px em vez de 2 px, para ela continuar visível
+quando está longe da câmera no retrato. O rastro colorido acompanha, já que é
+desenhado a partir do mesmo raio, e a sombra no chão cresceu junto.
+
 ## v17
 
 Correção de regra nas duplas: o motor só impedia o mesmo jogador de bater
