@@ -425,6 +425,63 @@ test('bola que não passa da rede é falta de quem bateu', () => {
   eq(m.lastWinner, 1);
 });
 
+test('o parceiro da CPU não rebate a bola que a própria dupla acabou de bater', () => {
+  const m = mk({ format: 'doubles', difficulty: 'dificil' });
+  const [a, b] = m.mates(0);
+  midRally(m, a.id, 3, 0);
+  // a weak shot by a, dying on their own side, right at b's feet
+  cleanContact(m, b);
+  m.ball.y = 2.0; m.ball.vz = 4; b.hitCd = 0;
+  const before = m.rally.shotCount;
+  m.checkHits();
+  eq(m.rally.shotCount, before, 'a CPU deixou a bola passar');
+  eq(m.rally.lastHitter, a.id, 'o último golpe continua sendo do primeiro');
+  ok(!m.rally.over, 'o rali só termina quando a bola quicar');
+});
+
+test('humano que bate na bola do parceiro comete falta de dois golpes', () => {
+  const m = mk({ format: 'doubles', humans: 2, arrangement: 'coop', difficulty: 'dificil' });
+  const humans = m.players.filter(p => p.ctrl === 'human' && p.team === 0);
+  ok(humans.length === 2, 'dupla de dois humanos');
+  const [a, b] = humans;
+  midRally(m, a.id, 3, 0);
+  cleanContact(m, b);
+  b.hitCd = 0;
+  m.pendingSwing[b.id] = humanSwing(m, b, { power: 0.5 });
+  m.checkHits();
+  ok(m.rally.over, 'o rali terminou');
+  eq(m.lastReason, 'dois_golpes');
+  eq(m.lastWinner, 1, 'ponto para os adversários');
+});
+
+test('no nível normal o segundo golpe da dupla vira aviso, e o golpe é descartado', () => {
+  const m = mk({ format: 'doubles', humans: 2, arrangement: 'coop', difficulty: 'normal' });
+  const [a, b] = m.players.filter(p => p.ctrl === 'human' && p.team === 0);
+  midRally(m, a.id, 3, 0);
+  cleanContact(m, b);
+  b.hitCd = 0;
+  m.pendingSwing[b.id] = humanSwing(m, b, { power: 0.5 });
+  m.checkHits();
+  ok(!m.rally.over, 'sem falta com as regras assistidas');
+  eq(m.rally.lastHitter, a.id, 'a bola não foi rebatida');
+  ok(!m.pendingSwing[b.id], 'o deslize foi consumido');
+  ok((m.hint || '').includes('parceiro'), 'aviso na tela');
+});
+
+test('bola fraca que quica no próprio campo é falta, e a mensagem distingue a rede', () => {
+  const m = mk({});
+  midRally(m, 0, 3, 0);
+  m.rally.netTouch = false;
+  m.onBounce(2, C.teamSign(0) * 8);
+  eq(m.lastReason, 'nao_passou');
+  eq(PB.Match.reasonText('nao_passou', m).label, 'Não passou da rede');
+  const m2 = mk({});
+  midRally(m2, 0, 3, 0);
+  m2.rally.netTouch = true;
+  m2.onBounce(2, C.teamSign(0) * 8);
+  eq(PB.Match.reasonText('nao_passou', m2).label, 'Na rede');
+});
+
 // ── physics sanity ────────────────────────────────────────────────────────
 test('golpes chegam ao alvo escolhido, com folga na rede', () => {
   const cases = [

@@ -418,10 +418,18 @@ PB.Match = (function () {
     }
 
     // ── contact ────────────────────────────────────────────────────────────
+    // The team whose shot is still in the air: nobody on it may touch the
+    // ball again until it has crossed the net.
+    hitTeam() {
+      const h = this.rally.lastHitter;
+      return h >= 0 ? this.teamOf(h) : -1;
+    }
+
     checkHits() {
       const b = this.ball;
       if (!b.live || this.rally.over) return;
       const side = C.sideOf(b.z);
+      const own = this.hitTeam();
       let best = null, bestD = 1e9;
       for (const p of this.players) {
         if (p.team !== side) continue;
@@ -431,6 +439,16 @@ PB.Match = (function () {
         const reach = (p.reach + p.lunge) * reachFactor(b.y);
         if (d > reach) continue;
         if (b.y < 0.18 || b.y > 8.4) continue;
+        if (p.team === own) {
+          // The partner's shot has not crossed yet. The CPU keeps its paddle
+          // down; a human who swings anyway has hit the ball twice as a team,
+          // which is a fault (a warning instead when the rules assist).
+          if (p.ctrl !== 'human' || !this.pendingSwing[p.id]) continue;
+          this.pendingSwing[p.id] = null;
+          if (this.assistRules) { this.say('Seu parceiro já bateu: a bola tem que cruzar a rede!', 1.4); continue; }
+          this.endRally(p.team, 'dois_golpes');
+          return;
+        }
         if (d < bestD) { bestD = d; best = p; }
       }
       if (!best) return;
@@ -663,7 +681,7 @@ PB.Match = (function () {
       // stretch for a wide ball
       const b = this.ball;
       p.lunge = 0;
-      if (b.live && C.sideOf(b.z) === p.team) {
+      if (b.live && C.sideOf(b.z) === p.team && this.hitTeam() !== p.team) {
         const d = Math.hypot(b.x - p.x, b.z - p.z);
         if (d < p.reach + 1.4) p.lunge = Math.min(1.15, Math.max(0, d - p.reach + 1.0));
       }
@@ -803,7 +821,8 @@ PB.Match = (function () {
     const w = m.lastWinner === 0 ? 'Time 1' : 'Time 2';
     const map = {
       fora: 'Bola fora',
-      nao_passou: 'Na rede',
+      nao_passou: m.rally.netTouch ? 'Na rede' : 'Não passou da rede',
+      dois_golpes: 'Dois golpes da mesma dupla',
       saque_fora: 'Saque fora',
       saque_cozinha: 'Saque na cozinha',
       dois_quiques: 'Dois quiques',

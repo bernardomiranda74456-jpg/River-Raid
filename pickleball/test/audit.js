@@ -7,7 +7,7 @@ const stats = {
   volleys: 0, volleyInKitchen: 0, volleyNearLine: [],
   hitsAfterBounceInKitchen: 0,
   serveFootFaults: 0, serveOutsideHalf: 0,
-  thirdShotVolleys: 0, doubleHits: 0,
+  thirdShotVolleys: 0, doubleHits: 0, teamDoubleHits: 0,
   ballThroughPlayer: 0,
 };
 
@@ -31,6 +31,7 @@ function audit(cfg, seconds) {
       stats.hitsAfterBounceInKitchen++;               // legal, but worth counting
     }
     if (m.rally.lastHitter === p.id) stats.doubleHits++;
+    else if (m.rally.lastHitter >= 0 && m.teamOf(m.rally.lastHitter) === p.team) stats.teamDoubleHits++;
     return origExec(p, sw);
   };
   const origServe = m.doServe.bind(m);
@@ -55,6 +56,7 @@ console.log('voleios com o jogador DENTRO da cozinha (falta):', stats.volleyInKi
 console.log('voleio antes do quique obrigatório (3o golpe):', stats.thirdShotVolleys);
 console.log('golpes após o quique com o jogador na cozinha (legal):', stats.hitsAfterBounceInKitchen);
 console.log('golpes duplos do mesmo jogador:', stats.doubleHits);
+console.log('segundo golpe do parceiro na mesma bola (falta):', stats.teamDoubleHits);
 console.log('saques com o pé dentro da quadra:', stats.serveFootFaults);
 console.log('saques da metade errada:', stats.serveOutsideHalf);
 console.log('voleios legais fora da linha lateral (a cozinha não se aplica):', stats.volleyWideOfSideline || 0);

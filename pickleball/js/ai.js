@@ -15,6 +15,8 @@ PB.AI = (function () {
   // Where should this player meet the ball?
   function contactPoint(m, p) {
     if (!m.pred || !m.pred.trace.length) return null;
+    // your own team's shot is not yours to play until it crosses the net
+    if (m.hitTeam() === p.team) return null;
     const sign = C.teamSign(p.team);
     const mustBounce = m.rally.shotCount <= 2;
     const tr = m.pred.trace;

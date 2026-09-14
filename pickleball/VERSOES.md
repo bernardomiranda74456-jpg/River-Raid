@@ -5,6 +5,21 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v17
+
+Correção de regra nas duplas: o motor só impedia o mesmo jogador de bater
+duas vezes seguidas, não o parceiro. Quando um golpe saía fraco e não
+atravessava, o companheiro rebatia de novo e a bola cruzava, ou seja, dois
+golpes da mesma dupla enquanto a bola estava de um lado só.
+
+Agora, depois de um golpe, ninguém da dupla pode tocar a bola até ela cruzar a
+rede. A CPU deixa a bola cair e nem corre atrás dela; um humano que deslizar
+para bater na bola do parceiro comete a falta "Dois golpes da mesma dupla"
+(no nível difícil) ou recebe o aviso "Seu parceiro já bateu: a bola tem que
+cruzar a rede!" e o golpe é descartado (regras assistidas dos níveis fácil e
+normal). A bola fraca que quica no próprio campo continua sendo falta, e a
+chamada agora distingue "Na rede" de "Não passou da rede".
+
 ## v16
 
 Palmas pela metade. Num ponto comum a torcida toca de 1,3 a 1,8 s (era de
