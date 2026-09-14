@@ -90,14 +90,14 @@ PB.Audio = (function () {
     o.start(); o.stop(ctx.currentTime + dur + 0.02);
   }
 
-  function play(kind, power) {
+  function play(kind, power, final) {
     if (!ctx || muted) return;
     try {
-      playInner(kind, power);
+      playInner(kind, power, !!final);
     } catch (e) { /* never let a sound break the frame */ }
   }
 
-  function playInner(kind, power) {
+  function playInner(kind, power, final) {
     resume();
     const p = Math.max(0.2, Math.min(1, power || 0.6));
     if (kind === 'hit') {
@@ -122,24 +122,23 @@ PB.Audio = (function () {
       src.connect(f); f.connect(g); g.connect(master);
       src.start();
     } else if (kind === 'crowd' && applause) {
-      // The recorded applause. A routine point gets a few seconds of it, with a
-      // random start so two points in a row never sound identical; the biggest
-      // points (a long rally, the end of the game) get the whole clip, which
-      // already swells and dies away on its own.
+      // The recorded applause. The next point can start 1.85 s after the last
+      // one ended (1.25 s pause plus the CPU's 0.6 s to serve), so a point gets
+      // at most 1.8 s of clapping, a little more the longer the rally, from a
+      // random start so two points in a row never sound identical. Only the
+      // end of the game gets a long ovation.
       const now = ctx.currentTime;
-      const full = p >= 0.999;
-      const offset = full ? 0 : 0.25 + Math.random() * 0.8;
-      const dur = full ? applause.duration - offset : 2.6 + p * 2.2;
+      const offset = final ? 0 : 0.25 + Math.random() * 0.8;
+      const dur = final ? 4.8 : 1.3 + p * 0.5;
+      const fade = final ? 0.8 : 0.4;
       const peak = 0.55 + 0.45 * p;
       const src = ctx.createBufferSource();
       src.buffer = applause;
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, now);
       g.gain.exponentialRampToValueAtTime(peak, now + 0.12);
-      if (!full) {
-        g.gain.setValueAtTime(peak, now + dur - 0.7);
-        g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-      }
+      g.gain.setValueAtTime(peak, now + dur - fade);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
       src.connect(g); g.connect(master);
       src.start(now, offset);
       src.stop(now + dur + 0.05);

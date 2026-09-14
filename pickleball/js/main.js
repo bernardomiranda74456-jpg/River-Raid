@@ -160,7 +160,7 @@
       else if (e.type === 'net') PB.Audio.play('net');
       else if (e.type === 'point') {
         PB.Audio.play('point');
-        PB.Audio.play('crowd', e.cheer || 0.6);
+        PB.Audio.play('crowd', e.cheer || 0.6, e.final);
         buzz(28);
       }
     }

@@ -754,7 +754,8 @@ PB.Match = (function () {
       this.cheerLevel = Math.min(1, 0.45 + this.rally.shotCount * 0.045);
       this.cheerDur = 2.6;
       this.cheerT = this.cheerDur;
-      this.events.push({ type: 'point', winner, reason, cheer: this.cheerLevel });
+      const ev = { type: 'point', winner, reason, cheer: this.cheerLevel };
+      this.events.push(ev);
 
       if (winner === this.servingTeam) {
         this.score[winner]++;
@@ -786,6 +787,8 @@ PB.Match = (function () {
         this.cheerLevel = 1;
         this.cheerDur = 4.5;
         this.cheerT = this.cheerDur;
+        ev.cheer = 1;
+        ev.final = true;
       }
     }
 

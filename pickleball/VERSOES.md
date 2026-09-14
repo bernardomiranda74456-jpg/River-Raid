@@ -5,6 +5,15 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v16
+
+Palmas pela metade. Num ponto comum a torcida toca de 1,3 a 1,8 s (era de
+2,6 a 4,8 s), com fade de saída de 0,4 s, e cabe inteira na pausa entre
+pontos: o próximo saque só pode sair 1,85 s depois do fim do ponto (1,25 s de
+pausa mais 0,6 s até a CPU sacar), então as palmas sempre terminam antes.
+Ralis longos já não tocam a gravação inteira; só o fim de partida recebe uma
+ovação maior, de 4,8 s.
+
 ## v15
 
 A torcida agora é uma gravação de verdade. Em vez de qualquer palma
