@@ -5,6 +5,29 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v20
+
+Polegar de movimento mais sensível e mais rápido (solução 2). A velocidade do
+jogador continua seguindo a velocidade do polegar, mas a resposta deixou de
+ser uma reta com teto alto:
+
+- A leitura é o arrasto acumulado no quadro misturado com uma memória curta
+  (45 ms), então a corrida não gagueja com a taxa de 60 Hz do toque e o
+  jogador para poucos quadros depois do dedo parar.
+- A resposta é uma curva com ganho forte no deslize lento (para os ajustes
+  finos ao lado da bola) e "corrida total" quando o polegar anda a 34% da
+  altura da tela por segundo (era 50%). Zona morta pequena (4%) para o tremor
+  de um dedo parado não mexer o boneco.
+- Medido no retrato (tela de 844 px): um arrasto calmo de 80 px/s rendia
+  3,3 ft/s e agora rende 5,5; a 140 px/s foi de 4,1 para 8,6; a 200 px/s de
+  4,1 para 11,1. A velocidade máxima (14,52 ft/s) não mudou, então o
+  equilíbrio com a CPU é o mesmo.
+
+Correção que apareceu na medição: o polegar direito (movimento) ainda passava
+pelo detector de deslize do modo cooperativo, então um arrasto rápido virava
+"golpe", travava a corrida por 260 ms e, ao soltar, podia até sacar. Agora o
+polegar de movimento só move.
+
 ## v19
 
 A marca de onde a bola caiu passou a ter exatamente o raio da bola desenhada

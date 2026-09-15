@@ -13,6 +13,9 @@ var PB = (function () {
 
 PB.Input = (function () {
   const SAMPLE_MS = 150;
+  // thumb speed, as a fraction of the viewport height per second, that means
+  // "run flat out"; the small dead zone swallows a resting finger's tremor
+  const MOVE_FULL = 0.34, MOVE_DEAD = 0.04, MOVE_SMOOTH = 0.045, MOVE_GAIN = 0.72;
 
   class Input {
     constructor(canvas) {
@@ -135,7 +138,7 @@ PB.Input = (function () {
         const m = PB.Stroke.measure(pt.path, this.strokeH());
         const st = this.strokes[pt.slot];
         if (st) { st.power = m ? m.power : 0; st.lob = !!(m && m.lob); }
-      } else {
+      } else if (pt.role !== 'move') {
         this.detectSwipe(pt, now);
       }
     }
@@ -163,6 +166,17 @@ PB.Input = (function () {
           this.state[pt.slot].swipe = { lateral: 0, power: 0.42, lob: false, arc: 0 };
         }
         this.strokes[pt.slot] = null;
+        delete this.pointers[e.pointerId];
+        return;
+      }
+      // The move thumb of the two-thumb scheme only ever moves: a fast drag is
+      // a sprint, not a swing, and lifting it after a run never serves. A plain
+      // tap, which moved nothing, still sends the gentle serve.
+      if (pt.role === 'move') {
+        const tap = Math.hypot(pt.x - pt.x0, pt.y - pt.y0) < 16;
+        if (tap && this.serveSlots[pt.slot] && !this.state[pt.slot].swipe) {
+          this.state[pt.slot].swipe = { lateral: 0, power: 0.42, lob: false, arc: 0 };
+        }
         delete this.pointers[e.pointerId];
         return;
       }
@@ -216,20 +230,34 @@ PB.Input = (function () {
       pt.samples = [{ t: now, x: pt.x, y: pt.y }];
     }
 
-    // Called once per frame: turn accumulated drag into a movement vector.
+    // Called once per frame: turn the thumb's speed into a run speed.
+    //
+    // The reading is the drag accumulated over the frame, blended with a short
+    // memory (about 45 ms) so a 60 Hz touch stream does not stutter and a thumb
+    // that stops brings the player to a stop within a few frames. The response
+    // is a curve, not a line: strong gain on a slow slide, for the small
+    // adjustments beside the ball, and flat out once the thumb moves at
+    // MOVE_FULL of the viewport height per second. A calm drag that used to
+    // command a quarter of top speed now commands about half of it.
     sample(dt) {
+      dt = Math.max(1 / 240, Math.min(0.1, dt || 1 / 60));
       const H = this.canvas.clientHeight * (this.split ? 0.5 : 1);
-      const full = H * 0.5;                        // px/s that means "run flat out"
+      const full = H * MOVE_FULL;
+      const blend = Math.min(1, dt / MOVE_SMOOTH);
       for (const slot of ['p1', 'p2']) { this.state[slot].mx = 0; this.state[slot].mz = 0; }
       const now = performance.now();
       for (const k in this.pointers) {
         const pt = this.pointers[k];
         if (!pt.mover) { pt.dx = 0; pt.dy = 0; continue; }
-        if (pt.lock > now) { pt.dx = 0; pt.dy = 0; continue; }
-        const st = this.state[pt.slot];
-        st.mx = Math.max(-1, Math.min(1, pt.dx / dt / full));
-        st.mz = Math.max(-1, Math.min(1, -pt.dy / dt / full));
+        if (pt.lock > now) { pt.dx = 0; pt.dy = 0; pt.vx = 0; pt.vy = 0; continue; }
+        const rx = pt.dx / dt / full, ry = -pt.dy / dt / full;
+        pt.vx = (pt.vx || 0) + (rx - (pt.vx || 0)) * blend;
+        pt.vy = (pt.vy || 0) + (ry - (pt.vy || 0)) * blend;
         pt.dx = 0; pt.dy = 0;
+        const st = this.state[pt.slot];
+        const mag = Math.hypot(pt.vx, pt.vy);
+        const out = Input.runCurve(mag);
+        if (out > 0) { st.mx = pt.vx / mag * out; st.mz = pt.vy / mag * out; }
       }
       // keyboard
       const k = this.keys || {};
@@ -256,5 +284,11 @@ PB.Input = (function () {
     }
   }
 
+  // thumb speed (1 = MOVE_FULL) -> commanded run speed, 0..1
+  Input.runCurve = function (mag) {
+    if (!(mag > MOVE_DEAD)) return 0;
+    return Math.min(1, Math.pow((mag - MOVE_DEAD) / (1 - MOVE_DEAD), MOVE_GAIN));
+  };
+  Input.MOVE_FULL = MOVE_FULL;
   return Input;
 })();
