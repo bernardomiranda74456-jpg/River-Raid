@@ -64,7 +64,13 @@ PB.Stroke = (function () {
   // A gesture is measured against the screen height so it feels the same on any
   // device. `pts` are raw screen points, oldest first.
   const FULL = 0.52;        // fraction of the screen height that means full power
-  const SIDE = 0.30;        // sideways travel that means "all the way to the line"
+  const SIDE = 0.30;        // (kept for older callers) sideways travel of a full pull
+  // The side of a shot is the TILT of the stroke, not how far it travelled
+  // sideways: straight up is straight ahead, and a stroke leaning SIDE_DEG
+  // or more from vertical is all the way to that side.
+  const SIDE_DEG = 70;
+  const SIDE_SIN = Math.sin(SIDE_DEG * Math.PI / 180);
+  const tilt = (dx, len) => len > 0 ? Math.max(-1, Math.min(1, (dx / len) / SIDE_SIN)) : 0;
   const MIN  = 0.030;       // below this it is a touch, not a stroke
   const ARC  = 0.26;        // bow-to-chord ratio that reads as a lob
 
@@ -92,12 +98,12 @@ PB.Stroke = (function () {
     const len = lob ? travel : chord;
     return {
       power: Math.max(0, Math.min(1.15, len / (H * FULL))),
-      lateral: Math.max(-1, Math.min(1, dx / (H * SIDE))),
+      lateral: tilt(dx, chord),
       arc, lob,
       up: -dy,
       chord, travel,
     };
   }
 
-  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, measure, FULL, SIDE, MIN, ARC };
+  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, measure, tilt, FULL, SIDE, SIDE_DEG, MIN, ARC };
 })();

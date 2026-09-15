@@ -5,6 +5,20 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v21
+
+Direção mais acentuada. A lateral do golpe deixou de ser "quantos pixels o
+dedo andou para o lado" e passou a ser a inclinação do deslize: reto para
+cima é zero, e um deslize deitado 70° ou mais em relação à vertical é tudo
+para aquele lado, seja o deslize curto ou longo.
+
+Na quadra, a inclinação vira o ângulo do golpe a partir de onde a bola está:
+reto vai reto em frente (e não mais para o centro da quadra), e totalmente
+para o lado vira a bola 30° para aquele lado, com uma curva que mantém as
+inclinações pequenas suaves. O alvo para na linha lateral (9,0 ft do centro,
+com 1 ft de folga), então a direção sozinha nunca põe a bola fora. O saque e
+o modo cooperativo usam a mesma leitura. Tutorial atualizado.
+
 ## v20
 
 Polegar de movimento mais sensível e mais rápido (solução 2). A velocidade do

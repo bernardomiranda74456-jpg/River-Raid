@@ -566,6 +566,42 @@ test('o lado do deslize é o lado da bola', () => {
   ok(dir.lateral > 0.3, 'deslize para a direita mira à direita');
 });
 
+test('a inclinação do deslize é a direção: reto é zero, deitado é tudo', () => {
+  const H = 800;
+  const reto = S.measure([{ x: 300, y: 600 }, { x: 300, y: 380 }], H);
+  const deitado = S.measure([{ x: 300, y: 600 }, { x: 80, y: 560 }], H);
+  const meio = S.measure([{ x: 300, y: 600 }, { x: 190, y: 490 }], H);      // 45°
+  eq(reto.lateral, 0, 'reto para cima mira em frente');
+  ok(deitado.lateral <= -0.99, 'quase horizontal é tudo para o lado');
+  ok(meio.lateral < -0.6 && meio.lateral > -0.9, '45° fica no meio do caminho');
+  // the same tilt reads the same whether the stroke is short or long
+  const curto = S.measure([{ x: 300, y: 600 }, { x: 245, y: 545 }], H);
+  ok(Math.abs(curto.lateral - meio.lateral) < 0.01, 'a direção não depende do comprimento');
+});
+
+test('reto vai reto em frente, deitado vai no canto sem sair', () => {
+  const m = mk({});
+  const p = m.players[0];
+  const land = (x, lateral) => {
+    m.state = 'live';
+    midRally(m, 1, 3, 1);
+    cleanContact(m, p);
+    p.x = x; m.ball.x = x;
+    m.executeHit(p, humanSwing(m, p, { power: 0.5, lateral }));
+    return PB.Physics.predictLanding(m.ball, 5);
+  };
+  for (const x of [-6, 0, 6]) {
+    const reto = land(x, 0);
+    ok(reto && Math.abs(reto.x - x) < 0.6, `reto de x=${x} cai em frente (${reto && reto.x.toFixed(1)})`);
+    const esq = land(x, -1);
+    ok(esq && esq.x < -8.2 && esq.x > -C.HALF_W, `todo à esquerda de x=${x} cai junto à lateral, dentro (${esq && esq.x.toFixed(1)})`);
+    const dir = land(x, 1);
+    ok(dir && dir.x > 8.2 && dir.x < C.HALF_W, `todo à direita de x=${x} cai junto à lateral, dentro (${dir && dir.x.toFixed(1)})`);
+  }
+  const meio = land(0, -0.5);
+  ok(meio && meio.x < -2 && meio.x > -8, `meia inclinação cai no meio do caminho (${meio && meio.x.toFixed(1)})`);
+});
+
 test('deslize mais longo é mais forte', () => {
   const H = 800;
   const curto = S.measure([{ x: 300, y: 600 }, { x: 300, y: 540 }], H);

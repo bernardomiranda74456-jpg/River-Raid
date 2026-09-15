@@ -78,14 +78,16 @@ PB.Tutorial = (function () {
              você passou do ponto</b> e a bola sai.</p>`,
     },
     {
-      title: 'A direção é o lado do deslize',
+      title: 'A direção é a inclinação do deslize',
       stage: court({ extra: ARROW +
         `<line x1="150" y1="142" x2="52" y2="66" stroke="#ffd60a" stroke-width="3" marker-end="url(#ah)"/>
          <line x1="150" y1="142" x2="150" y2="40" stroke="#ffd60a" stroke-width="3" marker-end="url(#ah)" opacity=".55"/>
          <line x1="150" y1="142" x2="248" y2="66" stroke="#ffd60a" stroke-width="3" marker-end="url(#ah)"/>` }),
-      body: `<p>Puxar para a esquerda manda a bola para a esquerda, e o mesmo vale para a
-             direita. <b>Quanto mais para o lado, mais aberta</b> ela vai.</p>
-             <p>É o mesmo deslize: o comprimento dá a força e a inclinação dá o lado.</p>`,
+      body: `<p>Deslize <b>reto para cima</b> e a bola vai reta para a frente. Incline o
+             deslize e ela vira: <b>quanto mais deitado, mais fechado o ângulo</b>, até
+             quase na horizontal, que manda a bola no canto.</p>
+             <p>A direção sozinha nunca põe a bola fora pela lateral. É o mesmo deslize:
+             o comprimento dá a força e a inclinação dá o lado.</p>`,
     },
     {
       title: 'Lob é um arco',

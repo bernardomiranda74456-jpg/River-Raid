@@ -18,6 +18,9 @@ PB.Match = (function () {
 
   const MOVE_SPEED = 13.2;    // ft/s: the baseline the CPU is built on
   const HUMAN_SPEED = 14.52;  // the player runs 10% above that, on purpose
+  // aiming: a full sideways stroke turns the shot AIM_MAX from straight ahead,
+  // AIM_CURVE keeps small tilts gentle, AIM_EDGE is the widest landing allowed
+  const AIM_MAX = 30 * Math.PI / 180, AIM_CURVE = 1.6, AIM_EDGE = 9.0;
   const REACH      = 3.05;   // paddle + arm
   const HIT_CD     = 0.22;
   const SERVE_WAIT   = 3.0;  // s standing at the line before the server starts bouncing the ball
@@ -550,10 +553,15 @@ PB.Match = (function () {
           ? PB.Stroke.depthAt(swing.power)
           : this.depthForStyle(style, swing.depth);
         tz = oSign * depth;
-        // A full sideways pull paints the sideline, never past it: the colour
-        // ramp warns about depth, and nothing warns about width, so width must
-        // not be able to fault on its own.
-        tx = Math.max(-9.7, Math.min(9.7, swing.lateral * 9.7));
+        // The tilt of the stroke is the angle of the shot. Straight up goes
+        // straight ahead from where the ball is; a full sideways pull turns it
+        // AIM_MAX degrees toward that side, sharper the further it leans. The
+        // target stops at the sideline, never past it: the colour ramp warns
+        // about depth, nothing warns about width, so width cannot fault alone.
+        const lat = Math.max(-1, Math.min(1, swing.lateral || 0));
+        const ang = Math.sign(lat) * Math.pow(Math.abs(lat), AIM_CURVE) * AIM_MAX;
+        tx = from.x + Math.tan(ang) * Math.abs(tz - from.z);
+        tx = Math.max(-AIM_EDGE, Math.min(AIM_EDGE, tx));
       }
       // timing/skill scatter
       const jitter = (1 - q) * 5.0;

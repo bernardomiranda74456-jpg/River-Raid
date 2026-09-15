@@ -189,7 +189,7 @@ PB.Input = (function () {
         const len = Math.hypot(dx, dy);
         if (-dy > H * 0.02 || len < 16) {
           this.state[pt.slot].swipe = {
-            lateral: Math.max(-1, Math.min(1, dx / (H * PB.Stroke.SIDE))),
+            lateral: PB.Stroke.tilt(dx, len),
             power: Math.max(0.3, Math.min(1.15, len / (H * PB.Stroke.FULL))),
             lob: false, arc: 0,
           };
@@ -215,7 +215,7 @@ PB.Input = (function () {
 
       const S = PB.Stroke;
       this.state[pt.slot].swipe = {
-        lateral: Math.max(-1, Math.min(1, dx / (H * S.SIDE))),
+        lateral: S.tilt(dx, len),
         power: Math.max(0, Math.min(1.15, len / (H * S.FULL))),
         lob: speed < 1.75 && len > H * 0.19,
         arc: 0,

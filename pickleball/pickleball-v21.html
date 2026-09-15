@@ -178,7 +178,7 @@
       <button class="btn" id="btn-play">JOGAR</button>
       <button class="btn ghost" id="btn-sound">🔊 Som</button>
     </div>
-    <div class="foot">v20 &middot; Dica: vire o celular na horizontal para uma visão mais ampla</div>
+    <div class="foot">v21 &middot; Dica: vire o celular na horizontal para uma visão mais ampla</div>
   </section>
 
   <!-- configuração -->
@@ -930,7 +930,13 @@ PB.Stroke = (function () {
   // A gesture is measured against the screen height so it feels the same on any
   // device. `pts` are raw screen points, oldest first.
   const FULL = 0.52;        // fraction of the screen height that means full power
-  const SIDE = 0.30;        // sideways travel that means "all the way to the line"
+  const SIDE = 0.30;        // (kept for older callers) sideways travel of a full pull
+  // The side of a shot is the TILT of the stroke, not how far it travelled
+  // sideways: straight up is straight ahead, and a stroke leaning SIDE_DEG
+  // or more from vertical is all the way to that side.
+  const SIDE_DEG = 70;
+  const SIDE_SIN = Math.sin(SIDE_DEG * Math.PI / 180);
+  const tilt = (dx, len) => len > 0 ? Math.max(-1, Math.min(1, (dx / len) / SIDE_SIN)) : 0;
   const MIN  = 0.030;       // below this it is a touch, not a stroke
   const ARC  = 0.26;        // bow-to-chord ratio that reads as a lob
 
@@ -958,14 +964,14 @@ PB.Stroke = (function () {
     const len = lob ? travel : chord;
     return {
       power: Math.max(0, Math.min(1.15, len / (H * FULL))),
-      lateral: Math.max(-1, Math.min(1, dx / (H * SIDE))),
+      lateral: tilt(dx, chord),
       arc, lob,
       up: -dy,
       chord, travel,
     };
   }
 
-  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, measure, FULL, SIDE, MIN, ARC };
+  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, measure, tilt, FULL, SIDE, SIDE_DEG, MIN, ARC };
 })();
 
 </script>
@@ -990,6 +996,9 @@ PB.Match = (function () {
 
   const MOVE_SPEED = 13.2;    // ft/s: the baseline the CPU is built on
   const HUMAN_SPEED = 14.52;  // the player runs 10% above that, on purpose
+  // aiming: a full sideways stroke turns the shot AIM_MAX from straight ahead,
+  // AIM_CURVE keeps small tilts gentle, AIM_EDGE is the widest landing allowed
+  const AIM_MAX = 30 * Math.PI / 180, AIM_CURVE = 1.6, AIM_EDGE = 9.0;
   const REACH      = 3.05;   // paddle + arm
   const HIT_CD     = 0.22;
   const SERVE_WAIT   = 3.0;  // s standing at the line before the server starts bouncing the ball
@@ -1522,10 +1531,15 @@ PB.Match = (function () {
           ? PB.Stroke.depthAt(swing.power)
           : this.depthForStyle(style, swing.depth);
         tz = oSign * depth;
-        // A full sideways pull paints the sideline, never past it: the colour
-        // ramp warns about depth, and nothing warns about width, so width must
-        // not be able to fault on its own.
-        tx = Math.max(-9.7, Math.min(9.7, swing.lateral * 9.7));
+        // The tilt of the stroke is the angle of the shot. Straight up goes
+        // straight ahead from where the ball is; a full sideways pull turns it
+        // AIM_MAX degrees toward that side, sharper the further it leans. The
+        // target stops at the sideline, never past it: the colour ramp warns
+        // about depth, nothing warns about width, so width cannot fault alone.
+        const lat = Math.max(-1, Math.min(1, swing.lateral || 0));
+        const ang = Math.sign(lat) * Math.pow(Math.abs(lat), AIM_CURVE) * AIM_MAX;
+        tx = from.x + Math.tan(ang) * Math.abs(tz - from.z);
+        tx = Math.max(-AIM_EDGE, Math.min(AIM_EDGE, tx));
       }
       // timing/skill scatter
       const jitter = (1 - q) * 5.0;
@@ -3814,7 +3828,7 @@ PB.Input = (function () {
         const len = Math.hypot(dx, dy);
         if (-dy > H * 0.02 || len < 16) {
           this.state[pt.slot].swipe = {
-            lateral: Math.max(-1, Math.min(1, dx / (H * PB.Stroke.SIDE))),
+            lateral: PB.Stroke.tilt(dx, len),
             power: Math.max(0.3, Math.min(1.15, len / (H * PB.Stroke.FULL))),
             lob: false, arc: 0,
           };
@@ -3840,7 +3854,7 @@ PB.Input = (function () {
 
       const S = PB.Stroke;
       this.state[pt.slot].swipe = {
-        lateral: Math.max(-1, Math.min(1, dx / (H * S.SIDE))),
+        lateral: S.tilt(dx, len),
         power: Math.max(0, Math.min(1.15, len / (H * S.FULL))),
         lob: speed < 1.75 && len > H * 0.19,
         arc: 0,
@@ -4213,14 +4227,16 @@ PB.Tutorial = (function () {
              você passou do ponto</b> e a bola sai.</p>`,
     },
     {
-      title: 'A direção é o lado do deslize',
+      title: 'A direção é a inclinação do deslize',
       stage: court({ extra: ARROW +
         `<line x1="150" y1="142" x2="52" y2="66" stroke="#ffd60a" stroke-width="3" marker-end="url(#ah)"/>
          <line x1="150" y1="142" x2="150" y2="40" stroke="#ffd60a" stroke-width="3" marker-end="url(#ah)" opacity=".55"/>
          <line x1="150" y1="142" x2="248" y2="66" stroke="#ffd60a" stroke-width="3" marker-end="url(#ah)"/>` }),
-      body: `<p>Puxar para a esquerda manda a bola para a esquerda, e o mesmo vale para a
-             direita. <b>Quanto mais para o lado, mais aberta</b> ela vai.</p>
-             <p>É o mesmo deslize: o comprimento dá a força e a inclinação dá o lado.</p>`,
+      body: `<p>Deslize <b>reto para cima</b> e a bola vai reta para a frente. Incline o
+             deslize e ela vira: <b>quanto mais deitado, mais fechado o ângulo</b>, até
+             quase na horizontal, que manda a bola no canto.</p>
+             <p>A direção sozinha nunca põe a bola fora pela lateral. É o mesmo deslize:
+             o comprimento dá a força e a inclinação dá o lado.</p>`,
     },
     {
       title: 'Lob é um arco',
