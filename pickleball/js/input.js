@@ -1,18 +1,13 @@
 'use strict';
-// Touch model, v2: the screen is split down the middle for each player. The
-// RIGHT side runs, the LEFT side strikes. Nothing is read as both, so a stroke
-// never shoves the player and a run never fires a shot.
-//
-// Two humans sharing one screen cannot use that split, because there the two
-// halves are already the two players. That mode keeps the v1 model: the first
-// finger in a half runs, any finger flicks.
+// Touch model, v2: the screen is split down the middle. The RIGHT side runs,
+// the LEFT side strikes. Nothing is read as both, so a stroke never shoves the
+// player and a run never fires a shot.
 var PB = (function () {
   var g = typeof window !== 'undefined' ? window : globalThis;
   return g.PB || (g.PB = {});
 })();
 
 PB.Input = (function () {
-  const SAMPLE_MS = 150;
   // thumb speed, as a fraction of the viewport height per second, that means
   // "run flat out"; the small dead zone swallows a resting finger's tremor
   const MOVE_FULL = 0.34, MOVE_DEAD = 0.04, MOVE_SMOOTH = 0.045, MOVE_GAIN = 0.72;
@@ -22,16 +17,10 @@ PB.Input = (function () {
       this.canvas = canvas;
       this.pointers = {};
       this.swipeFx = [];
-      this.split = false;
-      this.coop = false;
-      this.coopFlip = false;
-      this.serveSlots = { p1: false, p2: false };
-      this.state = {
-        p1: { mx: 0, mz: 0, swipe: null },
-        p2: { mx: 0, mz: 0, swipe: null },
-      };
+      this.serveSlots = { p1: false };
+      this.state = { p1: { mx: 0, mz: 0, swipe: null } };
       // the live path under the striking thumb, read by the renderer
-      this.strokes = { p1: null, p2: null };
+      this.strokes = { p1: null };
       this.enabled = true;
       this.bind();
     }
@@ -65,34 +54,19 @@ PB.Input = (function () {
       this.state[slot].swipe = { lateral, power, lob: !!lob, arc: lob ? 0.4 : 0 };
     }
 
-    // Which viewport belongs to this slot, in canvas pixels.
-    rectFor(slot) {
-      const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
-      if (this.split) return { x: 0, y: slot === 'p2' ? 0 : h / 2, w, h: h / 2 };
-      if (this.coop) {
-        const leftIsP1 = !this.coopFlip;
-        const left = (slot === 'p1') === leftIsP1;
-        return { x: left ? 0 : w / 2, y: 0, w: w / 2, h };
-      }
-      return { x: 0, y: 0, w, h };
+    // The viewport, in canvas pixels. One player, so it is the whole canvas.
+    rectFor() {
+      return { x: 0, y: 0, w: this.canvas.clientWidth, h: this.canvas.clientHeight };
     }
 
-    // Right half runs, left half strikes. Shared-screen co-op has no room for
-    // the split, so there every finger keeps the old double duty.
-    roleFor(x, slot) {
-      if (this.coop) return null;
-      const r = this.rectFor(slot);
+    // Right half runs, left half strikes.
+    roleFor(x) {
+      const r = this.rectFor();
       return x < r.x + r.w / 2 ? 'strike' : 'move';
     }
 
-    // Split screen: top half is P2. Shared screen with two humans on the same
-    // team: each half of the screen drives the partner standing on that side,
-    // and the mapping follows them when they switch courts after a point.
-    slotFor(x, y) {
-      if (this.split) return y < this.canvas.clientHeight / 2 ? 'p2' : 'p1';
-      if (!this.coop) return 'p1';
-      const left = x < this.canvas.clientWidth / 2;
-      return left === !!this.coopFlip ? 'p1' : 'p2';
+    slotFor() {
+      return 'p1';
     }
 
     local(e) {
@@ -104,15 +78,11 @@ PB.Input = (function () {
       if (!this.enabled) return;
       e.preventDefault();
       const p = this.local(e);
-      const slot = this.slotFor(p.x, p.y);
-      const role = this.roleFor(p.x, slot);
-      // co-op falls back to the old rule: the first finger in a half runs
-      const owner = Object.keys(this.pointers).some(k => this.pointers[k].slot === slot && this.pointers[k].mover);
-      const mover = role ? role === 'move' : !owner;
+      const slot = this.slotFor();
+      const role = this.roleFor(p.x);
       this.pointers[e.pointerId] = {
         id: e.pointerId, slot, role, x: p.x, y: p.y, x0: p.x, y0: p.y,
-        dx: 0, dy: 0, mover, active: true,
-        samples: [{ t: performance.now(), x: p.x, y: p.y }],
+        dx: 0, dy: 0, mover: role === 'move', active: true,
         path: role === 'strike' ? [{ x: p.x, y: p.y }] : null,
         lock: 0,
       };
@@ -128,9 +98,6 @@ PB.Input = (function () {
       pt.dx += p.x - pt.x;
       pt.dy += p.y - pt.y;
       pt.x = p.x; pt.y = p.y;
-      const now = performance.now();
-      pt.samples.push({ t: now, x: p.x, y: p.y });
-      while (pt.samples.length > 2 && now - pt.samples[0].t > SAMPLE_MS) pt.samples.shift();
       if (pt.path) {
         const last = pt.path[pt.path.length - 1];
         if (Math.hypot(p.x - last.x, p.y - last.y) > 2) pt.path.push({ x: p.x, y: p.y });
@@ -138,15 +105,13 @@ PB.Input = (function () {
         const m = PB.Stroke.measure(pt.path, this.strokeH());
         const st = this.strokes[pt.slot];
         if (st) { st.power = m ? m.power : 0; st.lob = !!(m && m.lob); }
-      } else if (pt.role !== 'move') {
-        this.detectSwipe(pt, now);
       }
     }
 
     // Gestures are measured against the height of one player's viewport, so a
-    // stroke means the same thing on a phone, a tablet and a split screen.
+    // stroke means the same thing on a phone and on a tablet.
     strokeH() {
-      return this.canvas.clientHeight * (this.split ? 0.5 : 1);
+      return this.canvas.clientHeight;
     }
 
     up(e) {
@@ -169,65 +134,14 @@ PB.Input = (function () {
         delete this.pointers[e.pointerId];
         return;
       }
-      // The move thumb of the two-thumb scheme only ever moves: a fast drag is
-      // a sprint, not a swing, and lifting it after a run never serves. A plain
-      // tap, which moved nothing, still sends the gentle serve.
-      if (pt.role === 'move') {
-        const tap = Math.hypot(pt.x - pt.x0, pt.y - pt.y0) < 16;
-        if (tap && this.serveSlots[pt.slot] && !this.state[pt.slot].swipe) {
-          this.state[pt.slot].swipe = { lateral: 0, power: 0.42, lob: false, arc: 0 };
-        }
-        delete this.pointers[e.pointerId];
-        return;
-      }
-      this.detectSwipe(pt, performance.now(), true);
-      // A serve is not a timed shot, so a deliberate stroke or a plain tap both
-      // send it, at whatever power the stroke carried.
-      if (this.serveSlots[pt.slot] && !this.state[pt.slot].swipe) {
-        const dx = pt.x - pt.x0, dy = pt.y - pt.y0;
-        const H = this.strokeH();
-        const len = Math.hypot(dx, dy);
-        if (-dy > H * 0.02 || len < 16) {
-          this.state[pt.slot].swipe = {
-            lateral: PB.Stroke.tilt(dx, len),
-            power: Math.max(0.3, Math.min(1.15, len / (H * PB.Stroke.FULL))),
-            lob: false, arc: 0,
-          };
-        }
+      // The move thumb only ever moves: a fast drag is a sprint, not a swing,
+      // and lifting it after a run never serves. A plain tap, which moved
+      // nothing, still sends the gentle serve.
+      const tap = Math.hypot(pt.x - pt.x0, pt.y - pt.y0) < 16;
+      if (tap && this.serveSlots[pt.slot] && !this.state[pt.slot].swipe) {
+        this.state[pt.slot].swipe = { lateral: 0, power: 0.42, lob: false, arc: 0 };
       }
       delete this.pointers[e.pointerId];
-    }
-
-    // Co-op on a shared screen only: one finger does both jobs, so the swing is
-    // still read from a speed spike. Power and direction follow the same scale
-    // as the two-thumb stroke, and a slow long flick stands in for the arc.
-    detectSwipe(pt, now, release) {
-      if (pt.lock > now) return;
-      const s0 = pt.samples[0];
-      if (!s0) return;
-      const dt = Math.max(0.016, (now - s0.t) / 1000);
-      const dx = pt.x - s0.x, dy = pt.y - s0.y;
-      const len = Math.hypot(dx, dy);
-      const H = this.strokeH();
-      const speed = len / dt / H;
-      if (-dy < H * 0.055) return;
-      if (speed < 0.75 && !(release && len > H * 0.16)) return;
-
-      const S = PB.Stroke;
-      this.state[pt.slot].swipe = {
-        lateral: S.tilt(dx, len),
-        power: Math.max(0, Math.min(1.15, len / (H * S.FULL))),
-        lob: speed < 1.75 && len > H * 0.19,
-        arc: 0,
-      };
-      this.swipeFx.push({
-        pts: [{ x: s0.x, y: s0.y }, { x: pt.x, y: pt.y }],
-        power: Math.max(0, Math.min(1.15, len / (H * S.FULL))),
-        life: 1,
-      });
-      pt.lock = now + 260;
-      pt.dx = 0; pt.dy = 0;
-      pt.samples = [{ t: now, x: pt.x, y: pt.y }];
     }
 
     // Called once per frame: turn the thumb's speed into a run speed.
@@ -241,10 +155,10 @@ PB.Input = (function () {
     // command a quarter of top speed now commands about half of it.
     sample(dt) {
       dt = Math.max(1 / 240, Math.min(0.1, dt || 1 / 60));
-      const H = this.canvas.clientHeight * (this.split ? 0.5 : 1);
+      const H = this.canvas.clientHeight;
       const full = H * MOVE_FULL;
       const blend = Math.min(1, dt / MOVE_SMOOTH);
-      for (const slot of ['p1', 'p2']) { this.state[slot].mx = 0; this.state[slot].mz = 0; }
+      this.state.p1.mx = 0; this.state.p1.mz = 0;
       const now = performance.now();
       for (const k in this.pointers) {
         const pt = this.pointers[k];
@@ -278,9 +192,8 @@ PB.Input = (function () {
     reset() {
       this.pointers = {};
       this.swipeFx.length = 0;
-      this.strokes = { p1: null, p2: null };
+      this.strokes = { p1: null };
       this.state.p1 = { mx: 0, mz: 0, swipe: null };
-      this.state.p2 = { mx: 0, mz: 0, swipe: null };
     }
   }
 

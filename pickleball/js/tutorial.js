@@ -1,12 +1,16 @@
 'use strict';
 // Eight-step tutorial. Every step draws its own little stage so the gesture is
-// shown rather than described, and the way back to the menu never moves.
+// shown rather than described, and the way back to the menu never moves. The
+// steps are built on demand, because every word in them, the labels inside the
+// drawings included, comes from the language table.
 var PB = (function () {
   var g = typeof window !== 'undefined' ? window : globalThis;
   return g.PB || (g.PB = {});
 })();
 
 PB.Tutorial = (function () {
+  const T = (k, v) => (PB.I18n ? PB.I18n.t(k, v) : k);
+  const esc = v => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   // A court seen from the game's own angle: near half wide at the bottom, far
   // half narrow at the top, kitchen bands either side of the net.
   function court(opts) {
@@ -31,28 +35,26 @@ PB.Tutorial = (function () {
   const ARROW = `<defs><marker id="ah" markerWidth="7" markerHeight="7" refX="5.4" refY="3" orient="auto">
       <path d="M0,0 L6,3 L0,6 z" fill="#d9ff3d"/></marker></defs>`;
 
-  const STEPS = [
+  function build() {
+    return [
     {
-      title: 'Dois dedos',
+      title: T('tut.thumbs.title'),
       stage: court({ extra:
         `<line x1="150" y1="4" x2="150" y2="164" stroke="#fff" stroke-width="2"
                stroke-dasharray="7 7" opacity=".5"/>
          <text x="76" y="22" fill="#d9ff3d" font-size="11" font-weight="800"
-               text-anchor="middle" font-family="system-ui">ESQUERDO</text>
+               text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.left'))}</text>
          <text x="76" y="36" fill="#cfe0ee" font-size="10" font-weight="700"
-               text-anchor="middle" font-family="system-ui">golpe</text>
+               text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.strike'))}</text>
          <text x="224" y="22" fill="#9fe4ff" font-size="11" font-weight="800"
-               text-anchor="middle" font-family="system-ui">DIREITO</text>
+               text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.right'))}</text>
          <text x="224" y="36" fill="#cfe0ee" font-size="10" font-weight="700"
-               text-anchor="middle" font-family="system-ui">mover</text>` })
+               text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.move'))}</text>` })
              + `<div class="hand drag" style="top:74%"></div>`,
-      body: `<p>A sua metade da tela se divide em duas. O <b>dedo direito corre</b> e o
-             <b>dedo esquerdo golpeia</b>.</p>
-             <p>Nada é lido como as duas coisas, então o golpe nunca empurra o jogador e
-             correr nunca dispara um golpe.</p>`,
+      body: T('tut.thumbs.body'),
     },
     {
-      title: 'A força é o tamanho do deslize',
+      title: T('tut.power.title'),
       stage: `<svg viewBox="0 0 300 168" preserveAspectRatio="xMidYMid meet">
         <defs><linearGradient id="ramp" x1="0" y1="1" x2="0" y2="0">
           <stop offset="0" stop-color="#9ef01a"/><stop offset="0.13" stop-color="#2b9348"/>
@@ -61,89 +63,72 @@ PB.Tutorial = (function () {
           <stop offset="0.78" stop-color="#e01e1e"/><stop offset="1" stop-color="#7a0b0b"/>
         </linearGradient></defs>
         <rect x="126" y="18" width="24" height="132" rx="12" fill="url(#ramp)"/>
-        <text x="160" y="30" fill="#7a0b0b" font-size="10" font-weight="800" font-family="system-ui">vermelho: sai</text>
-        <text x="160" y="66" fill="#ff5da2" font-size="10" font-weight="800" font-family="system-ui">rosa: na linha</text>
-        <text x="160" y="88" fill="#ff8800" font-size="10" font-weight="800" font-family="system-ui">laranja: bem funda</text>
-        <text x="160" y="140" fill="#9ef01a" font-size="10" font-weight="800" font-family="system-ui">verde: bola curta</text>
+        <text x="160" y="30" fill="#7a0b0b" font-size="10" font-weight="800" font-family="system-ui">${esc(T('tut.lbl.red'))}</text>
+        <text x="160" y="66" fill="#ff5da2" font-size="10" font-weight="800" font-family="system-ui">${esc(T('tut.lbl.pink'))}</text>
+        <text x="160" y="88" fill="#ff8800" font-size="10" font-weight="800" font-family="system-ui">${esc(T('tut.lbl.orange'))}</text>
+        <text x="160" y="140" fill="#9ef01a" font-size="10" font-weight="800" font-family="system-ui">${esc(T('tut.lbl.green'))}</text>
         <text x="60" y="86" fill="#cfe0ee" font-size="10" font-weight="700"
-              text-anchor="middle" font-family="system-ui">quanto mais</text>
+              text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.pull1'))}</text>
         <text x="60" y="100" fill="#cfe0ee" font-size="10" font-weight="700"
-              text-anchor="middle" font-family="system-ui">você puxa,</text>
+              text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.pull2'))}</text>
         <text x="60" y="114" fill="#cfe0ee" font-size="10" font-weight="700"
-              text-anchor="middle" font-family="system-ui">mais forte</text>
+              text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.pull3'))}</text>
       </svg>`,
-      body: `<p>O <b>traçado do seu dedo aparece na tela</b> e muda de cor conforme cresce.
-             A cor é a força que a bola vai levar.</p>
-             <p>Laranja é uma bola bem funda. Rosa pinta a linha de fundo. <b>No vermelho
-             você passou do ponto</b> e a bola sai.</p>`,
+      body: T('tut.power.body'),
     },
     {
-      title: 'A direção é a inclinação do deslize',
+      title: T('tut.aim.title'),
       stage: court({ extra: ARROW +
         `<line x1="150" y1="142" x2="52" y2="66" stroke="#ffd60a" stroke-width="3" marker-end="url(#ah)"/>
          <line x1="150" y1="142" x2="150" y2="40" stroke="#ffd60a" stroke-width="3" marker-end="url(#ah)" opacity=".55"/>
          <line x1="150" y1="142" x2="248" y2="66" stroke="#ffd60a" stroke-width="3" marker-end="url(#ah)"/>` }),
-      body: `<p>Deslize <b>reto para cima</b> e a bola vai reta para a frente. Incline o
-             deslize e ela vira: <b>quanto mais deitado, mais fechado o ângulo</b>, até
-             quase na horizontal, que manda a bola no canto.</p>
-             <p>A direção sozinha nunca põe a bola fora pela lateral. É o mesmo deslize:
-             o comprimento dá a força e a inclinação dá o lado.</p>`,
+      body: T('tut.aim.body'),
     },
     {
-      title: 'Lob é um arco',
+      title: T('tut.lob.title'),
       stage: court({ extra: ARROW +
         `<path d="M150,142 Q60,90 96,44" fill="none" stroke="#ffd166" stroke-width="3.4"
                stroke-dasharray="8 6" marker-end="url(#ah)"/>
          <path d="M150,142 Q240,90 204,44" fill="none" stroke="#ffd166" stroke-width="3.4"
                stroke-dasharray="8 6" marker-end="url(#ah)" opacity=".55"/>` }),
-      body: `<p>Um deslize <b>em arco acentuado</b> vira lob. Arco para a esquerda é lob
-             para a esquerda, arco para a direita é lob para a direita.</p>
-             <p>O tamanho do arco também conta: arco maior joga o lob mais para o fundo.</p>`,
+      body: T('tut.lob.body'),
     },
     {
-      title: 'Smash se conquista',
+      title: T('tut.smash.title'),
       stage: court({ extra: ARROW +
         `<path d="M120,150 Q150,10 186,52" fill="none" stroke="#ffd166" stroke-width="2.6"
                stroke-dasharray="6 5" opacity=".8"/>
          <circle cx="186" cy="52" r="6" fill="#d9ff3d"/>
          <line x1="186" y1="58" x2="186" y2="128" stroke="#d9ff3d" stroke-width="3.4" marker-end="url(#ah)"/>
          <text x="186" y="44" fill="#eef4f9" font-size="10" font-weight="800"
-               text-anchor="middle" font-family="system-ui">pegou no alto</text>` }),
-      body: `<p>Não existe botão de smash. Ele acontece quando o adversário <b>tenta um lob
-             e você pega a bola no alto</b>, antes dela quicar.</p>
-             <p>Deixou baixar, sai rebatida normal. A força e a direção do seu deslize
-             valem igual no smash.</p>`,
+               text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.high'))}</text>` }),
+      body: T('tut.smash.body'),
     },
     {
-      title: 'Regra dos dois quiques',
+      title: T('tut.bounce.title'),
       stage: court({ extra:
         `<ellipse cx="132" cy="64" rx="12" ry="4.5" fill="#fff" opacity=".9"/>
          <text x="152" y="67" fill="#eef4f9" font-size="10" font-weight="700"
-               font-family="system-ui">1º quique</text>
+               font-family="system-ui">${esc(T('tut.lbl.b1'))}</text>
          <ellipse cx="118" cy="134" rx="15" ry="5.5" fill="#fff" opacity=".9"/>
          <text x="142" y="137" fill="#eef4f9" font-size="10" font-weight="700"
-               font-family="system-ui">2º quique</text>` })
+               font-family="system-ui">${esc(T('tut.lbl.b2'))}</text>` })
              + `<div class="ball-dot hop"></div>`,
-      body: `<p>O <b>saque precisa quicar</b> antes de ser devolvido. A <b>devolução também</b>.</p>
-             <p>Só a partir do terceiro golpe alguém pode bater na bola sem deixar quicar.
-             Antes disso, voleio é falta.</p>`,
+      body: T('tut.bounce.body'),
     },
     {
-      title: 'A cozinha',
+      title: T('tut.kitchen.title'),
       stage: court({ kitchen: true, extra:
         `<text x="150" y="98" fill="#ffe0d6" font-size="11" font-weight="800"
-               text-anchor="middle" font-family="system-ui" letter-spacing="1">COZINHA</text>` }),
-      body: `<p>A faixa vermelha junto à rede tem <b>2,13 m</b> e é a zona de não-voleio.</p>
-             <p>Dentro dela você <b>não pode bater na bola antes do quique</b>. Depois do
-             quique, pode. E se você voleia perto da linha, o impulso não pode te levar
-             para dentro.</p>`,
+               text-anchor="middle" font-family="system-ui" letter-spacing="1">${esc(T('tut.lbl.kitchen'))}</text>` }),
+      body: T('tut.kitchen.body'),
     },
     {
-      title: 'Placar e saque',
+      title: T('tut.score.title'),
       stage: `<svg viewBox="0 0 300 168" preserveAspectRatio="xMidYMid meet">
         `+`<rect x="66" y="46" width="168" height="74" rx="8" fill="#0c1622" stroke="#1e3346"/>
          <rect x="66" y="46" width="4" height="74" fill="#d9ff3d"/>
-         <text x="82" y="72" fill="#d9ff3d" font-size="13" font-weight="800" font-family="system-ui">VOCÊ</text>
+         <text x="82" y="72" fill="#d9ff3d" font-size="13" font-weight="800" font-family="system-ui">${esc(T('name.you'))}</text>
          <text x="82" y="104" fill="#eef4f9" font-size="13" font-weight="800" font-family="system-ui">REIS</text>
          <circle cx="172" cy="67" r="7" fill="#d9ff3d" stroke="rgba(0,0,0,.35)"/>
          <circle cx="190" cy="67" r="7" fill="#d9ff3d" stroke="rgba(0,0,0,.35)"/>
@@ -154,32 +139,13 @@ PB.Tutorial = (function () {
          <text x="215" y="104" fill="#fff" font-size="15" font-weight="800"
                text-anchor="middle" font-family="system-ui">0</text>
          <text x="150" y="140" fill="#7f9ab1" font-size="9.5" font-weight="700"
-               text-anchor="middle" font-family="system-ui" letter-spacing="1">CHAMADA  0 - 0 - 2</text>
+               text-anchor="middle" font-family="system-ui" letter-spacing="1">${esc(T('hud.call'))}  0 - 0 - 2</text>
       </svg>`,
-      body: `<p>O saque usa o mesmo deslize do dedo esquerdo, com força e direção. Um
-             toque simples também saca, fraco e no meio.</p>
-             <p><b>Só quem saca pontua.</b> Perdeu o ponto sacando, o saque passa, mas o
-             placar não muda.</p>
-             <p>As bolinhas dizem quem saca: <b>uma bola é o primeiro sacador</b> da dupla,
-             <b>duas bolas é o segundo</b>. O nome aceso é quem está com a bola. Os dois
-             parceiros sacam antes de o saque passar, e por isso o jogo começa em
-             <b>0-0-2</b>.</p>`,
+      body: T('tut.score.body'),
     },
-    {
-      title: 'Dois no mesmo aparelho',
-      stage: court({ extra:
-        `<line x1="150" y1="10" x2="150" y2="158" stroke="#d9ff3d" stroke-width="2"
-               stroke-dasharray="6 6" opacity=".8"/>
-         <text x="96" y="24" fill="#d9ff3d" font-size="12" font-weight="800"
-               text-anchor="middle" font-family="system-ui">P1</text>
-         <text x="204" y="24" fill="#d9ff3d" font-size="12" font-weight="800"
-               text-anchor="middle" font-family="system-ui">P2</text>` }),
-      body: `<p>Em <b>um contra o outro</b>, a tela divide em duas e cada um joga com a sua
-             própria visão da quadra.</p>
-             <p>Em <b>jogar juntos</b>, vocês dividem a mesma tela: quem toca a metade
-             esquerda controla o jogador da esquerda.</p>`,
-    },
-  ];
+    ];
+  }
 
-  return { STEPS };
+  // Rebuilt on every call, so switching language repaints the whole tutorial.
+  return { steps: build, get STEPS() { return build(); } };
 })();

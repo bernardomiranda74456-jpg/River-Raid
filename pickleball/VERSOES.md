@@ -5,6 +5,30 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v23
+
+Duas mudanças grandes.
+
+**Um jogador só.** O modo de dois no mesmo aparelho saiu inteiro: as opções
+"Jogadores" e "Vocês dois vão…" sumiram da configuração, a tela dividida e o
+modelo de toque de um dedo só foram removidos, e o passo do tutorial que
+explicava esse modo também. O motor passou a ter um `humanIdx` em vez de dois
+"slots", o que tirou um ramo de cada laço de entrada, de desenho e de nomes.
+Em simples são dois jogadores em quadra, em duplas são quatro, e em ambos só
+um é seu.
+
+**Três idiomas, escolhidos por bandeira.** A tela principal ganhou três
+bandeiras (Brasil, Estados Unidos e Espanha) logo abaixo dos botões. A escolha
+vale para tudo: menus, tutorial, placar, avisos de regra e as chamadas de
+ponto. Na primeira visita o jogo segue o idioma do próprio aparelho e cai no
+inglês se for outro; depois disso vale o que foi escolhido, guardado no
+aparelho.
+
+Todo texto vive em `js/i18n.js`, uma tabela só com 114 chaves em cada idioma.
+O tutorial é montado na hora a partir dela, rótulos dentro dos desenhos
+inclusive, então trocar de idioma repinta os oito passos. Os testes conferem
+que as três tabelas têm exatamente as mesmas chaves, sem buraco nem sobra.
+
 ## v22
 
 O jogo agora se chama **Pickleball Forever**. A tela de entrada abre com o

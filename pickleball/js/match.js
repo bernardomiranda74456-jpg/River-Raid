@@ -8,6 +8,7 @@ var PB = (function () {
 })();
 
 PB.Match = (function () {
+  const T = (k, v) => (PB.I18n ? PB.I18n.t(k, v) : k);
   const C = PB.Court, P = PB.Physics, S = PB.Shots;
 
   const SKILL = {
@@ -62,8 +63,6 @@ PB.Match = (function () {
     constructor(cfg) {
       this.cfg = Object.assign({
         format: 'singles',      // 'singles' | 'doubles'
-        humans: 1,              // 1 | 2
-        arrangement: 'coop',    // doubles with 2 humans: 'coop' | 'versus'
         difficulty: 'normal',
         targetPoints: 11,
         winBy: 2,
@@ -74,29 +73,22 @@ PB.Match = (function () {
       this.autoSwing = d.autoSwing;
       nextId = 0;
 
+      // One human, always player 0; everyone else is driven by the CPU.
       const doubles = this.cfg.format === 'doubles';
-      const versus = this.cfg.humans === 2 && (!doubles || this.cfg.arrangement === 'versus');
-      this.versus = versus;
       this.players = [];
-      this.slot = {};
+      this.humanIdx = 0;
 
       if (doubles) {
-        const humanIds = versus ? [0, 2] : [0, 1];
         for (let t = 0; t < 2; t++) {
           for (let k = 0; k < 2; k++) {
             const id = t * 2 + k;
-            const isHuman = this.cfg.humans === 2 ? humanIds.indexOf(id) >= 0 : id === 0;
             const skill = t === 0 ? d.mate : d.opp;
-            this.players.push(mkPlayer(t, isHuman ? 'human' : 'cpu', k === 0 ? 'R' : 'L', skill, ''));
+            this.players.push(mkPlayer(t, id === 0 ? 'human' : 'cpu', k === 0 ? 'R' : 'L', skill, ''));
           }
         }
-        if (this.cfg.humans === 2) { this.slot.p1 = humanIds[0]; this.slot.p2 = humanIds[1]; }
-        else this.slot.p1 = 0;
       } else {
         this.players.push(mkPlayer(0, 'human', 'R', d.mate, ''));
-        this.players.push(mkPlayer(1, this.cfg.humans === 2 ? 'human' : 'cpu', 'R', d.opp, ''));
-        this.slot.p1 = 0;
-        if (this.cfg.humans === 2) this.slot.p2 = 1;
+        this.players.push(mkPlayer(1, 'cpu', 'R', d.opp, ''));
       }
       this.nameEveryone();
 
@@ -125,17 +117,11 @@ PB.Match = (function () {
     }
 
     nameEveryone() {
-      const twoHumans = this.cfg.humans === 2;
       const surnames = ['ALVES', 'COSTA', 'DIAS', 'MELO', 'PRADO', 'REIS'];
       for (const p of this.players) {
-        p.role = p.ctrl === 'human' ? 'Humano' : (p.team === 0 ? 'Parceiro' : 'Rival');
-        if (p.ctrl === 'human') {
-          p.name = twoHumans ? (p.id === this.slot.p1 ? 'P1' : 'P2') : 'VOCÊ';
-        } else {
-          p.name = surnames[(p.id * 2 + 1) % surnames.length];
-        }
+        p.role = p.ctrl === 'human' ? 'human' : (p.team === 0 ? 'mate' : 'rival');
+        p.name = p.ctrl === 'human' ? T('name.you') : surnames[(p.id * 2 + 1) % surnames.length];
       }
-
     }
 
     // ── helpers ────────────────────────────────────────────────────────────
@@ -239,7 +225,7 @@ PB.Match = (function () {
           server.vx = 0; server.vz = 0;
           this.ball.x = server.x + sSign * 0.9;
           this.ball.z = server.z + C.teamSign(server.team) * 0.35;
-          this.say(behind ? 'Saque sai da sua metade da quadra' : 'Fique atrás da linha de fundo para sacar', 1.4);
+          this.say(T(behind ? 'hint.servehalf' : 'hint.servebehind'), 1.4);
         } else {
           this.state = 'live';
           this.rally.shotCount = 1;
@@ -299,13 +285,8 @@ PB.Match = (function () {
       this.updatePrediction();
       this.updateAnticipation(dt);
 
-      // humans
-      for (const slot of ['p1', 'p2']) {
-        const id = this.slot[slot];
-        if (id === undefined) continue;
-        const inp = (inputs && inputs[slot]) || null;
-        this.driveHuman(this.players[id], inp, dt, slot, inputs);
-      }
+      // the human
+      this.driveHuman(this.players[this.humanIdx], (inputs && inputs.p1) || null, dt, 'p1', inputs);
       // cpu
       for (const p of this.players) {
         if (p.ctrl === 'cpu') PB.AI.update(this, p, dt);
@@ -448,7 +429,7 @@ PB.Match = (function () {
           // which is a fault (a warning instead when the rules assist).
           if (p.ctrl !== 'human' || !this.pendingSwing[p.id]) continue;
           this.pendingSwing[p.id] = null;
-          if (this.assistRules) { this.say('Seu parceiro já bateu: a bola tem que cruzar a rede!', 1.4); continue; }
+          if (this.assistRules) { this.say(T('hint.partnerhit'), 1.4); continue; }
           this.endRally(p.team, 'dois_golpes');
           return;
         }
@@ -496,9 +477,9 @@ PB.Match = (function () {
         if (!swing) return;
         if (bad && swing.auto) return;                    // the assist swing never fouls
         if (bad && this.assistRules) {
-          this.say(bad === 'cozinha' ? 'Saia da cozinha para dar voleio!'
-            : bad === 'recebedor' ? 'O saque é do seu parceiro!'
-            : 'Deixe quicar (regra dos dois quiques)!');
+          this.say(T(bad === 'cozinha' ? 'hint.kitchen'
+            : bad === 'recebedor' ? 'hint.receiver'
+            : 'hint.letbounce'));
           return;
         }
       } else {
@@ -701,7 +682,7 @@ PB.Match = (function () {
           if (this.assistRules || p.ctrl === 'cpu') {
             p.z = C.teamSign(p.team) * (C.KITCHEN + C.footprint(p) + 0.05);  // held out
             p.vz = 0;
-            if (p.ctrl === 'human') this.say('Impulso: não entre na cozinha após o voleio!', 1.2);
+            if (p.ctrl === 'human') this.say(T('hint.momentum'), 1.2);
           } else if (this.state === 'live') {
             this.endRally(p.team, 'impulso');
           }
@@ -825,22 +806,14 @@ PB.Match = (function () {
     }
   }
 
+  // The call the umpire makes. `reason` is a rule key, never a sentence, so the
+  // same rally reads back in whatever language is on at the time.
   Match.reasonText = function (reason, m) {
-    const w = m.lastWinner === 0 ? 'Time 1' : 'Time 2';
-    const map = {
-      fora: 'Bola fora',
-      nao_passou: m.rally.netTouch ? 'Na rede' : 'Não passou da rede',
-      dois_golpes: 'Dois golpes da mesma dupla',
-      saque_fora: 'Saque fora',
-      saque_cozinha: 'Saque na cozinha',
-      dois_quiques: 'Dois quiques',
-      cozinha: 'Voleio na cozinha',
-      voleio_saque: 'Voleio antes do quique',
-      recebedor: 'Recebedor errado',
-      impulso: 'Impulso na cozinha',
-      pe_no_saque: 'Pé na linha no saque',
-    };
-    const label = map[reason] || 'Ponto';
+    const w = T(m.lastWinner === 0 ? 'team.1' : 'team.2');
+    const key = reason === 'nao_passou'
+      ? (m.rally.netTouch ? 'reason.na_rede' : 'reason.nao_passou')
+      : 'reason.' + reason;
+    const label = PB.I18n && PB.I18n.DICT.en[key] ? T(key) : T('reason.ponto');
     return { label, team: m.lastWinner, sideOut: m.sideOut, w };
   };
 

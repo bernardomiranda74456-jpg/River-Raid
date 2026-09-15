@@ -1,6 +1,6 @@
 const vm = require('vm'), fs = require('fs');
 const base = '/home/user/River-Raid/pickleball/js/';
-for (const f of ['court','physics','shots','stroke','match','ai']) vm.runInThisContext(fs.readFileSync(base+f+'.js','utf8'));
+for (const f of ['i18n','court','physics','shots','stroke','match','ai']) vm.runInThisContext(fs.readFileSync(base+f+'.js','utf8'));
 const C = PB.Court;
 
 const stats = {
@@ -46,9 +46,9 @@ function audit(cfg, seconds) {
   while (t < seconds) { m.update(dt, {}); m.events.length = 0; t += dt; }
 }
 
-audit({ format: 'doubles', humans: 1, difficulty: 'normal' }, 600);
-audit({ format: 'doubles', humans: 1, difficulty: 'dificil' }, 600);
-audit({ format: 'singles', humans: 1, difficulty: 'normal' }, 400);
+audit({ format: 'doubles', difficulty: 'normal' }, 600);
+audit({ format: 'doubles', difficulty: 'dificil' }, 600);
+audit({ format: 'singles', difficulty: 'normal' }, 400);
 
 const near = stats.volleyNearLine.sort((a,b)=>a-b);
 console.log('voleios totais:', stats.volleys);

@@ -6,7 +6,7 @@
   const renderer = new PB.Renderer(canvas);
   const input = new PB.Input(canvas);
 
-  const DEFAULTS = { format: 'singles', humans: '1', arrangement: 'coop', difficulty: 'normal', targetPoints: '11', charStyle: 'boneco' };
+  const DEFAULTS = { format: 'singles', difficulty: 'normal', targetPoints: '11', charStyle: 'boneco' };
   // Storage can throw outright (private mode, sandboxed frame, site data blocked),
   // so every read and write goes through here.
   const store = {
@@ -14,6 +14,9 @@
     set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* not available */ } },
   };
   let cfg = load();
+  // Language: what was chosen before, else whatever the phone asks for.
+  const I18n = PB.I18n;
+  let lang = I18n.setLang(store.get('pb.lang') || I18n.detect());
   let match = null;
   let last = 0;
   let sound = store.get('pb.sound') !== '0';
@@ -53,8 +56,28 @@
       const key = grp.dataset.group;
       grp.querySelectorAll('.opt').forEach(b => b.setAttribute('aria-pressed', String(cfg[key] === b.dataset.val)));
     });
-    const twoInDoubles = cfg.format === 'doubles' && cfg.humans === '2';
-    $('grp-arrangement').style.display = twoInDoubles ? 'flex' : 'none';
+  }
+
+  // ── language ─────────────────────────────────────────────────────────────
+  function paintLangs() {
+    document.querySelectorAll('#langs .lang').forEach(b => {
+      b.setAttribute('aria-pressed', String(b.dataset.lang === lang));
+    });
+  }
+  function setLang(l) {
+    lang = I18n.setLang(l);
+    store.set('pb.lang', lang);
+    paintLangs();
+    paintSound();
+    // anything painted by hand rather than by data-i18n
+    if ($('scr-tutorial').classList.contains('on')) paintTutorial();
+  }
+  document.querySelectorAll('#langs .lang').forEach(b => {
+    b.onclick = () => { setLang(b.dataset.lang); buzz(8); };
+  });
+
+  function paintSound() {
+    $('btn-sound').textContent = (sound ? '🔊 ' : '🔇 ') + I18n.t('ui.sound');
   }
 
   function buzz(ms) { if (navigator.vibrate) try { navigator.vibrate(ms); } catch (e) { /* ignore */ } }
@@ -66,19 +89,19 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) PB.Audio.resume(); });
   $('btn-play').onclick = () => { PB.Audio.init(); syncOpts(); show('scr-setup'); };
   // ── tutorial ─────────────────────────────────────────────────────────────
-  const steps = PB.Tutorial.STEPS;
   let tutAt = 0;
-  $('tut-dots').innerHTML = steps.map(() => '<i></i>').join('');
+  $('tut-dots').innerHTML = PB.Tutorial.steps().map(() => '<i></i>').join('');
   const dots = Array.from($('tut-dots').children);
 
   function paintTutorial() {
+    const steps = PB.Tutorial.steps();
     const st = steps[tutAt];
-    $('tut-step').textContent = `PASSO ${tutAt + 1} DE ${steps.length}`;
+    $('tut-step').textContent = I18n.t('ui.tut.step', { a: tutAt + 1, b: steps.length });
     dots.forEach((d, i) => d.classList.toggle('on', i === tutAt));
     $('tut-stage').innerHTML = `<div class="tut-art">${st.stage}</div>`;
     $('tut-body').innerHTML = `<h3>${st.title}</h3>${st.body}`;
     $('btn-tut-prev').disabled = tutAt === 0;
-    $('btn-tut-next').textContent = tutAt === steps.length - 1 ? 'Jogar agora' : 'Próximo';
+    $('btn-tut-next').textContent = I18n.t(tutAt === steps.length - 1 ? 'ui.tut.playnow' : 'ui.tut.next');
     $('scr-tutorial').scrollTop = 0;
   }
   function openTutorial() { tutAt = 0; paintTutorial(); show('scr-tutorial'); }
@@ -87,7 +110,7 @@
   $('btn-tut-home').onclick = () => show('scr-title');
   $('btn-tut-prev').onclick = () => { if (tutAt > 0) { tutAt--; paintTutorial(); } };
   $('btn-tut-next').onclick = () => {
-    if (tutAt < steps.length - 1) { tutAt++; paintTutorial(); }
+    if (tutAt < PB.Tutorial.steps().length - 1) { tutAt++; paintTutorial(); }
     else { PB.Audio.init(); syncOpts(); show('scr-setup'); }
   };
   $('btn-back').onclick = () => show('scr-title');
@@ -96,7 +119,7 @@
     PB.Audio.init();
     PB.Audio.setMuted(!sound);
     store.set('pb.sound', sound ? '1' : '0');
-    $('btn-sound').textContent = sound ? '🔊 Som' : '🔇 Som';
+    paintSound();
   };
   $('btn-start').onclick = () => start();
   $('pauseBtn').onclick = () => { if (match) { match.paused = true; show('scr-pause'); } };
@@ -112,13 +135,9 @@
     PB.Audio.setMuted(!sound);
     match = new PB.Match({
       format: cfg.format,
-      humans: parseInt(cfg.humans, 10),
-      arrangement: cfg.arrangement,
       difficulty: cfg.difficulty,
       targetPoints: parseInt(cfg.targetPoints, 10),
     });
-    input.split = match.versus;
-    input.coop = !match.versus && match.cfg.humans === 2;
     input.reset();
     renderer.trail.length = 0;
     show(null);
@@ -131,18 +150,8 @@
     last = ts;
     if (!match) { return; }
     if (!match.paused) {
-      if (input.coop) {
-        const a = match.players[match.slot.p1], b = match.players[match.slot.p2];
-        input.coopFlip = a.x < b.x;
-      }
-      // let the input layer know who is waiting to serve
-      if (match.state === 'ready') {
-        input.serveSlots.p1 = match.slot.p1 === match.serverIdx;
-        input.serveSlots.p2 = match.slot.p2 === match.serverIdx;
-      } else {
-        input.serveSlots.p1 = false;
-        input.serveSlots.p2 = false;
-      }
+      // let the input layer know whether the player is the one waiting to serve
+      input.serveSlots.p1 = match.state === 'ready' && match.humanIdx === match.serverIdx;
       const state = input.sample(dt);
       match.update(dt, state);
       drain(match);
@@ -171,18 +180,16 @@
     const m = match;
     PB.Audio.play('win');
     const s = m.score;
-    const humanTeams = new Set(m.players.filter(p => p.ctrl === 'human').map(p => p.team));
-    let title;
-    if (m.cfg.humans === 2 && humanTeams.size === 2) title = m.winner === 0 ? 'P1 venceu!' : 'P2 venceu!';
-    else if (humanTeams.has(m.winner)) title = 'Você venceu!';
-    else title = 'Você perdeu';
-    $('over-title').textContent = title;
+    const won = m.players[m.humanIdx].team === m.winner;
+    $('over-title').textContent = I18n.t(won ? 'ui.over.win' : 'ui.over.lose');
     $('over-score').textContent = `${s[0]} - ${s[1]}`;
-    $('over-sub').textContent = `${m.cfg.format === 'doubles' ? 'Duplas' : 'Simples'} • até ${m.cfg.targetPoints} pontos • ${labelDiff(m.cfg.difficulty)}`;
+    $('over-sub').textContent = I18n.t('ui.over.sub', {
+      format: I18n.t(m.cfg.format === 'doubles' ? 'ui.format.doubles' : 'ui.format.singles'),
+      n: m.cfg.targetPoints,
+      diff: I18n.t('ui.diff.' + m.cfg.difficulty),
+    });
     show('scr-over');
   }
-
-  function labelDiff(d) { return d === 'facil' ? 'Fácil' : d === 'dificil' ? 'Difícil' : 'Normal'; }
 
   // ── boot ─────────────────────────────────────────────────────────────────
   function resize() { renderer.resize(); }
@@ -198,7 +205,8 @@
   // exposed for debugging and automated play-testing
   window.PBGame = { get match() { return match; }, input, renderer, start, cfg: () => cfg };
 
-  $('btn-sound').textContent = sound ? '🔊 Som' : '🔇 Som';
+  paintLangs();
+  paintSound();
   syncOpts();
   resize();
   show('scr-title');

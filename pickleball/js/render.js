@@ -7,6 +7,7 @@ var PB = (function () {
 })();
 
 PB.Renderer = (function () {
+  const T = (k, v) => (PB.I18n ? PB.I18n.t(k, v) : k);
   const C = PB.Court;
 
   const COL = {
@@ -1045,13 +1046,8 @@ PB.Renderer = (function () {
       this.w = w; this.h = h; this.dpr = dpr;
     }
 
-    viewports(m) {
-      if (!m.versus) return [{ side: 0, rect: { x: 0, y: 0, w: this.w, h: this.h }, slot: 'p1' }];
-      const half = Math.floor(this.h / 2);
-      return [
-        { side: 1, rect: { x: 0, y: 0, w: this.w, h: half }, slot: 'p2' },
-        { side: 0, rect: { x: 0, y: half, w: this.w, h: this.h - half }, slot: 'p1' },
-      ];
+    viewports() {
+      return [{ side: 0, rect: { x: 0, y: 0, w: this.w, h: this.h }, slot: 'p1' }];
     }
 
     // ── frame ──────────────────────────────────────────────────────────────
@@ -1059,7 +1055,7 @@ PB.Renderer = (function () {
       const ctx = this.ctx;
       this.match = m;
       ctx.clearRect(0, 0, this.w, this.h);
-      const views = this.viewports(m);
+      const views = this.viewports();
 
       // ball trail
       if (m.ball.live) {
@@ -1068,8 +1064,7 @@ PB.Renderer = (function () {
       } else if (this.trail.length) this.trail.length = 0;
 
       for (const v of views) {
-        const id = m.slot[v.slot];
-        const me = id !== undefined ? m.players[id] : m.players[0];
+        const me = m.players[m.humanIdx] || m.players[0];
         const cam = new Cam(v.rect, v.side, me ? me.x : 0);
         ctx.save();
         ctx.beginPath();
@@ -1078,10 +1073,6 @@ PB.Renderer = (function () {
         this.drawWorld(ctx, m, cam, me);
         this.drawViewHud(ctx, m, v, me);
         ctx.restore();
-      }
-      if (views.length > 1) {
-        ctx.fillStyle = '#0a0f16';
-        ctx.fillRect(0, views[1].rect.y - 2, this.w, 4);
       }
       if (input) this.drawTouch(ctx, input);
     }
@@ -1498,12 +1489,6 @@ PB.Renderer = (function () {
       const s = base.s;
       if (s <= 0 || base.cz <= 1) return;
       Char.draw(ctx, cam, p, base, s, p === me);
-      if (p.ctrl === 'human' && p !== me) {
-        ctx.fillStyle = 'rgba(255,255,255,0.85)';
-        ctx.font = `600 ${Math.max(9, s * 0.5)}px system-ui, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText(p.name, base.x, base.y - s * 6.5);
-      }
     }
 
     drawBall(ctx, cam, m) {
@@ -1589,9 +1574,9 @@ PB.Renderer = (function () {
         if (sub) this.centerText(ctx, r, sub, cy + 18, 11, 'rgba(255,255,255,0.65)');
       };
       if (m.state === 'ready' && me && m.players[m.serverIdx] === me) {
-        prompt('DESLIZE PARA SACAR', 'comprimento = força  •  lado = direção');
+        prompt(T('prompt.serve'), T('prompt.serve.sub'));
       } else if (m.state === 'ready' && me && m.players[m.receiverIdx] === me) {
-        prompt('DEIXE O SAQUE QUICAR', null);
+        prompt(T('prompt.letbounce'), null);
       }
     }
 
@@ -1628,7 +1613,7 @@ PB.Renderer = (function () {
       ctx.fillStyle = 'rgba(255,255,255,0.82)';
       ctx.font = `700 ${10.5 * k}px system-ui, sans-serif`;
       ctx.textAlign = 'left';
-      const title = (m.isDoubles() ? 'DUPLAS' : 'SIMPLES') + ': ATÉ ' + m.cfg.targetPoints + ' PONTOS';
+      const title = T('hud.title', { format: T(m.isDoubles() ? 'hud.doubles' : 'hud.singles'), n: m.cfg.targetPoints });
       ctx.fillText(spaced(title), x + 8 * k, y + head / 2);
 
       // one row per team
@@ -1697,7 +1682,7 @@ PB.Renderer = (function () {
       ctx.fillStyle = 'rgba(255,255,255,0.45)';
       ctx.font = `700 ${8.5 * k}px system-ui, sans-serif`;
       ctx.textAlign = 'left';
-      ctx.fillText(spaced(m.isDoubles() ? 'CHAMADA' : 'PICKLEBALL FOREVER'), x + 8 * k, fy);
+      ctx.fillText(spaced(m.isDoubles() ? T('hud.call') : 'PICKLEBALL FOREVER'), x + 8 * k, fy);
       ctx.textAlign = 'right';
       ctx.fillStyle = 'rgba(255,255,255,0.92)';
       ctx.font = `800 ${11 * k}px system-ui, sans-serif`;
@@ -1721,7 +1706,7 @@ PB.Renderer = (function () {
       ctx.fillText(t.label, bx + bw / 2, by + 26);
       ctx.fillStyle = 'rgba(255,255,255,0.75)';
       ctx.font = '600 12px system-ui, sans-serif';
-      ctx.fillText(t.sideOut ? 'Troca de saque' : 'Ponto ' + (t.team === 0 ? 'Time 1' : 'Time 2'),
+      ctx.fillText(t.sideOut ? T('banner.sideout') : T('banner.point', { team: T(t.team === 0 ? 'team.1' : 'team.2') }),
         bx + bw / 2, by + 46);
       ctx.restore();
     }
@@ -1774,11 +1759,9 @@ PB.Renderer = (function () {
         ctx.restore();
       }
       // live strokes, then the ghost of the one just released
-      if (input.strokes) {
-        for (const slot of ['p1', 'p2']) {
-          const st = input.strokes[slot];
-          if (st) this.strokePath(ctx, st.pts, st.power, 1);
-        }
+      if (input.strokes && input.strokes.p1) {
+        const st = input.strokes.p1;
+        this.strokePath(ctx, st.pts, st.power, 1);
       }
       for (const s of input.swipeFx) {
         this.strokePath(ctx, s.pts, s.power, Math.max(0, s.life) * 0.8);

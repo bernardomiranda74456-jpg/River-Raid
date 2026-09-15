@@ -1,6 +1,7 @@
 # Pickleball Forever 🥒🏓
 
-Jogo de pickleball para celular, com regras oficiais, feito em HTML5 Canvas puro
+Jogo de pickleball para celular, um jogador contra a CPU, em português, inglês
+e espanhol, com regras oficiais, feito em HTML5 Canvas puro
 (sem dependências) e portado para Swift Playgrounds/SpriteKit.
 
 ## Como abrir
@@ -19,11 +20,12 @@ navegador. Regenere com `node build-single.js` dentro de `pickleball/`.
 
 | Modo | Como funciona |
 | --- | --- |
-| Simples, 1 jogador | Você contra a CPU |
-| Simples, 2 jogadores | Dois humanos no mesmo aparelho, tela dividida |
-| Duplas, 1 jogador | Você + parceiro CPU contra dois CPUs |
-| Duplas, 2 jogadores — juntos | Vocês dois na mesma dupla contra a CPU (uma tela só, cada metade da tela controla o parceiro daquele lado) |
-| Duplas, 2 jogadores — um contra o outro | Cada humano com um parceiro CPU, tela dividida com a perspectiva de cada um |
+| Simples | Você contra a CPU |
+| Duplas | Você + parceiro CPU contra dois CPUs |
+
+Sempre um jogador humano. Idioma em português, inglês ou espanhol, escolhido
+pelas bandeiras na tela principal; na primeira vez o jogo segue o idioma do
+aparelho.
 
 Dificuldade: **Fácil** (golpe automático, faltas assistidas), **Normal**
 (você golpeia, mas o jogo evita faltas de cozinha e de dois quiques) e

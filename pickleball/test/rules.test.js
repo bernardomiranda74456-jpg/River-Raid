@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const dir = path.join(__dirname, '..', 'js');
-for (const f of ['court', 'physics', 'shots', 'stroke', 'match', 'ai']) {
+for (const f of ['i18n', 'court', 'physics', 'shots', 'stroke', 'match', 'ai', 'tutorial']) {
   vm.runInThisContext(fs.readFileSync(path.join(dir, f + '.js'), 'utf8'), { filename: f + '.js' });
 }
 const C = PB.Court;
@@ -22,7 +22,7 @@ function eq(actual, expected, what) {
 }
 function ok(cond, what) { if (!cond) throw new Error(what || 'condição falsa'); }
 
-const mk = cfg => new PB.Match(Object.assign({ format: 'singles', humans: 1, difficulty: 'normal' }, cfg));
+const mk = cfg => new PB.Match(Object.assign({ format: 'singles', difficulty: 'normal' }, cfg));
 
 // Puts a rally in the state right after `shotCount` hits by `hitter`.
 function midRally(m, hitter, shotCount, bounces) {
@@ -93,7 +93,7 @@ test('voleio antes do quique é falta quando as regras são estritas', () => {
   m.servingTeam = 1;                 // deixa o humano recebendo
   m.serverIdx = m.players.find(p => p.team === 1).id;
   m.prepareServe();
-  const human = m.players[m.slot.p1];
+  const human = m.players[m.humanIdx];
   midRally(m, m.serverIdx, 1, 0);    // saque no ar, sem quicar
   m.ball.x = human.x; m.ball.z = human.z; m.ball.y = 2.5;
   m.pendingSwing[human.id] = { lateral: 0, depth: 0.5, fast: true, long: true, quality: 1 };
@@ -107,7 +107,7 @@ test('no modo assistido o voleio do saque é bloqueado em vez de virar falta', (
   m.servingTeam = 1;
   m.serverIdx = m.players.find(p => p.team === 1).id;
   m.prepareServe();
-  const human = m.players[m.slot.p1];
+  const human = m.players[m.humanIdx];
   midRally(m, m.serverIdx, 1, 0);
   m.ball.x = human.x; m.ball.z = human.z; m.ball.y = 2.5;
   m.pendingSwing[human.id] = { lateral: 0, depth: 0.5, fast: true, long: true, quality: 1 };
@@ -119,7 +119,7 @@ test('no modo assistido o voleio do saque é bloqueado em vez de virar falta', (
 
 test('o terceiro golpe também tem que esperar o quique', () => {
   const m = mk({ difficulty: 'dificil' });
-  const human = m.players[m.slot.p1];          // time 0, que sacou
+  const human = m.players[m.humanIdx];          // time 0, que sacou
   midRally(m, 1, 2, 0);                        // devolução do adversário, no ar
   m.ball.x = human.x; m.ball.z = human.z; m.ball.y = 2.5;
   m.pendingSwing[human.id] = { lateral: 0, depth: 0.5, fast: true, long: true, quality: 1 };
@@ -129,7 +129,7 @@ test('o terceiro golpe também tem que esperar o quique', () => {
 
 test('a partir do quarto golpe o voleio é liberado', () => {
   const m = mk({ difficulty: 'dificil' });
-  const human = m.players[m.slot.p1];
+  const human = m.players[m.humanIdx];
   midRally(m, 1, 3, 0);                        // já passou dos dois quiques
   human.z = C.teamSign(0) * 12;                // longe da cozinha
   m.ball.x = human.x; m.ball.z = human.z; m.ball.y = 2.5;
@@ -167,7 +167,7 @@ test('uma partida recém-criada já aceita um golpe', () => {
   const m = mk({});
   ok(m.pendingSwing && typeof m.pendingSwing === 'object', 'pendingSwing existe desde o início');
   midRally(m, 1, 3, 0);
-  const human = m.players[m.slot.p1];
+  const human = m.players[m.humanIdx];
   m.ball.x = human.x; m.ball.z = human.z; m.ball.y = 2.5;
   m.attemptHit(human);                          // sem swipe: não pode explodir
   eq(m.rally.shotCount, 3, 'sem swipe, sem golpe');
@@ -180,7 +180,6 @@ test('só o recebedor da diagonal pode devolver o saque', () => {
   const receiver = m.players[m.receiverIdx];
   const partner = m.mates(receiver.team).find(p => p.id !== receiver.id);
   partner.ctrl = 'human';                       // para poder forçar o golpe
-  m.slot.p2 = partner.id;
   midRally(m, m.serverIdx, 1, 1);               // saque quicou
   m.ball.x = partner.x; m.ball.z = partner.z; m.ball.y = 2.4;
   m.pendingSwing[partner.id] = { lateral: 0, depth: 0.5, fast: true, long: true, quality: 1 };
@@ -195,7 +194,6 @@ test('o recebedor correto devolve normalmente', () => {
   m.prepareServe();
   const receiver = m.players[m.receiverIdx];
   receiver.ctrl = 'human';
-  m.slot.p2 = receiver.id;
   midRally(m, m.serverIdx, 1, 1);
   m.ball.x = receiver.x; m.ball.z = receiver.z; m.ball.y = 2.4;
   m.pendingSwing[receiver.id] = { lateral: 0, depth: 0.5, fast: true, long: true, quality: 1 };
@@ -215,7 +213,7 @@ test('segundo quique do mesmo lado perde o rally', () => {
 // ── kitchen ───────────────────────────────────────────────────────────────
 test('voleio com o pé na cozinha é falta', () => {
   const m = mk({ difficulty: 'dificil' });
-  const human = m.players[m.slot.p1];
+  const human = m.players[m.humanIdx];
   midRally(m, 1, 3, 0);                       // adversário bateu, sem quique
   human.x = 2; human.z = C.teamSign(0) * 3;   // dentro da cozinha
   m.ball.x = human.x; m.ball.z = human.z; m.ball.y = 3.0;
@@ -226,7 +224,7 @@ test('voleio com o pé na cozinha é falta', () => {
 
 test('voleio fora da cozinha é legal', () => {
   const m = mk({ difficulty: 'dificil' });
-  const human = m.players[m.slot.p1];
+  const human = m.players[m.humanIdx];
   midRally(m, 1, 3, 0);
   human.x = 2; human.z = C.teamSign(0) * (C.KITCHEN + 1);
   m.ball.x = human.x; m.ball.z = human.z; m.ball.y = 3.0;
@@ -238,7 +236,7 @@ test('voleio fora da cozinha é legal', () => {
 
 test('voleio com o pé da frente sobre a linha é falta, mesmo com o centro fora', () => {
   const m = mk({ difficulty: 'dificil' });
-  const human = m.players[m.slot.p1];
+  const human = m.players[m.humanIdx];
   midRally(m, 1, 3, 0);
   human.x = 2;
   human.speedN = 0; human.lunge = 0;
@@ -253,7 +251,7 @@ test('voleio com o pé da frente sobre a linha é falta, mesmo com o centro fora
 
 test('voleio com um passo de folga da linha é legal', () => {
   const m = mk({ difficulty: 'dificil' });
-  const human = m.players[m.slot.p1];
+  const human = m.players[m.humanIdx];
   midRally(m, 1, 3, 0);
   human.x = 2; human.speedN = 0; human.lunge = 0;
   human.z = C.teamSign(0) * (C.KITCHEN + 1.0);
@@ -266,7 +264,7 @@ test('voleio com um passo de folga da linha é legal', () => {
 
 test('correndo, a pegada aumenta e a folga exigida também', () => {
   const m = mk({ difficulty: 'dificil' });
-  const p = m.players[m.slot.p1];
+  const p = m.players[m.humanIdx];
   p.z = C.teamSign(0) * (C.KITCHEN + 0.7);
   p.speedN = 0; p.lunge = 0;
   ok(!C.playerInKitchen(p), 'parado a essa distância está legal');
@@ -276,7 +274,7 @@ test('correndo, a pegada aumenta e a folga exigida também', () => {
 
 test('a zona de não-voleio termina na linha lateral', () => {
   const m = mk({});
-  const p = m.players[m.slot.p1];
+  const p = m.players[m.humanIdx];
   p.x = C.HALF_W + 2; p.z = C.teamSign(0) * 3;      // fora da lateral, junto à rede
   p.speedN = 0; p.lunge = 0;
   ok(!C.playerInKitchen(p), 'fora da lateral pode voleiar junto à rede');
@@ -284,7 +282,7 @@ test('a zona de não-voleio termina na linha lateral', () => {
 
 test('entrar na cozinha por impulso após o voleio é falta', () => {
   const m = mk({ difficulty: 'dificil' });
-  const human = m.players[m.slot.p1];
+  const human = m.players[m.humanIdx];
   m.state = 'live';
   human.volleyMomentum = 0.4;
   human.x = 0; human.z = C.teamSign(0) * 3;    // arrastado para dentro
@@ -440,10 +438,10 @@ test('o parceiro da CPU não rebate a bola que a própria dupla acabou de bater'
 });
 
 test('humano que bate na bola do parceiro comete falta de dois golpes', () => {
-  const m = mk({ format: 'doubles', humans: 2, arrangement: 'coop', difficulty: 'dificil' });
-  const humans = m.players.filter(p => p.ctrl === 'human' && p.team === 0);
-  ok(humans.length === 2, 'dupla de dois humanos');
-  const [a, b] = humans;
+  const m = mk({ format: 'doubles', difficulty: 'dificil' });
+  const a = m.players[m.humanIdx];
+  const b = m.mates(a.team).find(p => p.id !== a.id);
+  b.ctrl = 'human';                              // para poder forçar o golpe
   midRally(m, a.id, 3, 0);
   cleanContact(m, b);
   b.hitCd = 0;
@@ -455,8 +453,10 @@ test('humano que bate na bola do parceiro comete falta de dois golpes', () => {
 });
 
 test('no nível normal o segundo golpe da dupla vira aviso, e o golpe é descartado', () => {
-  const m = mk({ format: 'doubles', humans: 2, arrangement: 'coop', difficulty: 'normal' });
-  const [a, b] = m.players.filter(p => p.ctrl === 'human' && p.team === 0);
+  const m = mk({ format: 'doubles', difficulty: 'normal' });
+  const a = m.players[m.humanIdx];
+  const b = m.mates(a.team).find(p => p.id !== a.id);
+  b.ctrl = 'human';
   midRally(m, a.id, 3, 0);
   cleanContact(m, b);
   b.hitCd = 0;
@@ -465,7 +465,7 @@ test('no nível normal o segundo golpe da dupla vira aviso, e o golpe é descart
   ok(!m.rally.over, 'sem falta com as regras assistidas');
   eq(m.rally.lastHitter, a.id, 'a bola não foi rebatida');
   ok(!m.pendingSwing[b.id], 'o deslize foi consumido');
-  ok((m.hint || '').includes('parceiro'), 'aviso na tela');
+  eq(m.hint, PB.I18n.t('hint.partnerhit'), 'aviso na tela');
 });
 
 test('bola fraca que quica no próprio campo é falta, e a mensagem distingue a rede', () => {
@@ -474,12 +474,66 @@ test('bola fraca que quica no próprio campo é falta, e a mensagem distingue a 
   m.rally.netTouch = false;
   m.onBounce(2, C.teamSign(0) * 8);
   eq(m.lastReason, 'nao_passou');
-  eq(PB.Match.reasonText('nao_passou', m).label, 'Não passou da rede');
+  eq(PB.Match.reasonText('nao_passou', m).label, PB.I18n.t('reason.nao_passou'));
   const m2 = mk({});
   midRally(m2, 0, 3, 0);
   m2.rally.netTouch = true;
   m2.onBounce(2, C.teamSign(0) * 8);
-  eq(PB.Match.reasonText('nao_passou', m2).label, 'Na rede');
+  eq(PB.Match.reasonText('nao_passou', m2).label, PB.I18n.t('reason.na_rede'));
+});
+
+test('a partida tem um humano só, em simples e em duplas', () => {
+  for (const format of ['singles', 'doubles']) {
+    const m = mk({ format });
+    const humanos = m.players.filter(p => p.ctrl === 'human');
+    eq(humanos.length, 1, format + ': um humano');
+    eq(humanos[0].id, m.humanIdx, format + ': é o jogador do índice humano');
+    eq(m.players.length, format === 'doubles' ? 4 : 2, format + ': gente em quadra');
+  }
+});
+
+test('os três idiomas têm todas as chaves e nenhuma sobra', () => {
+  const D = PB.I18n.DICT;
+  const base = Object.keys(D.en);
+  for (const l of PB.I18n.LANGS) {
+    const faltando = base.filter(k => D[l][k] === undefined);
+    const sobrando = Object.keys(D[l]).filter(k => base.indexOf(k) < 0);
+    eq(faltando.length, 0, l + ' sem chaves faltando: ' + faltando.join(', '));
+    eq(sobrando.length, 0, l + ' sem chaves sobrando: ' + sobrando.join(', '));
+    for (const k of base) ok(String(D[l][k]).length > 0, l + '/' + k + ' não é vazio');
+  }
+});
+
+test('trocar de idioma troca as chamadas e o tutorial', () => {
+  const m = mk({});
+  midRally(m, 0, 3, 0);
+  m.rally.netTouch = true;
+  const antes = PB.I18n.lang;
+  PB.I18n.setLang('en');
+  eq(PB.Match.reasonText('fora', m).label, 'Ball out');
+  eq(PB.Tutorial.steps()[0].title, 'Two thumbs');
+  PB.I18n.setLang('es');
+  eq(PB.Match.reasonText('fora', m).label, 'Bola fuera');
+  eq(PB.Tutorial.steps()[0].title, 'Dos dedos');
+  PB.I18n.setLang('pt');
+  eq(PB.Match.reasonText('fora', m).label, 'Bola fora');
+  eq(PB.Tutorial.steps()[0].title, 'Dois dedos');
+  PB.I18n.setLang(antes);
+});
+
+test('os oito passos do tutorial vêm inteiros nos três idiomas', () => {
+  const antes = PB.I18n.lang;
+  for (const l of PB.I18n.LANGS) {
+    PB.I18n.setLang(l);
+    const st = PB.Tutorial.steps();
+    eq(st.length, 8, l + ': oito passos');
+    for (const s of st) {
+      ok(s.title && s.title.indexOf('tut.') < 0, l + ': título traduzido');
+      ok(s.body && s.body.indexOf('tut.') < 0, l + ': texto traduzido');
+      ok(s.stage && s.stage.indexOf('${') < 0, l + ': desenho montado');
+    }
+  }
+  PB.I18n.setLang(antes);
 });
 
 // ── physics sanity ────────────────────────────────────────────────────────

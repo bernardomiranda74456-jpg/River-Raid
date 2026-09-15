@@ -181,79 +181,81 @@
   .final { font-size: 46px; font-weight: 800; letter-spacing: 2px; }
   .muted { color: #7f9ab1; font-size: 13px; }
   .foot { position: absolute; bottom: calc(10px + env(safe-area-inset-bottom)); font-size: 11px; color: #4d6478; }
+
+  /* language: three flags, the chosen one lit */
+  .langs { display: flex; gap: 12px; justify-content: center; }
+  .lang {
+    width: 48px; height: 32px; padding: 0; border-radius: 7px; cursor: pointer;
+    background: none; border: 2px solid transparent; opacity: 0.45;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity .15s, border-color .15s, transform .15s;
+  }
+  .lang svg { width: 100%; height: 100%; border-radius: 5px; display: block; }
+  .lang[aria-pressed="true"] { opacity: 1; border-color: #d9ff3d; transform: translateY(-1px); }
 </style>
 </head>
 <body>
 <div id="app">
   <canvas id="game"></canvas>
-  <button id="pauseBtn" aria-label="Pausar">⏸</button>
+  <button id="pauseBtn" data-i18n-aria="ui.pauseBtn" aria-label="Pausar">⏸</button>
 
   <!-- título -->
   <section id="scr-title" class="screen on">
     <h1 class="logo"><img src="img/logo.png" alt="Pickleball Forever" width="900" height="606" decoding="async"></h1>
     <div class="title-side">
-      <p class="tag">Simples ou duplas, sozinho ou com um amigo no mesmo aparelho. Regras oficiais, cozinha e tudo.</p>
+      <p class="tag" data-i18n="ui.tag">Simples ou duplas contra a CPU. Regras oficiais, cozinha e tudo.</p>
       <div class="card">
-        <button class="btn outline" id="btn-tutorial">TUTORIAL</button>
-        <button class="btn" id="btn-play">JOGAR</button>
-        <button class="btn ghost" id="btn-sound">🔊 Som</button>
+        <button class="btn outline" id="btn-tutorial" data-i18n="ui.tutorial">TUTORIAL</button>
+        <button class="btn" id="btn-play" data-i18n="ui.play">JOGAR</button>
+        <button class="btn ghost" id="btn-sound">Som</button>
       </div>
+    <div class="langs" id="langs" role="group" data-i18n-aria="ui.language">
+      <button class="lang" data-lang="pt" data-i18n-aria="lang.name.pt"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" rx="3" fill="#159b41"/><path d="M15 2.6 27.4 10 15 17.4 2.6 10Z" fill="#fedf00"/><circle cx="15" cy="10" r="4.4" fill="#002776"/><path d="M10.9 8.3a8 8 0 0 1 8.3 2.5" stroke="#fff" stroke-width="1.5" fill="none"/></svg></button>
+      <button class="lang" data-lang="en" data-i18n-aria="lang.name.en"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" rx="3" fill="#fff"/><g fill="#b22234"><rect width="30" height="1.54" y="0"/><rect width="30" height="1.54" y="3.08"/><rect width="30" height="1.54" y="6.15"/><rect width="30" height="1.54" y="9.23"/><rect width="30" height="1.54" y="12.31"/><rect width="30" height="1.54" y="15.38"/><rect width="30" height="1.54" y="18.46"/></g><rect width="13" height="10.77" fill="#3c3b6e"/><g fill="#fff"><circle cx="2.6" cy="2.2" r=".8"/><circle cx="6.5" cy="2.2" r=".8"/><circle cx="10.4" cy="2.2" r=".8"/><circle cx="4.5" cy="5.4" r=".8"/><circle cx="8.4" cy="5.4" r=".8"/><circle cx="2.6" cy="8.5" r=".8"/><circle cx="6.5" cy="8.5" r=".8"/><circle cx="10.4" cy="8.5" r=".8"/></g></svg></button>
+      <button class="lang" data-lang="es" data-i18n-aria="lang.name.es"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" rx="3" fill="#c60b1e"/><rect width="30" height="10" y="5" fill="#ffc400"/></svg></button>
     </div>
-    <div class="foot"><!--VERSION--> &middot; Dica: vire o celular na horizontal para uma visão mais ampla</div>
+    </div>
+    <div class="foot"><!--VERSION--> &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
   </section>
 
   <!-- configuração -->
   <section id="scr-setup" class="screen">
     <div class="card">
-      <h2>Configurar partida</h2>
+      <h2 data-i18n="ui.setup">Configurar partida</h2>
       <div class="group">
-        <div class="label">Formato</div>
+        <div class="label" data-i18n="ui.format">Formato</div>
         <div class="opts" data-group="format">
-          <button class="opt" data-val="singles">Simples<small>1 contra 1</small></button>
-          <button class="opt" data-val="doubles">Duplas<small>2 contra 2</small></button>
+          <button class="opt" data-val="singles"><span data-i18n="ui.format.singles">Simples</span><small data-i18n="ui.format.singles.sub">1 contra 1</small></button>
+          <button class="opt" data-val="doubles"><span data-i18n="ui.format.doubles">Duplas</span><small data-i18n="ui.format.doubles.sub">2 contra 2</small></button>
         </div>
       </div>
       <div class="group">
-        <div class="label">Jogadores</div>
-        <div class="opts" data-group="humans">
-          <button class="opt" data-val="1">Sozinho<small>contra a CPU</small></button>
-          <button class="opt" data-val="2">Dois jogadores<small>mesmo aparelho</small></button>
-        </div>
-      </div>
-      <div class="group" id="grp-arrangement">
-        <div class="label">Vocês dois vão…</div>
-        <div class="opts" data-group="arrangement">
-          <button class="opt" data-val="coop">Jogar juntos<small>dupla contra a CPU</small></button>
-          <button class="opt" data-val="versus">Um contra o outro<small>cada um com um parceiro CPU</small></button>
-        </div>
-      </div>
-      <div class="group">
-        <div class="label">Desenho dos jogadores</div>
+        <div class="label" data-i18n="ui.chars">Desenho dos jogadores</div>
         <div class="opts" data-group="charStyle">
-          <button class="opt" data-val="boneco">Boneco<small>estilo Wii, com rosto</small></button>
-          <button class="opt" data-val="atletico">Atlético<small>proporção real</small></button>
-          <button class="opt" data-val="vetor">Vetor<small>contorno, cor chapada</small></button>
-          <button class="opt" data-val="arcade">Arcade<small>cabeçudo, traço grosso</small></button>
+          <button class="opt" data-val="boneco"><span data-i18n="ui.chars.boneco">Boneco</span><small data-i18n="ui.chars.boneco.sub">estilo Wii</small></button>
+          <button class="opt" data-val="atletico"><span data-i18n="ui.chars.atletico">Atlético</span><small data-i18n="ui.chars.atletico.sub">proporção real</small></button>
+          <button class="opt" data-val="vetor"><span data-i18n="ui.chars.vetor">Vetor</span><small data-i18n="ui.chars.vetor.sub">contorno</small></button>
+          <button class="opt" data-val="arcade"><span data-i18n="ui.chars.arcade">Arcade</span><small data-i18n="ui.chars.arcade.sub">cabeçudo</small></button>
         </div>
       </div>
       <div class="group">
-        <div class="label">Dificuldade</div>
+        <div class="label" data-i18n="ui.diff">Dificuldade</div>
         <div class="opts" data-group="difficulty">
-          <button class="opt" data-val="facil">Fácil<small>golpe automático</small></button>
-          <button class="opt" data-val="normal">Normal<small>faltas assistidas</small></button>
-          <button class="opt" data-val="dificil">Difícil<small>regras sem perdão</small></button>
+          <button class="opt" data-val="facil"><span data-i18n="ui.diff.facil">Fácil</span><small data-i18n="ui.diff.facil.sub">golpe automático</small></button>
+          <button class="opt" data-val="normal"><span data-i18n="ui.diff.normal">Normal</span><small data-i18n="ui.diff.normal.sub">faltas assistidas</small></button>
+          <button class="opt" data-val="dificil"><span data-i18n="ui.diff.dificil">Difícil</span><small data-i18n="ui.diff.dificil.sub">sem perdão</small></button>
         </div>
       </div>
       <div class="group">
-        <div class="label">Partida até</div>
+        <div class="label" data-i18n="ui.upto">Partida até</div>
         <div class="opts" data-group="targetPoints">
-          <button class="opt" data-val="7">7 pontos</button>
-          <button class="opt" data-val="11">11 pontos</button>
-          <button class="opt" data-val="15">15 pontos</button>
+          <button class="opt" data-val="7" data-i18n-points="7">7 pontos</button>
+          <button class="opt" data-val="11" data-i18n-points="11">11 pontos</button>
+          <button class="opt" data-val="15" data-i18n-points="15">15 pontos</button>
         </div>
       </div>
-      <button class="btn" id="btn-start">COMEÇAR</button>
-      <button class="btn ghost" id="btn-back">Voltar</button>
+      <button class="btn" id="btn-start" data-i18n="ui.start">COMEÇAR</button>
+      <button class="btn ghost" id="btn-back" data-i18n="ui.back">Voltar</button>
     </div>
   </section>
 
@@ -262,7 +264,7 @@
     <div class="tut">
       <div class="tut-top">
         <span class="tut-step" id="tut-step">PASSO 1 DE 8</span>
-        <button class="tut-home" id="btn-tut-home">Menu principal</button>
+        <button class="tut-home" id="btn-tut-home" data-i18n="ui.tut.home">Menu principal</button>
       </div>
       <div class="tut-dots" id="tut-dots"></div>
       <div class="tut-card">
@@ -270,7 +272,7 @@
         <div class="tut-body" id="tut-body"></div>
       </div>
       <div class="tut-nav">
-        <button class="btn ghost" id="btn-tut-prev">Voltar</button>
+        <button class="btn ghost" id="btn-tut-prev" data-i18n="ui.tut.prev">Voltar</button>
         <button class="btn" id="btn-tut-next">Próximo</button>
       </div>
     </div>
@@ -279,25 +281,26 @@
   <!-- pausa -->
   <section id="scr-pause" class="screen sheet">
     <div class="card">
-      <h2>Pausa</h2>
-      <button class="btn" id="btn-resume">Continuar</button>
-      <button class="btn ghost" id="btn-restart">Reiniciar partida</button>
-      <button class="btn ghost" id="btn-quit">Sair para o menu</button>
+      <h2 data-i18n="ui.pause">Pausa</h2>
+      <button class="btn" id="btn-resume" data-i18n="ui.resume">Continuar</button>
+      <button class="btn ghost" id="btn-restart" data-i18n="ui.restart">Reiniciar partida</button>
+      <button class="btn ghost" id="btn-quit" data-i18n="ui.quit">Sair para o menu</button>
     </div>
   </section>
 
   <!-- fim -->
   <section id="scr-over" class="screen sheet">
     <div class="card" style="align-items:center;text-align:center">
-      <h2 id="over-title">Fim de jogo</h2>
+      <h2 id="over-title" data-i18n="ui.over">Fim de jogo</h2>
       <div class="final" id="over-score">11 - 5</div>
       <p class="muted" id="over-sub"></p>
-      <button class="btn" id="btn-rematch">Revanche</button>
-      <button class="btn ghost" id="btn-menu">Menu</button>
+      <button class="btn" id="btn-rematch" data-i18n="ui.rematch">Revanche</button>
+      <button class="btn ghost" id="btn-menu" data-i18n="ui.menu">Menu</button>
     </div>
   </section>
 </div>
 
+<script src="js/i18n.js"></script>
 <script src="js/court.js"></script>
 <script src="js/physics.js"></script>
 <script src="js/shots.js"></script>
