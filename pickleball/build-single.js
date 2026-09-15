@@ -8,14 +8,25 @@ const path = require('path');
 
 // Bump this and the game names its own build. It is the one place the version
 // lives: the file name and the line under the title screen both read it.
-const VERSION = 21;
+const VERSION = 22;
 
 const dir = __dirname;
 const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 
 const stamped = html.replace('<!--VERSION-->', `v${VERSION}`);
 
-const inlined = stamped.replace(/<script src="js\/([^"]+)"><\/script>/g, (_, file) => {
+// Images live next to the page while developing and travel inside it in the
+// single-file build, so the game still opens straight from a downloaded file.
+const MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', svg: 'image/svg+xml' };
+const withImages = stamped.replace(/src="(img\/[^"]+)"/g, (_, file) => {
+  const ext = path.extname(file).slice(1).toLowerCase();
+  const mime = MIME[ext];
+  if (!mime) throw new Error(`não sei embutir ${file}`);
+  const b64 = fs.readFileSync(path.join(dir, file)).toString('base64');
+  return `src="data:${mime};base64,${b64}"`;
+});
+
+const inlined = withImages.replace(/<script src="js\/([^"]+)"><\/script>/g, (_, file) => {
   const code = fs.readFileSync(path.join(dir, 'js', file), 'utf8');
   if (code.includes('</script')) throw new Error(`${file} contains a closing script tag`);
   return `<script>\n${code}\n</script>`;

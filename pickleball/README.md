@@ -1,4 +1,4 @@
-# Pickleball 🥒🏓
+# Pickleball Forever 🥒🏓
 
 Jogo de pickleball para celular, com regras oficiais, feito em HTML5 Canvas puro
 (sem dependências) e portado para Swift Playgrounds/SpriteKit.

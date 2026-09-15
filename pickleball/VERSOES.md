@@ -5,6 +5,17 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v22
+
+O jogo agora se chama **Pickleball Forever**. A tela de entrada abre com o
+logo no lugar da palavra escrita, dimensionado para caber no retrato e na
+horizontal sem empurrar os botões. O título da página, a descrição, o letreiro
+do fundo da quadra e o rodapé do placar seguem o novo nome.
+
+O logo fica em `img/logo.png` (900 px de largura, fundo transparente, 212 KB)
+e o montador de arquivo único passou a embutir imagens de `img/` como data
+URI, então o arquivo baixado continua abrindo sozinho, sem internet.
+
 ## v21
 
 Direção mais acentuada. A lateral do golpe deixou de ser "quantos pixels o

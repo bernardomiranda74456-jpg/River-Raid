@@ -1191,7 +1191,7 @@ PB.Renderer = (function () {
       ctx.font = `700 ${Math.max(7, anchor.s * 0.8)}px system-ui, sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(255,255,255,0.55)';
-      ctx.fillText('P I C K L E B A L L', anchor.x, anchor.y + anchor.s * 0.28);
+      ctx.fillText('P I C K L E B A L L   F O R E V E R', anchor.x, anchor.y + anchor.s * 0.28);
       ctx.restore();
     }
 
@@ -1697,7 +1697,7 @@ PB.Renderer = (function () {
       ctx.fillStyle = 'rgba(255,255,255,0.45)';
       ctx.font = `700 ${8.5 * k}px system-ui, sans-serif`;
       ctx.textAlign = 'left';
-      ctx.fillText(spaced(m.isDoubles() ? 'CHAMADA' : 'PICKLEBALL'), x + 8 * k, fy);
+      ctx.fillText(spaced(m.isDoubles() ? 'CHAMADA' : 'PICKLEBALL FOREVER'), x + 8 * k, fy);
       ctx.textAlign = 'right';
       ctx.fillStyle = 'rgba(255,255,255,0.92)';
       ctx.font = `800 ${11 * k}px system-ui, sans-serif`;
