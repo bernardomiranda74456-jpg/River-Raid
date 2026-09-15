@@ -5,6 +5,19 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v24
+
+Na hora de sacar o jogador fica preso na faixa em que o saque é legal, em vez
+de sair de lá e levar falta de pé. Enquanto espera para sacar ele só anda para
+a esquerda e para a direita: o dedo empurrando para frente ou para trás não
+tem efeito, a profundidade fica fixa um passo atrás da linha de fundo, e o
+lado a que ele tem direito é o único onde pode andar, entre a linha do meio
+(com 0,65 ft de folga, para não pisar nela) e a linha lateral.
+
+Assim que a bola sai no saque a trava some e o jogador volta a andar em
+qualquer direção. Quem está recebendo nunca é travado. A trava vale também
+para a CPU, que já ficava parada, e agora não tem como derivar.
+
 ## v23
 
 Duas mudanças grandes.

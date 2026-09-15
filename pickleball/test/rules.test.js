@@ -536,6 +536,52 @@ test('os oito passos do tutorial vêm inteiros nos três idiomas', () => {
   PB.I18n.setLang(antes);
 });
 
+test('o sacador não sai da linha de fundo nem do lado certo', () => {
+  for (const format of ['singles', 'doubles']) {
+    const m = mk({ format });
+    const server = m.players[m.serverIdx];
+    server.ctrl = 'human';
+    const z0 = server.z;
+    const lado = m.serveXSign;
+    // empurra para a frente, para trás e para o lado errado, por dois segundos
+    for (const [mx, mz] of [[0, 1], [0, -1], [-lado, 0], [lado, 0]]) {
+      server.mx = mx; server.mz = mz;
+      for (let i = 0; i < 120; i++) m.movePlayer(server, 1 / 60);
+      ok(Math.abs(server.z - z0) < 1e-6, `${format}: continua na linha de fundo (z=${server.z.toFixed(2)})`);
+      ok(Math.abs(server.z) > C.HALF_L, `${format}: atrás da linha de fundo`);
+      ok(Math.sign(server.x) === lado, `${format}: continua no lado do saque (x=${server.x.toFixed(2)})`);
+      ok(Math.abs(server.x) <= C.HALF_W + 1e-6, `${format}: não passa da linha lateral`);
+      ok(Math.abs(server.x) >= 0.6, `${format}: não pisa na linha do meio`);
+    }
+    // e o saque daí é legal
+    server.mx = 0; server.mz = 0;
+    m.doServe(m.serveTarget(0, 0.5, true), 0.8);
+    ok(m.lastReason !== 'pe_no_saque', `${format}: saque sem falta de pé`);
+  }
+});
+
+test('depois do saque o jogador volta a andar para frente e para trás', () => {
+  const m = mk({});
+  const server = m.players[m.serverIdx];
+  server.ctrl = 'human';
+  m.doServe(m.serveTarget(0, 0.5, true), 0.8);
+  eq(m.state, 'live', 'a bola está em jogo');
+  const z0 = server.z;
+  server.mx = 0; server.mz = 1;
+  for (let i = 0; i < 60; i++) m.movePlayer(server, 1 / 60);
+  ok(Math.abs(server.z) < Math.abs(z0) - 1, `avançou para a quadra (${z0.toFixed(1)} -> ${server.z.toFixed(1)})`);
+});
+
+test('quem recebe anda livre enquanto espera o saque', () => {
+  const m = mk({});
+  const receiver = m.players[m.receiverIdx];
+  receiver.ctrl = 'human';
+  const z0 = receiver.z;
+  receiver.mx = 0; receiver.mz = 1;
+  for (let i = 0; i < 60; i++) m.movePlayer(receiver, 1 / 60);
+  ok(Math.abs(receiver.z - z0) > 1, 'o recebedor se mexe normalmente');
+});
+
 // ── physics sanity ────────────────────────────────────────────────────────
 test('golpes chegam ao alvo escolhido, com folga na rede', () => {
   const cases = [

@@ -22,6 +22,9 @@ PB.Match = (function () {
   // aiming: a full sideways stroke turns the shot AIM_MAX from straight ahead,
   // AIM_CURVE keeps small tilts gentle, AIM_EDGE is the widest landing allowed
   const AIM_MAX = 30 * Math.PI / 180, AIM_CURVE = 1.6, AIM_EDGE = 9.0;
+  // Where the server stands while waiting: one step behind the baseline, and
+  // between the centre line and the sideline of the half they must serve from.
+  const SERVE_Z = 23.2, SERVE_X_MIN = 0.65;
   const REACH      = 3.05;   // paddle + arm
   const HIT_CD     = 0.22;
   const SERVE_WAIT   = 3.0;  // s standing at the line before the server starts bouncing the ball
@@ -159,7 +162,7 @@ PB.Match = (function () {
       const serveSign = C.teamSign(st);
 
       server.x = sSign * 4.6;
-      server.z = serveSign * 23.2;
+      server.z = serveSign * SERVE_Z;
 
       // receiver is the opponent standing diagonally across
       let receiver;
@@ -648,10 +651,31 @@ PB.Match = (function () {
       }
     }
 
+    // Waiting to serve, the only legal ground is behind the baseline and inside
+    // the half you must serve from. Rather than let the player wander out and
+    // then call a foot fault, the serve stance simply holds: sideways only.
+    isServing(p) {
+      return this.state === 'ready' && p.id === this.serverIdx;
+    }
+
+    clampServer(p) {
+      if (!this.isServing(p)) return;
+      const sign = C.teamSign(p.team);
+      p.z = sign * SERVE_Z;
+      p.vz = 0;
+      const xs = this.serveXSign;
+      const ax = Math.min(C.HALF_W, Math.max(SERVE_X_MIN, Math.abs(p.x)));
+      const nx = xs * ax;
+      // pressing into a wall stops rather than piling up speed
+      if (nx !== p.x) p.vx = 0;
+      p.x = nx;
+    }
+
     movePlayer(p, dt) {
       let dx, dz;
       if (p.ctrl === 'human') {
         dx = p.mx || 0; dz = p.mz || 0;
+        if (this.isServing(p)) dz = 0;          // sideways only until the serve is away
       } else {
         dx = p.tx - p.x; dz = p.tz - p.z;
         const d = Math.hypot(dx, dz);
@@ -689,6 +713,7 @@ PB.Match = (function () {
         }
       }
       C.clampToPlayArea(p, p.team);
+      this.clampServer(p);
       if (p.hitCd > 0) p.hitCd -= dt;
       if (p.swingT > 0) p.swingT -= dt;
       this.animate(p, dt);
