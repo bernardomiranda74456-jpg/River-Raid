@@ -5,6 +5,27 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v27
+
+Correção da postura do juiz. Na v26 ele foi desenhado de frente para a câmera,
+ou seja, olhando para o fundo da quadra, que não é onde um juiz fica. Agora o
+corpo está de perfil, de frente para a rede, olhando para o outro lado da
+quadra, como na posição real.
+
+Com o corpo de lado, o desenho mudou inteiro: tronco em perfil, com o peito
+para a frente e as costas retas, uma perna atrás da outra em tom mais escuro,
+o braço do outro lado do corpo por trás, os pés apontando para a rede e a
+faixa verde aparecendo só na frente do peito.
+
+A cabeça continua seguindo a bola, mas agora ela gira a partir do perfil: com
+a bola na altura da rede ele fica de perfil puro, com nariz e aba do boné
+apontados para a quadra e um olho à vista; com a bola vindo para perto ele
+vira o rosto para a câmera e aparecem os dois olhos; com a bola no fundo
+adversário ele vira de costas e o rosto desaparece.
+
+O braço do sinal também mudou: sobe para cima e para a frente, sobre a quadra,
+em vez de subir colado ao corpo, onde a cabeça o escondia.
+
 ## v26
 
 Entrou um juiz em quadra. Ele fica em pé ao lado do poste da rede, fora da
