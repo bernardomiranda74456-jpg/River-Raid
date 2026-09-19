@@ -5,6 +5,26 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v26
+
+Entrou um juiz em quadra. Ele fica em pé ao lado do poste da rede, fora da
+quadra, na linha da rede, de uniforme escuro com a faixa verde do jogo no
+peito e boné.
+
+A cabeça acompanha a bola o rali inteiro. Como ele está de lado para a câmera,
+o comprimento da quadra é a esquerda e a direita dele: com a bola no fundo da
+quadra adversária a cabeça vira para um lado, com a bola vindo para perto vira
+para o outro, e a aba do boné gira junto. Os olhos somem quando a cabeça passa
+dos três quartos de volta, como acontece de verdade. Entre os pontos, sem bola
+viva, ele olha para quem vai sacar.
+
+O sinal de início do ponto é o braço. Passado meio segundo da preparação do
+saque, ele levanta o braço e segura: é a autorização para sacar. No instante
+em que a bola sai o braço desce.
+
+O juiz tem um esqueleto próprio, separado do dos jogadores: sem raquete, sem
+ciclo de corrida e com uma cabeça que gira muito mais.
+
 ## v25
 
 As CPUs ganharam peso na arrancada. Até aqui todo mundo em quadra saltava para

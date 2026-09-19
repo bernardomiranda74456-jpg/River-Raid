@@ -1022,6 +1022,35 @@ PB.Renderer = (function () {
 
   function spaced(s) { return s.split('').join(' '); }
 
+  // ── the umpire ───────────────────────────────────────────────────────────
+  // Stands beside the net post, off court, at the net line. The head follows
+  // the ball the whole rally, and before each serve an arm goes up: that raised
+  // arm is the signal that the point may start, and it drops the moment the
+  // serve is struck. Drawn with its own small rig rather than the player one:
+  // no paddle, no run cycle, and a head that turns much further.
+  const UMP = {
+    x: C.HALF_W + 3.2, z: 0,
+    kit: '#1d2b3a', trim: '#d9ff3d', skin: '#c68642', cap: '#16212d',
+    ankle: 0.30, hip: 2.72, shoulder: 4.62, head: 5.30, headR: 0.42,
+  };
+
+  function umpState(r, m, dt) {
+    let u = r.ump;
+    if (!u) u = r.ump = { turn: 0, sig: 0 };
+    const b = m.ball;
+    // What to watch: the ball while it is alive, otherwise whoever is serving.
+    let tx = b.x, tz = b.z;
+    if (!b.live && m.players[m.serverIdx]) { tx = m.players[m.serverIdx].x; tz = m.players[m.serverIdx].z; }
+    // The umpire faces the court, so the court's length is their left-to-right.
+    const want = Math.atan2(tz - UMP.z, Math.max(0.5, UMP.x - tx));
+    const k = Math.min(1, dt * 7.5);
+    u.turn += (Math.max(-1.25, Math.min(1.25, want)) - u.turn) * k;
+    // The arm is up while the point is being set up, and drops once it is away.
+    const wantSig = m.state === 'ready' && m.stateT > 0.35 ? 1 : 0;
+    u.sig += (wantSig - u.sig) * Math.min(1, dt * (wantSig ? 6 : 9));
+    return u;
+  }
+
   // test hook: build the near-side camera for an arbitrary rect so a check can
   // ask where a world point actually lands on screen
   function probeCam(rect) { return new Cam(rect, 0, 0); }
@@ -1053,6 +1082,9 @@ PB.Renderer = (function () {
     // ── frame ──────────────────────────────────────────────────────────────
     draw(m, input) {
       const ctx = this.ctx;
+      const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+      this.dt = this.lastDraw ? Math.min(0.05, now - this.lastDraw) : 1 / 60;
+      this.lastDraw = now;
       this.match = m;
       ctx.clearRect(0, 0, this.w, this.h);
       const views = this.viewports();
@@ -1120,6 +1152,7 @@ PB.Renderer = (function () {
         }
       };
       drawGroup(order[0]);
+      this.drawUmpire(ctx, cam, m, this.dt);
       this.drawNet(ctx, cam);
       drawGroup(order[1]);
     }
@@ -1544,6 +1577,132 @@ PB.Renderer = (function () {
       ctx.strokeStyle = 'rgba(0,0,0,0.25)';
       ctx.lineWidth = 1;
       ctx.stroke();
+    }
+
+    // Beside the net post: one figure, drawn small, that makes the court feel
+    // officiated rather than empty.
+    drawUmpire(ctx, cam, m, dt) {
+      const u = umpState(this, m, dt);
+      const base = cam.proj(UMP.x, 0, UMP.z);
+      const s = base.s;
+      if (s <= 0 || base.cz <= 1) return;
+      const X = v => base.x + v * s, Y = v => base.y - v * s;
+      const lw = Math.max(1, s * 0.055);
+
+      // shadow
+      ctx.save();
+      ctx.globalAlpha = 0.28;
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.ellipse(base.x, base.y, s * 0.52, s * 0.19, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      const limb = (ax, ay, bx, by, w, col) => {
+        ctx.beginPath();
+        ctx.moveTo(X(ax), Y(ay));
+        ctx.lineTo(X(bx), Y(by));
+        ctx.lineCap = 'round';
+        ctx.lineWidth = Math.max(1.4, s * w);
+        ctx.strokeStyle = col;
+        ctx.stroke();
+      };
+
+      // legs, dark trousers
+      limb(-0.22, UMP.ankle, -0.17, UMP.hip, 0.30, '#25313f');
+      limb(0.22, UMP.ankle, 0.17, UMP.hip, 0.30, '#25313f');
+      ctx.fillStyle = '#0f1620';
+      for (const sx of [-0.22, 0.22]) {
+        ctx.beginPath();
+        ctx.ellipse(X(sx), Y(UMP.ankle - 0.22), s * 0.17, s * 0.09, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Arms first, then the torso over them, so the shoulders read as joints
+      // rather than as sticks glued to the sides. Only the hands and forearms
+      // clear the silhouette.
+      const shHalf = 0.42;
+      const arm = (sx, ex, ey, hx, hy) => {
+        limb(sx * 0.80, UMP.shoulder - 0.14, ex, ey, 0.21, tint(UMP.kit, -0.10));
+        limb(ex, ey, hx, hy, 0.145, UMP.skin);
+        ctx.beginPath();
+        ctx.arc(X(hx), Y(hy), s * 0.115, 0, Math.PI * 2);
+        ctx.fillStyle = UMP.skin;
+        ctx.fill();
+      };
+      // the resting arm hangs at the side
+      arm(-shHalf, -0.58, UMP.shoulder - 0.95, -0.60, UMP.shoulder - 1.72);
+      // and the other one rises to signal, out and then up
+      const up = u.sig;
+      const ex = shHalf + 0.16 + 0.22 * up;
+      const ey = UMP.shoulder - 0.95 + 1.05 * up;
+      const hx = ex + 0.02 + 0.12 * up;
+      const hy = UMP.shoulder - 1.72 + 2.60 * up;
+      arm(shHalf, ex, ey, hx, hy);
+
+      // torso: a shirt with the game's own green across the chest
+      const torso = new Path2D();
+      torso.moveTo(X(-0.30), Y(UMP.hip - 0.08));
+      torso.lineTo(X(-shHalf), Y(UMP.shoulder - 0.16));
+      torso.quadraticCurveTo(X(-shHalf * 0.72), Y(UMP.shoulder + 0.10), X(0), Y(UMP.shoulder + 0.12));
+      torso.quadraticCurveTo(X(shHalf * 0.72), Y(UMP.shoulder + 0.10), X(shHalf), Y(UMP.shoulder - 0.16));
+      torso.lineTo(X(0.30), Y(UMP.hip - 0.08));
+      torso.closePath();
+      const g = ctx.createLinearGradient(X(-shHalf), 0, X(shHalf), 0);
+      g.addColorStop(0, tint(UMP.kit, 0.20));
+      g.addColorStop(0.55, UMP.kit);
+      g.addColorStop(1, tint(UMP.kit, -0.25));
+      ctx.fillStyle = g;
+      ctx.fill(torso);
+      ctx.strokeStyle = 'rgba(8,14,22,0.55)';
+      ctx.lineWidth = lw;
+      ctx.stroke(torso);
+      ctx.fillStyle = UMP.trim;
+      ctx.fillRect(X(-shHalf * 0.80), Y(UMP.shoulder - 0.34), s * shHalf * 1.60, Math.max(1, s * 0.10));
+
+      // head, turned toward whatever it is watching
+      const R = UMP.headR;
+      const t = u.turn;                         // + = looking down the far court
+      const cx = Math.sin(t) * R * 0.12;
+      const cy = UMP.head;
+      limb(0, UMP.shoulder - 0.06, cx * 0.6, cy - R * 0.8, 0.16, tint(UMP.skin, -0.2));
+      ctx.beginPath();
+      ctx.ellipse(X(cx), Y(cy), s * R, s * R * 1.06, 0, 0, Math.PI * 2);
+      const hg = ctx.createLinearGradient(X(cx - R), 0, X(cx + R), 0);
+      hg.addColorStop(0, tint(UMP.skin, 0.16));
+      hg.addColorStop(0.5, UMP.skin);
+      hg.addColorStop(1, tint(UMP.skin, -0.26));
+      ctx.fillStyle = hg;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(8,14,22,0.45)';
+      ctx.lineWidth = lw;
+      ctx.stroke();
+
+      // the cap sits on top and its peak swings round with the look
+      const peak = Math.sin(t);
+      ctx.beginPath();
+      ctx.ellipse(X(cx), Y(cy + R * 0.52), s * R * 1.02, s * R * 0.72, 0, Math.PI, 0);
+      ctx.fillStyle = UMP.cap;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(X(cx + peak * R * 0.95), Y(cy + R * 0.46), s * R * 0.62, s * R * 0.22,
+                  peak * 0.30, 0, Math.PI * 2);
+      ctx.fillStyle = tint(UMP.cap, 0.10);
+      ctx.fill();
+
+      // eyes ride round the head and disappear once it is turned away
+      const face = Math.cos(t);
+      if (face > 0.12) {
+        ctx.globalAlpha = Math.min(1, (face - 0.12) / 0.35);
+        ctx.fillStyle = '#12202c';
+        for (const d of [-0.34, 0.30]) {
+          const ox = Math.sin(t) * R * 0.78 + d * R * face;
+          ctx.beginPath();
+          ctx.ellipse(X(cx + ox), Y(cy - R * 0.02), s * R * 0.12, s * R * 0.17, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
     }
 
     // ── overlays ───────────────────────────────────────────────────────────
