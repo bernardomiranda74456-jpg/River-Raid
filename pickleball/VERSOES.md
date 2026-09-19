@@ -5,6 +5,25 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v25
+
+As CPUs ganharam peso na arrancada. Até aqui todo mundo em quadra saltava para
+a velocidade máxima na mesma rampa de 0,21 s; agora a rampa da CPU depende da
+dificuldade: 0,35 s no fácil, 0,29 s no normal e 0,24 s no difícil para chegar
+a 90% do topo. O jogador continua exatamente como estava, em 0,21 s.
+
+Para isso não virar um presente, o platô de cada CPU sobe na medida exata para
+que uma perseguição de um segundo cubra o mesmo chão de antes: 7,4% no fácil,
+3,9% no normal e 1,6% no difícil. O efeito fica todo no meio segundo inicial.
+Numa bola longa, que é quando a CPU ganha ou perde o ponto por alcance, nada
+mudou.
+
+Onde o jogador sente a diferença, no nível normal, é na troca de direção: a
+CPU cobre 39% menos chão nos primeiros 0,3 s de uma virada e 17% menos em
+0,5 s, voltando a empatar em um segundo. Numa arrancada parada a perda é bem
+menor, de 9% em 0,3 s. É o peso de quem estava indo para um lado e tem que ir
+para o outro.
+
 ## v24
 
 Na hora de sacar o jogador fica preso na faixa em que o saque é legal, em vez

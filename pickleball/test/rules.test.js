@@ -582,6 +582,47 @@ test('quem recebe anda livre enquanto espera o saque', () => {
   ok(Math.abs(receiver.z - z0) > 1, 'o recebedor se mexe normalmente');
 });
 
+test('a CPU acelera mais devagar que o jogador, e mais devagar no fácil', () => {
+  const A = PB.Match.accelOf;
+  const h = PB.Match.HUMAN_ACCEL;
+  const k = {};
+  for (const d of ['facil', 'normal', 'dificil']) {
+    const m = mk({ format: 'doubles', difficulty: d });
+    eq(A(m.players[m.humanIdx]), h, d + ': o jogador não mudou');
+    const cpu = m.players.find(p => p.ctrl === 'cpu');
+    k[d] = A(cpu);
+    ok(k[d] < h, d + ': a CPU é mais pesada que o jogador');
+  }
+  ok(k.facil < k.normal && k.normal < k.dificil, 'quanto mais difícil, mais afiada a arrancada');
+});
+
+test('a compensação mantém a perseguição de um segundo como era antes', () => {
+  const T = PB.Match.topSpeed, A = PB.Match.accelOf, h = PB.Match.HUMAN_ACCEL;
+  const corrida = (V, k, t) => {
+    let v = 0, x = 0; const dt = 1 / 2000;
+    for (let i = 0; i < t / dt; i++) { v += (V - v) * dt * k; x += v * dt; }
+    return x;
+  };
+  for (const d of ['facil', 'normal', 'dificil']) {
+    const m = mk({ format: 'doubles', difficulty: d });
+    const cpu = m.players.find(p => p.ctrl === 'cpu');
+    const antes = corrida(T(cpu) / cpu.speedBoost, h, 1);     // como era na v24
+    const agora = corrida(T(cpu), A(cpu), 1);
+    ok(Math.abs(agora / antes - 1) < 0.01, `${d}: um segundo de corrida cobre o mesmo chão (${antes.toFixed(2)} -> ${agora.toFixed(2)} ft)`);
+    // mas o arranque curto ficou mais leve para o jogador
+    const curtoAntes = corrida(T(cpu) / cpu.speedBoost, h, 0.3);
+    const curtoAgora = corrida(T(cpu), A(cpu), 0.3);
+    ok(curtoAgora < curtoAntes * 0.97, `${d}: os primeiros 0,3 s ficaram mais curtos`);
+  }
+});
+
+test('a velocidade do jogador não mudou', () => {
+  const m = mk({ format: 'doubles', difficulty: 'dificil' });
+  const you = m.players[m.humanIdx];
+  eq(+PB.Match.topSpeed(you).toFixed(2), +PB.Match.HUMAN_SPEED.toFixed(2), 'topo do jogador intocado');
+  eq(you.speedBoost, 1, 'o jogador não leva compensação');
+});
+
 // ── physics sanity ────────────────────────────────────────────────────────
 test('golpes chegam ao alvo escolhido, com folga na rede', () => {
   const cases = [

@@ -215,7 +215,7 @@
       <button class="lang" data-lang="es" data-i18n-aria="lang.name.es"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" rx="3" fill="#c60b1e"/><rect width="30" height="10" y="5" fill="#ffc400"/></svg></button>
     </div>
     </div>
-    <div class="foot">v24 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
+    <div class="foot">v25 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
   </section>
 
   <!-- configuração -->
@@ -1473,10 +1473,12 @@ PB.Match = (function () {
   const T = (k, v) => (PB.I18n ? PB.I18n.t(k, v) : k);
   const C = PB.Court, P = PB.Physics, S = PB.Shots;
 
+  // `accel` is how sharply a CPU gets going, in the same units as the human's
+  // (see HUMAN_ACCEL): lower is heavier off the mark.
   const SKILL = {
-    facil:   { opp: 0.40, mate: 0.56, assist: true,  autoSwing: true  },
-    normal:  { opp: 0.63, mate: 0.68, assist: true,  autoSwing: false },
-    dificil: { opp: 0.86, mate: 0.80, assist: false, autoSwing: false },
+    facil:   { opp: 0.40, mate: 0.56, accel: 6.5, assist: true,  autoSwing: true  },
+    normal:  { opp: 0.63, mate: 0.68, accel: 8.0, assist: true,  autoSwing: false },
+    dificil: { opp: 0.86, mate: 0.80, accel: 9.5, assist: false, autoSwing: false },
   };
 
   const MOVE_SPEED = 13.2;    // ft/s: the baseline the CPU is built on
@@ -1503,9 +1505,23 @@ PB.Match = (function () {
 
   // How fast this player can run. The CPU is a fraction of the baseline by
   // skill; the human sits above it, so the edge is theirs rather than shared.
+  // Everyone used to snap to speed at the same rate. Now a CPU carries weight:
+  // it leans into the run instead of starting at full tilt, which is what you
+  // see when it has to change direction. That must not quietly hand the player
+  // the match, so each CPU's plateau is raised by exactly enough that a
+  // one-second chase still covers the ground it covered before. The easing is
+  // therefore confined to the first half second, where a real player is slow
+  // too, and a long chase is as hard to win as it always was.
+  const HUMAN_ACCEL = 11;
+  const CHASE = 1.0;
+  const ground = k => CHASE - (1 - Math.exp(-k * CHASE)) / k;
+  const rampComp = k => ground(HUMAN_ACCEL) / ground(k);
+
   function topSpeed(p) {
-    return p.ctrl === 'cpu' ? MOVE_SPEED * (0.72 + 0.28 * p.skill) : HUMAN_SPEED;
+    const base = p.ctrl === 'cpu' ? MOVE_SPEED * (0.72 + 0.28 * p.skill) : HUMAN_SPEED;
+    return base * (p.speedBoost || 1);
   }
+  function accelOf(p) { return p.accel || HUMAN_ACCEL; }
 
   let nextId = 0;
 
@@ -1554,6 +1570,10 @@ PB.Match = (function () {
       } else {
         this.players.push(mkPlayer(0, 'human', 'R', d.mate, ''));
         this.players.push(mkPlayer(1, 'cpu', 'R', d.opp, ''));
+      }
+      for (const p of this.players) {
+        p.accel = p.ctrl === 'cpu' ? d.accel : HUMAN_ACCEL;
+        p.speedBoost = p.ctrl === 'cpu' ? rampComp(d.accel) : 1;
       }
       this.nameEveryone();
 
@@ -2147,7 +2167,7 @@ PB.Match = (function () {
       if (mag > 1) { dx /= mag; dz /= mag; }
       const speed = topSpeed(p);
       const tvx = dx * speed, tvz = dz * speed;
-      const k = Math.min(1, dt * 11);
+      const k = Math.min(1, dt * accelOf(p));
       p.vx += (tvx - p.vx) * k;
       p.vz += (tvz - p.vz) * k;
       p.x += p.vx * dt;
@@ -2308,6 +2328,9 @@ PB.Match = (function () {
   Match.MOVE_SPEED = MOVE_SPEED;
   Match.HUMAN_SPEED = HUMAN_SPEED;
   Match.topSpeed = topSpeed;
+  Match.accelOf = accelOf;
+  Match.HUMAN_ACCEL = HUMAN_ACCEL;
+  Match.rampComp = rampComp;
   return Match;
 })();
 
