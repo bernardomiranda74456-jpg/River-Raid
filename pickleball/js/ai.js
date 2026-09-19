@@ -13,10 +13,18 @@ PB.AI = (function () {
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
   // Where should this player meet the ball?
+  // The CPU standing on the human's own side of the net.
+  function isMate(m, p) {
+    const you = m.players[m.humanIdx];
+    return !!you && p.ctrl === 'cpu' && p.team === you.team;
+  }
+
   function contactPoint(m, p) {
     if (!m.pred || !m.pred.trace.length) return null;
     // your own team's shot is not yours to play until it crosses the net
     if (m.hitTeam() === p.team) return null;
+    // a ball already judged out is watched, not chased into a volley
+    if (p.ai.letGo) return null;
     const sign = C.teamSign(p.team);
     const mustBounce = m.rally.shotCount <= 2;
     const tr = m.pred.trace;
@@ -74,13 +82,26 @@ PB.AI = (function () {
     }
     a.timer -= dt;
 
-    // Judgement call: a ball heading out should be let go instead of volleyed.
+    // Judgement call: a ball heading out should be let go instead of volleyed,
+    // because volleying it throws away a point the team had already won.
+    // Your own partner makes that call properly: once the ball is clearly
+    // going out they always leave it, and only a ball landing within a few
+    // inches of the line can fool them. An opponent still misreads it at the
+    // old rate, so their mistakes are still yours to win.
     if (a.letGoShot !== m.rally.shotCount && m.pred && m.pred.landing) {
       a.letGoShot = m.rally.shotCount;
-      const L = m.pred.landing;
+      // The shared trace is sampled coarsely and can misplace the bounce by a
+      // few inches, which is exactly the range this call turns on, so the
+      // judgement runs the flight out properly once instead.
+      const L = PB.Physics.predictLanding(m.ball, 5) || m.pred.landing;
       const margin = Math.max(Math.abs(L.x) - C.HALF_W, Math.abs(L.z) - C.HALF_L);
-      const readable = clamp((margin - 0.15) / 1.6, 0, 1);
-      a.letGo = margin > 0.15 && Math.random() < readable * (0.25 + 0.65 * p.skill);
+      if (isMate(m, p)) {
+        const sure = clamp((margin - 0.10) / 0.45, 0, 1);
+        a.letGo = margin > 0.10 && Math.random() < sure;
+      } else {
+        const readable = clamp((margin - 0.15) / 1.6, 0, 1);
+        a.letGo = margin > 0.15 && Math.random() < readable * (0.25 + 0.65 * p.skill);
+      }
     }
 
     if (m.state !== 'live') {
@@ -250,5 +271,5 @@ PB.AI = (function () {
     return !!(p.ai.letGo && m.rally.bounces === 0);
   }
 
-  return { update, swing, serve, neutralSwing, bestGap, contactPoint, letsItGo };
+  return { update, swing, serve, neutralSwing, bestGap, contactPoint, letsItGo, isMate };
 })();

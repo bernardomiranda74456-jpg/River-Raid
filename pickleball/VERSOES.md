@@ -5,6 +5,23 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v28
+
+O parceiro da CPU passou a julgar direito a bola que vai sair. Antes ele
+voleava a bola longa com a mesma taxa de erro de um adversário, o que jogava
+fora um ponto que o time já tinha ganhado. Agora, assim que a bola está
+claramente fora, ele deixa passar: a partir de meio pé além da linha ele
+deixa em 90% das vezes e a partir de um pé em todas. Só a bola que cai a
+poucos centímetros da linha ainda o engana. Ele também não corre mais para
+voleá-la, fica olhando.
+
+O adversário continua errando essa leitura na taxa antiga, porque o erro dele
+é uma chance sua de ponto.
+
+De quebra, a chamada passou a usar o pouso exato em vez do traço compartilhado
+da previsão, que é amostrado de 1/120 s e errava o quique em até três
+polegadas. Justamente a faixa em que essa decisão se decide.
+
 ## v27
 
 Correção da postura do juiz. Na v26 ele foi desenhado de frente para a câmera,

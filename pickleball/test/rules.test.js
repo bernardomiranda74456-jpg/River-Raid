@@ -623,6 +623,49 @@ test('a velocidade do jogador não mudou', () => {
   eq(you.speedBoost, 1, 'o jogador não leva compensação');
 });
 
+// Fires a drive at a CPU standing at the net, landing `margin` ft past the
+// baseline, and says whether that CPU volleyed it instead of letting it go.
+function outBallTrial(margin, side) {
+  const m = mk({ format: 'doubles', difficulty: 'normal' });
+  const you = m.players[m.humanIdx];
+  const team = side === 'mate' ? you.team : 1 - you.team;
+  const cpu = m.players.find(p => p.ctrl === 'cpu' && p.team === team);
+  const sign = C.teamSign(team);
+  m.state = 'live';
+  m.rally.shotCount = 3; m.rally.bounces = 0; m.rally.over = false;
+  m.rally.lastHitter = m.players.find(p => p.team !== team).id;
+  const from = { x: 0, y: 3.0, z: -sign * 14 };
+  const v = PB.Shots.plan(from, { x: 0, y: C.BALL_R, z: sign * (C.HALF_L + margin) }, 'drive', 1);
+  const b = m.ball;
+  b.x = from.x; b.y = from.y; b.z = from.z;
+  b.vx = v.vx; b.vy = v.vy; b.vz = v.vz; b.spin = v.spin;
+  b.live = true; b.resting = false;
+  cpu.x = 0; cpu.z = sign * (C.KITCHEN + 1.1); cpu.atNet = true; cpu.hitCd = 0;
+  const shots0 = m.rally.shotCount;
+  for (let f = 0; f < 240 && !m.rally.over; f++) m.update(1 / 60, null);
+  return m.rally.shotCount > shots0;      // true = rebateu
+}
+
+test('o parceiro deixa passar a bola que vai sair', () => {
+  for (const margin of [1.0, 2.0]) {
+    let rebateu = 0;
+    for (let i = 0; i < 40; i++) if (outBallTrial(margin, 'mate')) rebateu++;
+    eq(rebateu, 0, `${margin} ft fora: o parceiro nunca rebate (rebateu ${rebateu} de 40)`);
+  }
+});
+
+test('o parceiro joga normalmente a bola que vai cair dentro', () => {
+  let rebateu = 0;
+  for (let i = 0; i < 40; i++) if (outBallTrial(-1.5, 'mate')) rebateu++;
+  ok(rebateu > 30, `bola dentro: o parceiro joga (rebateu ${rebateu} de 40)`);
+});
+
+test('o adversário ainda erra a leitura e rebate bola que ia sair', () => {
+  let rebateu = 0;
+  for (let i = 0; i < 60; i++) if (outBallTrial(1.0, 'opp')) rebateu++;
+  ok(rebateu > 20, `o erro do adversário continua sendo uma chance sua (rebateu ${rebateu} de 60)`);
+});
+
 // ── physics sanity ────────────────────────────────────────────────────────
 test('golpes chegam ao alvo escolhido, com folga na rede', () => {
   const cases = [
