@@ -128,7 +128,7 @@ PB.I18n = (function () {
     'tut.lob.body': '<p>Um deslize <b>em arco acentuado</b> vira lob. Arco para a esquerda é lob para a esquerda, arco para a direita é lob para a direita.</p><p>O tamanho do arco também conta: arco maior joga o lob mais para o fundo.</p>',
 
     'tut.smash.title': 'Smash se conquista',
-    'tut.smash.body': '<p>Não existe botão de smash. Ele acontece quando o adversário <b>tenta um lob e você pega a bola no alto</b>, antes dela quicar.</p><p>Deixou baixar, sai rebatida normal. A força e a direção do seu deslize valem igual no smash.</p>',
+    'tut.smash.body': '<p>Não existe botão de smash. Ele se conquista de dois jeitos, e os dois são sobre <b>altura</b>.</p><p>Um: o adversário <b>tenta um lob e você pega a bola no alto</b>, antes dela quicar. Dois: você está <b>na rede e a bola sobe acima dela</b>, e aí dá para bater para baixo.</p><p>Com a bola na altura da rede ou abaixo não sai smash, por mais que você puxe: para passar a rede ela teria que subir. A força e a direção do seu deslize valem igual, e no vermelho ela sai igual.</p>',
     'tut.lbl.high': 'pegou no alto',
 
     'tut.bounce.title': 'Regra dos dois quiques',
@@ -261,7 +261,7 @@ PB.I18n = (function () {
     'tut.lob.body': '<p>A swipe with a <b>pronounced arc</b> becomes a lob. Arc to the left is a lob to the left, arc to the right is a lob to the right.</p><p>The size of the arc counts too: a bigger arc throws the lob deeper.</p>',
 
     'tut.smash.title': 'A smash is earned',
-    'tut.smash.body': '<p>There is no smash button. It happens when your opponent <b>tries a lob and you take the ball high</b>, before it bounces.</p><p>Let it drop and it is an ordinary drive. The power and direction of your swipe count the same on a smash.</p>',
+    'tut.smash.body': '<p>There is no smash button. It is earned in two ways, and both are about <b>height</b>.</p><p>One: your opponent <b>tries a lob and you take the ball high</b>, before it bounces. Two: you are <b>at the net and the ball sits above it</b>, so you can hit down on it.</p><p>With the ball level with the net or below it there is no smash, however hard you pull: to clear the net it would have to go up. Power and direction of your swipe count the same, and on red it still goes out.</p>',
     'tut.lbl.high': 'taken high',
 
     'tut.bounce.title': 'The two-bounce rule',
@@ -394,7 +394,7 @@ PB.I18n = (function () {
     'tut.lob.body': '<p>Un deslizamiento <b>en arco marcado</b> sale como globo. Arco a la izquierda es globo a la izquierda, arco a la derecha es globo a la derecha.</p><p>El tamaño del arco también cuenta: un arco mayor manda el globo más al fondo.</p>',
 
     'tut.smash.title': 'El remate se gana',
-    'tut.smash.body': '<p>No hay botón de remate. Ocurre cuando el rival <b>intenta un globo y tú coges la bola arriba</b>, antes de que bote.</p><p>Si la dejas bajar, sale un golpe normal. La fuerza y la dirección de tu deslizamiento valen igual en el remate.</p>',
+    'tut.smash.body': '<p>No hay botón de remate. Se gana de dos maneras, y las dos son cuestión de <b>altura</b>.</p><p>Una: el rival <b>intenta un globo y tú coges la bola arriba</b>, antes de que bote. Dos: estás <b>en la red y la bola queda por encima de ella</b>, y entonces puedes golpear hacia abajo.</p><p>Con la bola a la altura de la red o por debajo no sale remate, por mucho que estires: para pasar la red tendría que subir. La fuerza y la dirección de tu deslizamiento valen igual, y en rojo sale igual.</p>',
     'tut.lbl.high': 'cogida arriba',
 
     'tut.bounce.title': 'La regla de los dos botes',

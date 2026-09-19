@@ -163,7 +163,9 @@ PB.AI = (function () {
       const dropIt = oppNet && Math.random() < 0.28 + p.skill * 0.5;
       if (dropIt) { style = 'drop'; tx = clamp(-Math.sign(b.x || 1) * rnd(2, 5.5), -8, 8); tz = oSign * rnd(3.4, 6.2); }
       else { style = 'drive'; tx = bestGap(m, p, true); tz = oSign * rnd(15.5, 20); }
-    } else if (volley && b.y > 3.1 && myZ < 13) {
+    } else if (volley && b.y > (PB.Match.SMASH_HIGH || 3.4) && myZ < 13) {
+      // same height gate the player gets: below the net there is nothing to
+      // hit down on, so there is no put-away and no overarm swing
       style = 'smash';
       tx = bestGap(m, p, false);
       tz = oSign * rnd(8, 16);

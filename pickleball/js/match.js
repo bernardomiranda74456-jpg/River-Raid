@@ -27,6 +27,14 @@ PB.Match = (function () {
   // Where the server stands while waiting: one step behind the baseline, and
   // between the centre line and the sideline of the half they must serve from.
   const SERVE_Z = 23.2, SERVE_X_MIN = 0.65;
+  // A ball can only be hit DOWNWARD once it is above the net, and the net is
+  // 2.83 ft at the centre. Measured launch angles turn from up to down between
+  // 2.8 and 3.2 ft of contact height, so 3.4 is the first height with real room
+  // to swing over the top. Below it there is no put-away and no overarm swing,
+  // however hard the stroke: that is the whole reason the dink game exists.
+  const SMASH_HIGH = 3.4;        // contact height that unlocks the put-away
+  const SMASH_NEAR = 11;         // and only from this close to the net
+  const SMASH_POWER = 0.32;      // a soft stroke up there is still a dink
   const REACH      = 3.05;   // paddle + arm
   const HIT_CD     = 0.22;
   const SERVE_WAIT   = 3.0;  // s standing at the line before the server starts bouncing the ball
@@ -623,14 +631,18 @@ PB.Match = (function () {
     pickStyleFromSwipe(p, sw, volley, from) {
       const nearNet = Math.abs(p.z) < 10.5;
       if (sw.lob) return 'lob';
-      if (this.smashable(p, volley, from)) return 'smash';
+      if (this.smashable(p, volley, from, sw)) return 'smash';
       if (sw.power <= 0.16) return nearNet ? 'dink' : 'drop';
       return volley && nearNet ? 'punch' : 'drive';
     }
 
-    // A smash is only available against a lob taken early and high. Let it drop
-    // and it is an ordinary stroke, however hard you pull.
-    smashable(p, volley, from) {
+    // Two ways to earn the overarm swing, both of them about height.
+    // One: the opponent lobs and you take it out of the air, up high.
+    // Two: you are at the net and the ball sits above it, so you can hit down
+    // on it. Anything lower is an ordinary stroke, however hard you pull.
+    smashable(p, volley, from, sw) {
+      if (from.y > SMASH_HIGH && Math.abs(from.z) < SMASH_NEAR
+          && (sw ? (sw.power || 0) : 1) > SMASH_POWER) return true;
       return volley
         && this.rally.lastStyle === 'lob'
         && from.y > 4.2
@@ -869,5 +881,7 @@ PB.Match = (function () {
   Match.accelOf = accelOf;
   Match.HUMAN_ACCEL = HUMAN_ACCEL;
   Match.rampComp = rampComp;
+  Match.SMASH_HIGH = SMASH_HIGH;
+  Match.SMASH_NEAR = SMASH_NEAR;
   return Match;
 })();

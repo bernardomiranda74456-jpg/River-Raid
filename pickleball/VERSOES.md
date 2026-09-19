@@ -5,6 +5,32 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v29
+
+O golpe de perto da rede com a bola no alto virou smash de verdade, com o
+movimento de braço por cima, e a regra é a altura da bola.
+
+Medi qual é a trajetória mais rápida que ainda passa a rede e cai dentro, para
+cada altura de contato. O ângulo de saída vira de "para cima" para "para
+baixo" entre 2,8 e 3,2 pés, que é a altura da rede. Abaixo disso não existe
+paulada: para passar a rede a bola tem que subir, e subindo ela chega mansa.
+Por isso a porta do smash abre em 3,4 pés, que é a primeira altura com folga
+de verdade, e só a até 11 pés da rede.
+
+O que muda na prática, com um golpe laranja a 3 pés da rede: com a bola a 3
+pés de altura sai o golpe rasteiro de sempre, a 34 km/h, chegando em 515 ms.
+Com a bola a 3,6 pés sai o smash, a 57 km/h, chegando em 300 ms. O adversário
+tem quase metade do tempo.
+
+O risco é o que você espera: o alvo continua sendo o da cor do deslize, então
+puxar demais manda a bola para fora igual. E um toque leve numa bola alta
+continua sendo bola curta, não vira paulada sem querer.
+
+A CPU já tinha esse golpe e o jogador não. Agora os dois usam a mesma altura:
+a da CPU subiu de 3,1 para 3,4 pés, porque a 3,1 ela ainda estava batendo numa
+bola em que não dá para bater para baixo. O passo do tutorial sobre o smash foi
+reescrito nos três idiomas.
+
 ## v28
 
 O parceiro da CPU passou a julgar direito a bola que vai sair. Antes ele

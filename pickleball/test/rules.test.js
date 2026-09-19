@@ -666,6 +666,68 @@ test('o adversário ainda erra a leitura e rebate bola que ia sair', () => {
   ok(rebateu > 20, `o erro do adversário continua sendo uma chance sua (rebateu ${rebateu} de 60)`);
 });
 
+// Puts the player on the ball at a chosen spot and height and plays one stroke.
+function strokeAt(z, y, power) {
+  const m = mk({});
+  const you = m.players[m.humanIdx];
+  m.state = 'live';
+  m.rally.shotCount = 4; m.rally.bounces = 1; m.rally.over = false; m.rally.lastHitter = 1;
+  you.x = 0; you.z = z; you.vx = 0; you.vz = 0; you.lunge = 0; you.speedN = 0;
+  const b = m.ball;
+  b.x = 0; b.y = y; b.z = z; b.vx = b.vy = b.vz = 0; b.live = true; b.resting = false;
+  m.executeHit(you, { lateral: 0, power, lob: false, human: true, quality: 1 });
+  // how long the opponent has, and where it lands
+  const cl = Object.assign({}, b);
+  let t = 0;
+  for (let i = 0; i < 6000; i++) {
+    const ev = {};
+    PB.Physics.step(cl, 1 / 600, ev); t += 1 / 600;
+    if (cl.z >= 14 || (ev.bounce && cl.z > 0)) break;
+  }
+  return { style: b.style, kind: you.swingKind, ms: t * 1000,
+           land: PB.Physics.predictLanding(b, 6) };
+}
+
+test('na rede, a bola acima da rede vira smash e o braço vai por cima', () => {
+  const alto = strokeAt(-3, PB.Match.SMASH_HIGH + 0.25, 0.55);
+  eq(alto.style, 'smash', 'bola alta na rede é smash');
+  eq(alto.kind, 'over', 'e o movimento é por cima');
+});
+
+test('na altura da rede ou abaixo não existe smash, por mais forte que seja', () => {
+  for (const y of [2.2, 2.8, PB.Match.SMASH_HIGH - 0.1]) {
+    for (const power of [0.45, 0.66, 0.78]) {
+      const r = strokeAt(-3, y, power);
+      ok(r.style !== 'smash', `bola a ${y} ft com força ${power}: ${r.style}, não smash`);
+      ok(r.kind !== 'over', `bola a ${y} ft: sem movimento por cima`);
+    }
+  }
+});
+
+test('toque leve numa bola alta na rede continua sendo bola curta', () => {
+  const r = strokeAt(-3, 4.2, 0.12);
+  ok(r.style !== 'smash', `toque leve vira ${r.style}`);
+});
+
+test('longe da rede a bola alta não vira smash sozinha', () => {
+  const r = strokeAt(-16, 4.5, 0.55);
+  ok(r.style !== 'smash', `a ${16} ft da rede vira ${r.style}`);
+});
+
+test('o smash da rede chega bem antes que o mesmo golpe rasteiro', () => {
+  const baixo = strokeAt(-3, 3.0, 0.55);
+  const alto = strokeAt(-3, 4.2, 0.55);
+  ok(alto.ms < baixo.ms * 0.75,
+     `${baixo.ms.toFixed(0)} ms rasteiro contra ${alto.ms.toFixed(0)} ms por cima`);
+});
+
+test('o smash da rede também sai fora se você puxar demais', () => {
+  const dentro = strokeAt(-3, 4.2, 0.60);
+  const fora = strokeAt(-3, 4.2, 0.95);
+  ok(dentro.land && Math.abs(dentro.land.z) <= C.HALF_L, 'força controlada cai dentro');
+  ok(fora.land && Math.abs(fora.land.z) > C.HALF_L, 'força demais manda para fora');
+});
+
 // ── physics sanity ────────────────────────────────────────────────────────
 test('golpes chegam ao alvo escolhido, com folga na rede', () => {
   const cases = [
@@ -822,17 +884,31 @@ test('lob só sai do arco', () => {
      'lob', 'arco é lob');
 });
 
-test('smash só contra um lob pego alto e no ar', () => {
+test('longe da rede, o smash continua sendo só contra um lob pego alto e no ar', () => {
   const m = mk({});
   const p = m.players[0];
   midRally(m, 1, 3, 0);
-  const alto = { x: 0, y: 5.2, z: -10 };
+  const forte = { power: 0.6 };
+  const alto = { x: 0, y: 5.2, z: -14 };          // fora do alcance da rede
   m.rally.lastStyle = 'drive';
-  ok(!m.smashable(p, true, alto), 'bola alta que não veio de lob não dá smash');
+  ok(!m.smashable(p, true, alto, forte), 'bola alta que não veio de lob não dá smash');
   m.rally.lastStyle = 'lob';
-  ok(m.smashable(p, true, alto), 'lob pego alto e no ar dá smash');
-  ok(!m.smashable(p, false, alto), 'depois do quique não é mais smash');
-  ok(!m.smashable(p, true, { x: 0, y: 2.4, z: -10 }), 'lob pego baixo não é smash');
+  ok(m.smashable(p, true, alto, forte), 'lob pego alto e no ar dá smash');
+  ok(!m.smashable(p, false, alto, forte), 'depois do quique não é mais smash');
+  ok(!m.smashable(p, true, { x: 0, y: 2.4, z: -14 }, forte), 'lob pego baixo não é smash');
+});
+
+test('na rede, a altura da bola é o que decide, não de onde ela veio', () => {
+  const m = mk({});
+  const p = m.players[0];
+  midRally(m, 1, 3, 1);
+  const forte = { power: 0.6 };
+  m.rally.lastStyle = 'drive';                    // não veio de lob
+  const H = PB.Match.SMASH_HIGH;
+  ok(m.smashable(p, false, { x: 0, y: H + 0.3, z: -3 }, forte), 'acima da rede, na rede, é smash');
+  ok(!m.smashable(p, false, { x: 0, y: H - 0.3, z: -3 }, forte), 'abaixo dessa altura, não');
+  ok(!m.smashable(p, false, { x: 0, y: H + 0.3, z: -3 }, { power: 0.15 }), 'toque leve não é smash');
+  ok(!m.smashable(p, false, { x: 0, y: H + 0.3, z: -PB.Match.SMASH_NEAR - 1 }, forte), 'longe da rede, não');
 });
 
 // Stand the player on the ball: these tests are about the power-to-depth map,

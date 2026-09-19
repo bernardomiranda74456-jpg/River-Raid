@@ -215,7 +215,7 @@
       <button class="lang" data-lang="es" data-i18n-aria="lang.name.es"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" rx="3" fill="#c60b1e"/><rect width="30" height="10" y="5" fill="#ffc400"/></svg></button>
     </div>
     </div>
-    <div class="foot">v28 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
+    <div class="foot">v29 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
   </section>
 
   <!-- configuração -->
@@ -431,7 +431,7 @@ PB.I18n = (function () {
     'tut.lob.body': '<p>Um deslize <b>em arco acentuado</b> vira lob. Arco para a esquerda é lob para a esquerda, arco para a direita é lob para a direita.</p><p>O tamanho do arco também conta: arco maior joga o lob mais para o fundo.</p>',
 
     'tut.smash.title': 'Smash se conquista',
-    'tut.smash.body': '<p>Não existe botão de smash. Ele acontece quando o adversário <b>tenta um lob e você pega a bola no alto</b>, antes dela quicar.</p><p>Deixou baixar, sai rebatida normal. A força e a direção do seu deslize valem igual no smash.</p>',
+    'tut.smash.body': '<p>Não existe botão de smash. Ele se conquista de dois jeitos, e os dois são sobre <b>altura</b>.</p><p>Um: o adversário <b>tenta um lob e você pega a bola no alto</b>, antes dela quicar. Dois: você está <b>na rede e a bola sobe acima dela</b>, e aí dá para bater para baixo.</p><p>Com a bola na altura da rede ou abaixo não sai smash, por mais que você puxe: para passar a rede ela teria que subir. A força e a direção do seu deslize valem igual, e no vermelho ela sai igual.</p>',
     'tut.lbl.high': 'pegou no alto',
 
     'tut.bounce.title': 'Regra dos dois quiques',
@@ -564,7 +564,7 @@ PB.I18n = (function () {
     'tut.lob.body': '<p>A swipe with a <b>pronounced arc</b> becomes a lob. Arc to the left is a lob to the left, arc to the right is a lob to the right.</p><p>The size of the arc counts too: a bigger arc throws the lob deeper.</p>',
 
     'tut.smash.title': 'A smash is earned',
-    'tut.smash.body': '<p>There is no smash button. It happens when your opponent <b>tries a lob and you take the ball high</b>, before it bounces.</p><p>Let it drop and it is an ordinary drive. The power and direction of your swipe count the same on a smash.</p>',
+    'tut.smash.body': '<p>There is no smash button. It is earned in two ways, and both are about <b>height</b>.</p><p>One: your opponent <b>tries a lob and you take the ball high</b>, before it bounces. Two: you are <b>at the net and the ball sits above it</b>, so you can hit down on it.</p><p>With the ball level with the net or below it there is no smash, however hard you pull: to clear the net it would have to go up. Power and direction of your swipe count the same, and on red it still goes out.</p>',
     'tut.lbl.high': 'taken high',
 
     'tut.bounce.title': 'The two-bounce rule',
@@ -697,7 +697,7 @@ PB.I18n = (function () {
     'tut.lob.body': '<p>Un deslizamiento <b>en arco marcado</b> sale como globo. Arco a la izquierda es globo a la izquierda, arco a la derecha es globo a la derecha.</p><p>El tamaño del arco también cuenta: un arco mayor manda el globo más al fondo.</p>',
 
     'tut.smash.title': 'El remate se gana',
-    'tut.smash.body': '<p>No hay botón de remate. Ocurre cuando el rival <b>intenta un globo y tú coges la bola arriba</b>, antes de que bote.</p><p>Si la dejas bajar, sale un golpe normal. La fuerza y la dirección de tu deslizamiento valen igual en el remate.</p>',
+    'tut.smash.body': '<p>No hay botón de remate. Se gana de dos maneras, y las dos son cuestión de <b>altura</b>.</p><p>Una: el rival <b>intenta un globo y tú coges la bola arriba</b>, antes de que bote. Dos: estás <b>en la red y la bola queda por encima de ella</b>, y entonces puedes golpear hacia abajo.</p><p>Con la bola a la altura de la red o por debajo no sale remate, por mucho que estires: para pasar la red tendría que subir. La fuerza y la dirección de tu deslizamiento valen igual, y en rojo sale igual.</p>',
     'tut.lbl.high': 'cogida arriba',
 
     'tut.bounce.title': 'La regla de los dos botes',
@@ -1256,7 +1256,9 @@ PB.AI = (function () {
       const dropIt = oppNet && Math.random() < 0.28 + p.skill * 0.5;
       if (dropIt) { style = 'drop'; tx = clamp(-Math.sign(b.x || 1) * rnd(2, 5.5), -8, 8); tz = oSign * rnd(3.4, 6.2); }
       else { style = 'drive'; tx = bestGap(m, p, true); tz = oSign * rnd(15.5, 20); }
-    } else if (volley && b.y > 3.1 && myZ < 13) {
+    } else if (volley && b.y > (PB.Match.SMASH_HIGH || 3.4) && myZ < 13) {
+      // same height gate the player gets: below the net there is nothing to
+      // hit down on, so there is no put-away and no overarm swing
       style = 'smash';
       tx = bestGap(m, p, false);
       tz = oSign * rnd(8, 16);
@@ -1510,6 +1512,14 @@ PB.Match = (function () {
   // Where the server stands while waiting: one step behind the baseline, and
   // between the centre line and the sideline of the half they must serve from.
   const SERVE_Z = 23.2, SERVE_X_MIN = 0.65;
+  // A ball can only be hit DOWNWARD once it is above the net, and the net is
+  // 2.83 ft at the centre. Measured launch angles turn from up to down between
+  // 2.8 and 3.2 ft of contact height, so 3.4 is the first height with real room
+  // to swing over the top. Below it there is no put-away and no overarm swing,
+  // however hard the stroke: that is the whole reason the dink game exists.
+  const SMASH_HIGH = 3.4;        // contact height that unlocks the put-away
+  const SMASH_NEAR = 11;         // and only from this close to the net
+  const SMASH_POWER = 0.32;      // a soft stroke up there is still a dink
   const REACH      = 3.05;   // paddle + arm
   const HIT_CD     = 0.22;
   const SERVE_WAIT   = 3.0;  // s standing at the line before the server starts bouncing the ball
@@ -2106,14 +2116,18 @@ PB.Match = (function () {
     pickStyleFromSwipe(p, sw, volley, from) {
       const nearNet = Math.abs(p.z) < 10.5;
       if (sw.lob) return 'lob';
-      if (this.smashable(p, volley, from)) return 'smash';
+      if (this.smashable(p, volley, from, sw)) return 'smash';
       if (sw.power <= 0.16) return nearNet ? 'dink' : 'drop';
       return volley && nearNet ? 'punch' : 'drive';
     }
 
-    // A smash is only available against a lob taken early and high. Let it drop
-    // and it is an ordinary stroke, however hard you pull.
-    smashable(p, volley, from) {
+    // Two ways to earn the overarm swing, both of them about height.
+    // One: the opponent lobs and you take it out of the air, up high.
+    // Two: you are at the net and the ball sits above it, so you can hit down
+    // on it. Anything lower is an ordinary stroke, however hard you pull.
+    smashable(p, volley, from, sw) {
+      if (from.y > SMASH_HIGH && Math.abs(from.z) < SMASH_NEAR
+          && (sw ? (sw.power || 0) : 1) > SMASH_POWER) return true;
       return volley
         && this.rally.lastStyle === 'lob'
         && from.y > 4.2
@@ -2352,6 +2366,8 @@ PB.Match = (function () {
   Match.accelOf = accelOf;
   Match.HUMAN_ACCEL = HUMAN_ACCEL;
   Match.rampComp = rampComp;
+  Match.SMASH_HIGH = SMASH_HIGH;
+  Match.SMASH_NEAR = SMASH_NEAR;
   return Match;
 })();
 
