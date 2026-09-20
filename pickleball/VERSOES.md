@@ -5,6 +5,29 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v30
+
+O juiz passou a falar. No fim de cada rali sai uma das três chamadas oficiais,
+na voz escolhida:
+
+- **Point**, quando quem sacava ganhou o ponto.
+- **Second Serve**, quando quem sacava perdeu sendo o primeiro sacador da
+  dupla, e o saque passa para o parceiro.
+- **Side Out**, quando o saque passa para os adversários. Em simples só
+  existem Point e Side Out, porque só há um sacador de cada lado.
+
+A chamada não é escolhida por um caso à parte: ela sai dos mesmos três ramos
+que já moviam o saque, então a voz nunca pode discordar do placar.
+
+A ordem é a da quadra: o juiz chama e a plateia responde. A palma entra 0,38 s
+depois da fala. No Second Serve não há palma nenhuma, porque ninguém pontuou.
+O bipe que marcava o ponto virou reserva, e só toca se o navegador não
+conseguir decodificar a fala.
+
+As três falas vão embutidas no arquivo, em MP3 mono de 48 kbps, somando 18 KB.
+Ficam em inglês nos três idiomas, que é como esses termos são chamados em
+quadra no mundo todo.
+
 ## v29
 
 O golpe de perto da rede com a bola no alto virou smash de verdade, com o

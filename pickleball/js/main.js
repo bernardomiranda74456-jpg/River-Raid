@@ -168,8 +168,11 @@
       else if (e.type === 'bounce') PB.Audio.play('bounce', (e.impact || 8) / 20);
       else if (e.type === 'net') PB.Audio.play('net');
       else if (e.type === 'point') {
-        PB.Audio.play('point');
-        PB.Audio.play('crowd', e.cheer || 0.6, e.final);
+        // The umpire calls it, then the crowd answers. A second serve is not a
+        // point, so nobody claps for it.
+        const spoke = PB.Audio.call(e.call);
+        if (!spoke) PB.Audio.play('point');
+        if (e.call !== 'second') PB.Audio.play('crowd', e.cheer || 0.6, e.final, spoke ? 0.38 : 0);
         buzz(28);
       }
     }

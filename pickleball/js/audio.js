@@ -10,6 +10,8 @@ PB.Audio = (function () {
   // The recorded applause, decoded once per context. Until it is ready (or if
   // the browser cannot decode MP3) the synthesised crowd stands in.
   let applause = null, applauseTried = false;
+  // the umpire's spoken calls, decoded once alongside the applause
+  const calls = {};
 
   // Audio is a nicety: if the context cannot be created (older iOS, a frame
   // without permission, an autoplay policy) the game must carry on silently.
@@ -30,6 +32,7 @@ PB.Audio = (function () {
     }
     unlock();
     loadApplause();
+    loadCalls();
   }
 
   function loadApplause() {
@@ -45,6 +48,39 @@ PB.Audio = (function () {
     } catch (e) { applause = null; }
   }
   function hasApplause() { return !!applause; }
+
+  function loadCalls() {
+    if (!ctx || !PB.CALLS_MP3) return;
+    for (const name in PB.CALLS_MP3) {
+      if (calls[name] !== undefined) continue;
+      calls[name] = null;                       // claimed, so it decodes once
+      try {
+        const bin = atob(PB.CALLS_MP3[name]);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        ctx.decodeAudioData(bytes.buffer, buf => { calls[name] = buf; }, () => { calls[name] = null; });
+      } catch (e) { calls[name] = null; }
+    }
+  }
+  function hasCall(name) { return !!calls[name]; }
+
+  // The call the umpire makes at the end of a rally. It goes out in front of
+  // the crowd, because the umpire calls it and the crowd answers.
+  function call(name) {
+    if (!ctx || muted || !calls[name]) return 0;
+    try {
+      resume();
+      const buf = calls[name];
+      const now = ctx.currentTime;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const g = ctx.createGain();
+      g.gain.value = 0.95;
+      src.connect(g); g.connect(master);
+      src.start(now);
+      return buf.duration;
+    } catch (e) { return 0; }
+  }
 
   // iOS keeps a fresh context suspended and only honours resume() from inside a
   // user gesture, so this runs on every tap until the context reports running.
@@ -90,14 +126,14 @@ PB.Audio = (function () {
     o.start(); o.stop(ctx.currentTime + dur + 0.02);
   }
 
-  function play(kind, power, final) {
+  function play(kind, power, final, delay) {
     if (!ctx || muted) return;
     try {
-      playInner(kind, power, !!final);
+      playInner(kind, power, !!final, Math.max(0, delay || 0));
     } catch (e) { /* never let a sound break the frame */ }
   }
 
-  function playInner(kind, power, final) {
+  function playInner(kind, power, final, delay) {
     resume();
     const p = Math.max(0.2, Math.min(1, power || 0.6));
     if (kind === 'hit') {
@@ -192,5 +228,5 @@ PB.Audio = (function () {
   function setMuted(v) { muted = v; try { if (master) master.gain.value = v ? 0 : 0.7; } catch (e) { /* ignore */ } }
   function isMuted() { return muted; }
 
-  return { init, play, setMuted, isMuted, resume, unlock, state, hasApplause };
+  return { init, play, call, setMuted, isMuted, resume, unlock, state, hasApplause, hasCall };
 })();

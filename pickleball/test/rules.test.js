@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const dir = path.join(__dirname, '..', 'js');
-for (const f of ['i18n', 'court', 'physics', 'shots', 'stroke', 'match', 'ai', 'tutorial']) {
+for (const f of ['i18n', 'calls', 'court', 'physics', 'shots', 'stroke', 'match', 'ai', 'tutorial']) {
   vm.runInThisContext(fs.readFileSync(path.join(dir, f + '.js'), 'utf8'), { filename: f + '.js' });
 }
 const C = PB.Court;
@@ -726,6 +726,67 @@ test('o smash da rede também sai fora se você puxar demais', () => {
   const fora = strokeAt(-3, 4.2, 0.95);
   ok(dentro.land && Math.abs(dentro.land.z) <= C.HALF_L, 'força controlada cai dentro');
   ok(fora.land && Math.abs(fora.land.z) > C.HALF_L, 'força demais manda para fora');
+});
+
+// Ends a rally with a chosen winner and hands back the point event.
+function callFor(m, losingTeam) {
+  m.events.length = 0;
+  m.rally.over = false;
+  m.endRally(losingTeam, 'fora');
+  return m.events.find(e => e.type === 'point');
+}
+
+test('a chamada do juiz segue o placar, nas três situações', () => {
+  // quem saca ganha: Point
+  const a = mk({ format: 'doubles' });
+  eq(callFor(a, 1 - a.servingTeam).call, 'point', 'sacador pontuou');
+
+  // quem saca perde sendo o primeiro sacador: Second Serve
+  const b = mk({ format: 'doubles' });
+  b.serverNumber = 1;
+  eq(callFor(b, b.servingTeam).call, 'second', 'passa para o parceiro');
+
+  // quem saca perde sendo o segundo: Side Out
+  const c = mk({ format: 'doubles' });
+  c.serverNumber = 2;
+  eq(callFor(c, c.servingTeam).call, 'sideout', 'passa para os adversários');
+});
+
+test('em simples não existe Second Serve', () => {
+  for (let i = 0; i < 6; i++) {
+    const m = mk({ format: 'singles' });
+    const perdedor = i % 2 === 0 ? m.servingTeam : 1 - m.servingTeam;
+    const ev = callFor(m, perdedor);
+    ok(ev.call === 'point' || ev.call === 'sideout', `simples chamou ${ev.call}`);
+  }
+});
+
+test('a chamada bate com quem saca depois', () => {
+  for (const fmt of ['singles', 'doubles']) {
+    for (const quemPerde of ['sacador', 'recebedor']) {
+      const m = mk({ format: fmt });
+      const antesTime = m.servingTeam, antesNum = m.serverNumber;
+      const ev = callFor(m, quemPerde === 'sacador' ? m.servingTeam : 1 - m.servingTeam);
+      if (ev.call === 'point') {
+        eq(m.servingTeam, antesTime, 'Point: o saque fica');
+      } else if (ev.call === 'second') {
+        eq(m.servingTeam, antesTime, 'Second Serve: o saque fica no time');
+        eq(m.serverNumber, 2, 'e passa para o segundo sacador');
+        eq(antesNum, 1, 'só acontece vindo do primeiro');
+      } else {
+        ok(m.servingTeam !== antesTime, 'Side Out: o saque troca de time');
+        eq(m.serverNumber, 1, 'e volta para o primeiro sacador');
+      }
+    }
+  }
+});
+
+test('as três falas estão embutidas e são curtas', () => {
+  const c = PB.CALLS_MP3;
+  for (const k of ['point', 'second', 'sideout']) {
+    ok(c[k] && c[k].length > 2000, k + ' está embutida');
+    ok(c[k].length < 20000, k + ' cabe no arquivo único (' + Math.round(c[k].length / 1024) + ' KB em base64)');
+  }
 });
 
 // ── physics sanity ────────────────────────────────────────────────────────

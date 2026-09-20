@@ -818,16 +818,20 @@ PB.Match = (function () {
       this.cheerLevel = Math.min(1, 0.45 + this.rally.shotCount * 0.045);
       this.cheerDur = 2.6;
       this.cheerT = this.cheerDur;
-      const ev = { type: 'point', winner, reason, cheer: this.cheerLevel };
+      // Which call the umpire makes is decided by the same three branches that
+      // move the serve along, so the voice can never disagree with the score.
+      const ev = { type: 'point', winner, reason, cheer: this.cheerLevel, call: 'sideout' };
       this.events.push(ev);
 
       if (winner === this.servingTeam) {
+        ev.call = 'point';
         this.score[winner]++;
         if (this.isDoubles()) {
           for (const p of this.mates(this.servingTeam)) p.courtSide = p.courtSide === 'R' ? 'L' : 'R';
         }
         this.sideOut = false;
       } else if (this.isDoubles() && this.serverNumber === 1) {
+        ev.call = 'second';
         const partner = this.mates(this.servingTeam).find(p => p.id !== this.serverIdx);
         this.serverIdx = partner.id;
         this.serverNumber = 2;
