@@ -1103,6 +1103,14 @@ PB.Renderer = (function () {
 
   // The hoarding behind the far baseline: one dark board with the sponsors on
   // it, standing in front of the fence exactly as it does at a real venue.
+  // The fence banner, which runs the full width behind the wall.
+  const BANNER_BOARDS = [
+    { name: 'varig', x: -16.8, h: 0.44 },
+    { name: 'telerj', x: -5.6, h: 0.70 },
+    { name: 'oi', x: 4.6, h: 0.68 },
+    { name: 'bank', x: 15.2, h: 0.68 },
+  ];
+
   const WALL_Z = FENCE_Z - 2.2, WALL_H = 5.6;
   const WALL_BOARDS = [
     { name: 'telerj', x: -16.0, h: 4.0 },
@@ -1298,16 +1306,18 @@ PB.Renderer = (function () {
         ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
       }
       ctx.stroke();
+      // The banner across the fence: a deep sponsor band rather than the name
+      // of the game, which nobody needs to read mid-rally.
       const bz = FZ - 0.05 * F;
-      mesh([[-FENCE_X, H * 0.26, bz], [-FENCE_X, H * 0.58, bz],
-            [FENCE_X, H * 0.58, bz], [FENCE_X, H * 0.26, bz]], 'rgba(20,90,120,0.85)');
-      const anchor = cam.proj(0, H * 0.42, bz - 0.01 * F);
-      ctx.save();
-      ctx.font = `700 ${Math.max(7, anchor.s * 0.8)}px system-ui, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.fillStyle = 'rgba(255,255,255,0.55)';
-      ctx.fillText('P I C K L E B A L L   F O R E V E R', anchor.x, anchor.y + anchor.s * 0.28);
-      ctx.restore();
+      // It has to clear the hoarding standing in front of it, which is nearer
+      // the camera and therefore climbs higher on screen than its own height.
+      const b0 = H * 0.52, b1 = H * 0.97;
+      mesh([[-FENCE_X, b0, bz], [-FENCE_X, b1, bz],
+            [FENCE_X, b1, bz], [FENCE_X, b0, bz]], 'rgba(18,76,104,0.92)');
+      const bh = b1 - b0;
+      for (const b of BANNER_BOARDS) {
+        wallLogo(ctx, cam, b.name, b.x * F, b0 + bh * 0.5 - bh * b.h / 2, bz - 0.01 * F, bh * b.h, 0.92);
+      }
     }
 
     drawStands(ctx, cam) {
@@ -1706,9 +1716,13 @@ PB.Renderer = (function () {
     drawFloorLogos(ctx, cam, onCourt) {
       const F = cam.side === 1 ? -1 : 1;
       if (onCourt) {
-        // inside the lines: held well back, so they never read as a ball
-        groundLogo(ctx, cam, 'oi', 0, 15.5 * F, 5.4, 0.34);
-        groundLogo(ctx, cam, 'telerj', 0, -15.5 * F, 3.6, 0.30);
+        // One in each half, back where the rally lives, held down so they
+        // never read as a ball, and one in each kitchen: white on the red
+        // band, which is the strongest contrast the court has to offer.
+        groundLogo(ctx, cam, 'oi', 0, 15.5 * F, 5.0, 0.30);
+        groundLogo(ctx, cam, 'telerj', 0, -15.5 * F, 3.4, 0.26);
+        groundLogo(ctx, cam, 'varig', 0, 3.5 * F, 9.0, 0.58);
+        groundLogo(ctx, cam, 'varig', 0, -3.5 * F, 9.0, 0.58);
         return;
       }
       // out in the surround, where nothing is at stake, they run at full
@@ -1719,7 +1733,7 @@ PB.Renderer = (function () {
       groundLogo(ctx, cam, 'bank', -12.8 * F, -7 * F, 5.0, 0.85);
       groundLogo(ctx, cam, 'varig', 13.0 * F, -7 * F, 5.6, 0.9);
       groundLogo(ctx, cam, 'varig', 0, -24 * F, 7.0, 0.85);
-      groundLogo(ctx, cam, 'telerj', 0, 26.2 * F, 3.2, 0.75);
+      groundLogo(ctx, cam, 'telerj', 0, 26.2 * F, 3.2, 0.7);
     }
 
     // Beside the net post: one figure, drawn small, that makes the court feel

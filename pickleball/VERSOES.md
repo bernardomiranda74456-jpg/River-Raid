@@ -5,6 +5,31 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v32
+
+Três mudanças no patrocínio.
+
+**Tudo em branco.** Cada marca virou uma silhueta branca com fundo transparente
+e os vazados abertos por dentro: o quadrado do TELERJ, as letras do Oi, as
+colunas do BANK. Assim um arquivo só funciona no azul da quadra, no vermelho da
+cozinha e no escuro do tapume, e nenhum logo fica numa plaquinha da própria cor.
+De quebra ficaram menores: os quatro somam 25 KB, contra 36 KB coloridos.
+
+**A faixa do alambrado virou patrocínio.** No lugar do nome do jogo entrou uma
+faixa mais alta com quatro marcas. Ela precisou subir, porque o tapume que está
+na frente é mais perto da câmera e por isso sobe mais na tela do que a própria
+altura dele sugere, e estava cortando a faixa pela metade. No retrato as duas
+faixas aparecem uma sobre a outra; na horizontal sobra pouca altura acima da
+quadra e o tapume acaba sendo a superfície principal.
+
+**Uma marca em cada cozinha.** Branco sobre o vermelho, que é o contraste mais
+forte que a quadra tem. Em meia força, para a faixa continuar lendo como
+cozinha e não como cartaz.
+
+Com as seis marcas novas o custo por quadro foi de 1,63 para 2,04 ms, num
+orçamento de 16. O arquivo único encolheu de 646 para 633 KB, porque a arte
+branca comprime melhor que a colorida.
+
 ## v31
 
 A quadra ganhou patrocínio, como teste, com os quatro logos enviados.
