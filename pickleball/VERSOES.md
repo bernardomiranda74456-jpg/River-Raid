@@ -5,6 +5,24 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v33
+
+Duas chamadas novas na voz do juiz: **Out** e **Net**. Elas entram no lugar de
+Point, porque um juiz nomeia o que aconteceu antes de alguém pensar no placar.
+
+- **Out** quando o rali acaba com a bola fora, no golpe ou no saque.
+- **Net** quando a bola morre na fita. Só vale quando ela encostou mesmo na
+  rede: uma bola que morre antes de chegar lá continua sendo Point, porque o
+  juiz não cantaria "net" nesse caso.
+- Qualquer outra falta, como dois quiques ou voleio na cozinha, continua sendo
+  Point.
+
+A troca vale só para o Point. Se quem sacava é que errou, o saque muda de mão e
+a chamada continua sendo Second Serve ou Side Out, que é o que importa naquele
+momento.
+
+As duas falas somam 8 KB embutidos, na mesma voz das outras três.
+
 ## v32
 
 Três mudanças no patrocínio.

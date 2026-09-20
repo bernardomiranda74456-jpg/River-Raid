@@ -729,12 +729,16 @@ test('o smash da rede também sai fora se você puxar demais', () => {
 });
 
 // Ends a rally with a chosen winner and hands back the point event.
-function callFor(m, losingTeam) {
+// `dois_quiques` is the neutral reason: it is neither out nor into the net,
+// so it leaves the call to the score alone.
+function callFor(m, losingTeam, reason) {
   m.events.length = 0;
   m.rally.over = false;
-  m.endRally(losingTeam, 'fora');
+  m.endRally(losingTeam, reason || 'dois_quiques');
   return m.events.find(e => e.type === 'point');
 }
+// the calls that mean "the serving side scored", however they are phrased
+const MARCOU = ['point', 'out', 'net'];
 
 test('a chamada do juiz segue o placar, nas três situações', () => {
   // quem saca ganha: Point
@@ -757,7 +761,36 @@ test('em simples não existe Second Serve', () => {
     const m = mk({ format: 'singles' });
     const perdedor = i % 2 === 0 ? m.servingTeam : 1 - m.servingTeam;
     const ev = callFor(m, perdedor);
-    ok(ev.call === 'point' || ev.call === 'sideout', `simples chamou ${ev.call}`);
+    ok(MARCOU.indexOf(ev.call) >= 0 || ev.call === 'sideout', `simples chamou ${ev.call}`);
+  }
+});
+
+test('bola fora e bola na rede trocam a chamada de ponto', () => {
+  const casos = [
+    ['fora', 'out'], ['saque_fora', 'out'],
+    ['dois_quiques', 'point'], ['cozinha', 'point'], ['recebedor', 'point'],
+  ];
+  for (const [reason, esperado] of casos) {
+    const m = mk({ format: 'doubles' });
+    eq(callFor(m, 1 - m.servingTeam, reason).call, esperado, reason);
+  }
+  // na rede só quando a bola encostou mesmo na fita
+  const a = mk({ format: 'doubles' });
+  a.rally.netTouch = true;
+  eq(callFor(a, 1 - a.servingTeam, 'nao_passou').call, 'net', 'encostou na rede');
+  const b = mk({ format: 'doubles' });
+  b.rally.netTouch = false;
+  eq(callFor(b, 1 - b.servingTeam, 'nao_passou').call, 'point', 'morreu antes da rede');
+});
+
+test('quando o saque troca de mão, a chamada continua sendo do saque', () => {
+  for (const reason of ['fora', 'nao_passou', 'saque_fora']) {
+    const a = mk({ format: 'doubles' });
+    a.serverNumber = 1; a.rally.netTouch = true;
+    eq(callFor(a, a.servingTeam, reason).call, 'second', reason + ' com o primeiro sacador');
+    const b = mk({ format: 'doubles' });
+    b.serverNumber = 2; b.rally.netTouch = true;
+    eq(callFor(b, b.servingTeam, reason).call, 'sideout', reason + ' com o segundo');
   }
 });
 
@@ -767,8 +800,8 @@ test('a chamada bate com quem saca depois', () => {
       const m = mk({ format: fmt });
       const antesTime = m.servingTeam, antesNum = m.serverNumber;
       const ev = callFor(m, quemPerde === 'sacador' ? m.servingTeam : 1 - m.servingTeam);
-      if (ev.call === 'point') {
-        eq(m.servingTeam, antesTime, 'Point: o saque fica');
+      if (MARCOU.indexOf(ev.call) >= 0) {
+        eq(m.servingTeam, antesTime, ev.call + ': o saque fica');
       } else if (ev.call === 'second') {
         eq(m.servingTeam, antesTime, 'Second Serve: o saque fica no time');
         eq(m.serverNumber, 2, 'e passa para o segundo sacador');
@@ -783,7 +816,7 @@ test('a chamada bate com quem saca depois', () => {
 
 test('as três falas estão embutidas e são curtas', () => {
   const c = PB.CALLS_MP3;
-  for (const k of ['point', 'second', 'sideout']) {
+  for (const k of ['point', 'second', 'sideout', 'out', 'net']) {
     ok(c[k] && c[k].length > 2000, k + ' está embutida');
     ok(c[k].length < 20000, k + ' cabe no arquivo único (' + Math.round(c[k].length / 1024) + ' KB em base64)');
   }

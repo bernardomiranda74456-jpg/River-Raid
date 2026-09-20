@@ -824,7 +824,13 @@ PB.Match = (function () {
       this.events.push(ev);
 
       if (winner === this.servingTeam) {
-        ev.call = 'point';
+        // A referee names what happened before anyone thinks about the score,
+        // so a ball that died on the line or on the tape is called as such.
+        // Only the winning-the-point call gives way; a serve changing hands is
+        // still announced as a serve changing hands.
+        ev.call = reason === 'fora' || reason === 'saque_fora' ? 'out'
+          : (reason === 'nao_passou' && this.rally.netTouch) ? 'net'
+          : 'point';
         this.score[winner]++;
         if (this.isDoubles()) {
           for (const p of this.mates(this.servingTeam)) p.courtSide = p.courtSide === 'R' ? 'L' : 'R';
