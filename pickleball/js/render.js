@@ -1022,6 +1022,95 @@ PB.Renderer = (function () {
 
   function spaced(s) { return s.split('').join(' '); }
 
+  // ── sponsor dressing ─────────────────────────────────────────────────────
+  // Logos are decoded once and then painted onto planes. Every point at the
+  // same depth shares one scale, so a thin band of a plane maps to a band on
+  // screen with a constant width: slice the artwork into bands and the
+  // perspective falls out, no texture mapper needed.
+  const LOGO_IMG = {};
+  function logo(name) {
+    if (LOGO_IMG[name] === undefined) {
+      LOGO_IMG[name] = null;
+      const data = PB.LOGOS_PNG && PB.LOGOS_PNG[name];
+      if (data && typeof Image !== 'undefined') {
+        const el = new Image();
+        el.onload = () => { LOGO_IMG[name] = el; };
+        el.onerror = () => { LOGO_IMG[name] = null; };
+        el.src = 'data:image/png;base64,' + data;
+      }
+    }
+    return LOGO_IMG[name];
+  }
+
+  // `edge(t)` gives the world points of the artwork's left and right edge,
+  // t = 0 at the bottom of the image, 1 at the top.
+  function drawPlaneImage(ctx, cam, img, edge, alpha) {
+    if (!img || !img.width) return;
+    const a = edge(0), b = edge(1);
+    const pa = cam.proj(a.l[0], a.l[1], a.l[2]);
+    const pb = cam.proj(b.l[0], b.l[1], b.l[2]);
+    if (pa.cz <= 1 || pb.cz <= 1) return;
+    const hpx = Math.abs(pb.y - pa.y);
+    if (hpx < 2) return;
+    // One band every four screen pixels: past that the extra bands cost
+    // frame time and change nothing anyone can see.
+    const n = Math.max(3, Math.min(22, Math.round(hpx / 4)));
+    // Band edges are computed once and shared, so neighbours meet exactly.
+    // Overlapping them instead would double-paint every seam, which shows up
+    // as bright stripes the moment the artwork is drawn under 1.
+    const L = [], R = [], Y = [];
+    for (let i = 0; i <= n; i++) {
+      const e = edge(i / n);
+      const pl = cam.proj(e.l[0], e.l[1], e.l[2]);
+      const pr = cam.proj(e.r[0], e.r[1], e.r[2]);
+      L.push(pl.x); R.push(pr.x); Y.push(Math.round(pl.y));
+    }
+    ctx.save();
+    ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+    for (let i = 0; i < n; i++) {
+      const xL = (L[i] + L[i + 1]) / 2, xR = (R[i] + R[i + 1]) / 2;
+      const yB = Y[i], yT = Y[i + 1];
+      const dw = xR - xL, dh = yB - yT;
+      if (!(dw > 0.3) || !(Math.abs(dh) >= 1)) continue;
+      ctx.drawImage(img, 0, img.height * (1 - (i + 1) / n), img.width, img.height / n,
+                    xL, Math.min(yT, yB), dw, Math.abs(dh));
+    }
+    ctx.restore();
+  }
+
+  // Flat on the ground, reading upright from behind the near baseline.
+  function groundLogo(ctx, cam, name, cx, cz, w, alpha) {
+    const img = logo(name);
+    if (!img || !img.width) return;
+    const d = w * img.height / img.width;
+    const z0 = cz - d / 2;
+    drawPlaneImage(ctx, cam, img, t => ({
+      l: [cx - w / 2, 0.004, z0 + d * t],
+      r: [cx + w / 2, 0.004, z0 + d * t],
+    }), alpha);
+  }
+
+  // Upright on a board at the far end.
+  function wallLogo(ctx, cam, name, cx, y0, z, h, alpha) {
+    const img = logo(name);
+    if (!img || !img.width) return;
+    const w = h * img.width / img.height;
+    drawPlaneImage(ctx, cam, img, t => ({
+      l: [cx - w / 2, y0 + h * t, z],
+      r: [cx + w / 2, y0 + h * t, z],
+    }), alpha);
+  }
+
+  // The hoarding behind the far baseline: one dark board with the sponsors on
+  // it, standing in front of the fence exactly as it does at a real venue.
+  const WALL_Z = FENCE_Z - 2.2, WALL_H = 5.6;
+  const WALL_BOARDS = [
+    { name: 'telerj', x: -16.0, h: 4.0 },
+    { name: 'oi', x: -5.6, h: 3.4 },
+    { name: 'varig', x: 5.6, h: 2.2 },
+    { name: 'bank', x: 16.0, h: 3.4 },
+  ];
+
   // ── the umpire ───────────────────────────────────────────────────────────
   // Stands beside the net post, off court, at the net line. The head follows
   // the ball the whole rally, and before each serve an arm goes up: that raised
@@ -1123,6 +1212,8 @@ PB.Renderer = (function () {
       const F = cam.side === 1 ? -1 : 1;
       this.quad(ctx, cam, [[-60, -42 * F], [60, -42 * F], [60, FENCE_Z * F], [-60, FENCE_Z * F]], COL.surround);
       this.drawFence(ctx, cam);
+      this.drawSponsorWall(ctx, cam);
+      this.drawFloorLogos(ctx, cam, false);
       this.drawCourt(ctx, cam);
 
       if (m.state === 'ready') {
@@ -1387,6 +1478,7 @@ PB.Renderer = (function () {
       this.quad(ctx, cam, [[-W, -L], [W, -L], [W, L], [-W, L]], COL.court);
       this.quad(ctx, cam, [[-W, -K], [W, -K], [W, 0], [-W, 0]], COL.kitchen);
       this.quad(ctx, cam, [[-W, 0], [W, 0], [W, K], [-W, K]], COL.kitchen);
+      this.drawFloorLogos(ctx, cam, true);
       // lines
       this.line(ctx, cam, -W, -L, W, -L);
       this.line(ctx, cam, -W, L, W, L);
@@ -1577,6 +1669,57 @@ PB.Renderer = (function () {
       ctx.strokeStyle = 'rgba(0,0,0,0.25)';
       ctx.lineWidth = 1;
       ctx.stroke();
+    }
+
+    // The sponsor hoarding, drawn after the fence so it stands in front of it.
+    drawSponsorWall(ctx, cam) {
+      const F = cam.side === 1 ? -1 : 1;
+      const z = WALL_Z * F;
+      const X = 24;
+      const corners = [[-X, 0, z], [-X, WALL_H, z], [X, WALL_H, z], [X, 0, z]];
+      ctx.beginPath();
+      for (let i = 0; i < corners.length; i++) {
+        const p = cam.proj(corners[i][0], corners[i][1], corners[i][2]);
+        if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+      }
+      ctx.closePath();
+      const top = cam.proj(0, WALL_H, z), bot = cam.proj(0, 0, z);
+      const g = ctx.createLinearGradient(0, top.y, 0, bot.y);
+      g.addColorStop(0, '#16222f');
+      g.addColorStop(1, '#0c141d');
+      ctx.fillStyle = g;
+      ctx.fill();
+      // a lit rail along the top, which is what reads as a barrier
+      ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+      ctx.lineWidth = Math.max(1, (bot.y - top.y) * 0.035);
+      ctx.beginPath();
+      const tl = cam.proj(-X, WALL_H, z), tr = cam.proj(X, WALL_H, z);
+      ctx.moveTo(tl.x, tl.y); ctx.lineTo(tr.x, tr.y);
+      ctx.stroke();
+      for (const b of WALL_BOARDS) {
+        wallLogo(ctx, cam, b.name, b.x * F, WALL_H * 0.5 - b.h / 2, z, b.h, 0.95);
+      }
+    }
+
+    // Court decals. Inside the lines they are held back so they never read as
+    // a ball or a line; out in the surround they are full strength.
+    drawFloorLogos(ctx, cam, onCourt) {
+      const F = cam.side === 1 ? -1 : 1;
+      if (onCourt) {
+        // inside the lines: held well back, so they never read as a ball
+        groundLogo(ctx, cam, 'oi', 0, 15.5 * F, 5.4, 0.34);
+        groundLogo(ctx, cam, 'telerj', 0, -15.5 * F, 3.6, 0.30);
+        return;
+      }
+      // out in the surround, where nothing is at stake, they run at full
+      // strength. They sit down-court of the net so the umpire and the net
+      // posts do not crowd them.
+      // Placed against the measured frame: in portrait the ground is 16.6 ft
+      // wide either side at this depth, so these stay inside 16.
+      groundLogo(ctx, cam, 'bank', -12.8 * F, -7 * F, 5.0, 0.85);
+      groundLogo(ctx, cam, 'varig', 13.0 * F, -7 * F, 5.6, 0.9);
+      groundLogo(ctx, cam, 'varig', 0, -24 * F, 7.0, 0.85);
+      groundLogo(ctx, cam, 'telerj', 0, 26.2 * F, 3.2, 0.75);
     }
 
     // Beside the net post: one figure, drawn small, that makes the court feel

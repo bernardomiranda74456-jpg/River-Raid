@@ -5,6 +5,34 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v31
+
+A quadra ganhou patrocínio, como teste, com os quatro logos enviados.
+
+**A parede do fundo.** Atrás da linha de fundo adversária, na frente do
+alambrado, entrou um tapume escuro de 5,6 pés de altura com quatro placas.
+É o que aparece na foto de jogo real: a barreira que separa a quadra da
+arquibancada e carrega os patrocínios.
+
+**As marcas no chão.** Dentro das linhas ficaram duas, bem apagadas, uma em
+cada meia quadra, para nunca serem confundidas com a bola ou com uma linha.
+Fora das linhas, onde não há nada em jogo, ficam quatro em força total: uma de
+cada lado da quadra, uma atrás da sua linha de fundo e uma junto à parede. As
+de quadra são desenhadas por baixo das linhas, como tinta de verdade.
+
+**Como isso é desenhado.** Não há mapeamento de textura no Canvas 2D, mas
+nesta câmera todo ponto à mesma profundidade divide a mesma escala. Então uma
+faixa fina de um plano vira uma faixa na tela com largura constante: o desenho
+fatia a arte em uma faixa a cada quatro pixels de tela, até vinte e duas, e a perspectiva sai de graça. As bordas
+das faixas são calculadas uma vez e compartilhadas, porque sobrepô-las pintava
+cada emenda duas vezes e isso aparecia como listras claras assim que a arte
+era desenhada com transparência.
+
+Custa 0,26 ms por quadro, de 1,37 para 1,63. Os logos vão embutidos em PNG com
+fundo recortado, somando 36 KB. A posição de
+cada um foi conferida contra a largura real do quadro em cada profundidade, no
+retrato e na horizontal, para nenhum ficar cortado na borda da tela.
+
 ## v30
 
 O juiz passou a falar. No fim de cada rali sai uma das três chamadas oficiais,

@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const dir = path.join(__dirname, '..', 'js');
-for (const f of ['i18n', 'calls', 'court', 'physics', 'shots', 'stroke', 'match', 'ai', 'tutorial']) {
+for (const f of ['i18n', 'calls', 'logos', 'court', 'physics', 'shots', 'stroke', 'match', 'ai', 'tutorial']) {
   vm.runInThisContext(fs.readFileSync(path.join(dir, f + '.js'), 'utf8'), { filename: f + '.js' });
 }
 const C = PB.Court;
@@ -787,6 +787,19 @@ test('as três falas estão embutidas e são curtas', () => {
     ok(c[k] && c[k].length > 2000, k + ' está embutida');
     ok(c[k].length < 20000, k + ' cabe no arquivo único (' + Math.round(c[k].length / 1024) + ' KB em base64)');
   }
+});
+
+test('os logos dos patrocinadores estão embutidos e são leves', () => {
+  const L = PB.LOGOS_PNG;
+  const nomes = Object.keys(L);
+  ok(nomes.length >= 4, 'pelo menos quatro logos: ' + nomes.join(', '));
+  let total = 0;
+  for (const n of nomes) {
+    ok(typeof L[n] === 'string' && L[n].length > 1000, n + ' tem arte');
+    ok(L[n].slice(0, 8) === 'iVBORw0K', n + ' é PNG, que é o formato com transparência');
+    total += L[n].length;
+  }
+  ok(total < 80000, 'os quatro somam ' + Math.round(total / 1024) + ' KB em base64');
 });
 
 // ── physics sanity ────────────────────────────────────────────────────────
