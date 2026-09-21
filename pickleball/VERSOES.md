@@ -5,6 +5,21 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v34
+
+Uma tela de entrada com a marca **3EMP** antes do menu.
+
+- O logo nasce apagado e **sobe até o brilho cheio em 1,3 s**, com uma curva
+  simétrica: começa devagar, cresce no meio e assenta no fim. Não há fade out —
+  o menu entra com a marca no auge.
+- Depois de 1 s parada a tela dá lugar ao menu principal. Quem já viu pode
+  tocar em qualquer ponto e ir direto.
+- Em aparelhos com "reduzir movimento" ligado a marca aparece inteira, sem
+  animação.
+
+O fundo é o mesmo gradiente escuro do resto do jogo, então o vermelho da marca
+fica com contraste sem precisar de um cartão branco no meio do caminho.
+
 ## v33
 
 Duas chamadas novas na voz do juiz: **Out** e **Net**. Elas entram no lugar de

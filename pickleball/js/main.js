@@ -30,7 +30,7 @@
   function save() { store.set('pb.cfg', JSON.stringify(cfg)); }
 
   // ── screens ──────────────────────────────────────────────────────────────
-  const screens = ['scr-title', 'scr-setup', 'scr-tutorial', 'scr-pause', 'scr-over'];
+  const screens = ['scr-splash', 'scr-title', 'scr-setup', 'scr-tutorial', 'scr-pause', 'scr-over'];
   function show(id) {
     for (const s of screens) $(s).classList.toggle('on', s === id);
     $('pauseBtn').classList.toggle('on', id === null);
@@ -208,10 +208,24 @@
   // exposed for debugging and automated play-testing
   window.PBGame = { get match() { return match; }, input, renderer, start, cfg: () => cfg };
 
+  // Entry screen: the mark fades up over 1.2 s, holds, then the menu takes over.
+  // A tap cuts the wait short for anyone who has seen it before.
+  const SPLASH_MS = 2300;
+  let splashDone = false;
+  function leaveSplash() {
+    if (splashDone) return;
+    splashDone = true;
+    clearTimeout(splashTimer);
+    $('scr-splash').removeEventListener('pointerdown', leaveSplash);
+    show('scr-title');
+  }
+  const splashTimer = setTimeout(leaveSplash, SPLASH_MS);
+  $('scr-splash').addEventListener('pointerdown', leaveSplash);
+
   paintLangs();
   paintSound();
   syncOpts();
   resize();
-  show('scr-title');
+  show('scr-splash');
   requestAnimationFrame(frame);
 })();

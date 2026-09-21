@@ -35,6 +35,22 @@
     -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   }
 
+  /* Entry screen: the company mark comes up out of the dark, and stays up —
+     the cut to the menu happens with the logo at full strength, no fade out. */
+  #scr-splash { background: radial-gradient(120% 90% at 50% 45%, #16293c 0%, #080e16 68%); }
+  #scr-splash img {
+    display: block; width: min(64vw, 340px); height: auto;
+    opacity: 0; transform: scale(0.94);
+    animation: splash-in 1300ms cubic-bezier(0.42, 0, 0.58, 1) forwards;
+  }
+  @keyframes splash-in {
+    from { opacity: 0; transform: scale(0.94); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #scr-splash img { animation: none; opacity: 1; transform: none; }
+  }
+
   h1 { font-size: clamp(30px, 10vw, 52px); letter-spacing: 2px; font-weight: 800; }
   h1 span { color: #d9ff3d; }
   /* the wordmark replaces the typed title on the entry screen */
@@ -199,8 +215,13 @@
   <canvas id="game"></canvas>
   <button id="pauseBtn" data-i18n-aria="ui.pauseBtn" aria-label="Pausar">⏸</button>
 
+  <!-- entrada -->
+  <section id="scr-splash" class="screen on">
+    <img src="img/3emp.png" alt="3EMP" width="560" height="203" decoding="async">
+  </section>
+
   <!-- título -->
-  <section id="scr-title" class="screen on">
+  <section id="scr-title" class="screen">
     <h1 class="logo"><img src="img/logo.png" alt="Pickleball Forever" width="900" height="606" decoding="async"></h1>
     <div class="title-side">
       <p class="tag" data-i18n="ui.tag">Simples ou duplas contra a CPU. Regras oficiais, cozinha e tudo.</p>
