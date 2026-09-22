@@ -393,6 +393,23 @@ test('vitória exige dois pontos de vantagem', () => {
   eq(m.winner, 0, 'partida encerrada');
 });
 
+test('a partida curta acaba nos 5 pontos, com os mesmos dois de vantagem', () => {
+  const m = mk({ targetPoints: 5 });     // quem saca é o time 0, então é ele que pontua
+  m.score = [4, 0];
+  m.endRally(1, 'fora');
+  eq(m.score, [5, 0], 'placar');
+  eq(m.winner, 0, 'cinco a zero encerra');
+
+  const n = mk({ targetPoints: 5 });
+  n.score = [4, 4];
+  n.endRally(1, 'fora');
+  eq(n.winner, -1, '5 a 4 ainda não encerra');
+  n.afterPoint();
+  n.endRally(1, 'fora');
+  eq(n.score, [6, 4], 'placar');
+  eq(n.winner, 0, 'seis a quatro encerra');
+});
+
 test('placar de duplas é dito sacador-recebedor-número', () => {
   const m = mk({ format: 'doubles' });
   m.score = [4, 3];

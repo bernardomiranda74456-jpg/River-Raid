@@ -236,7 +236,7 @@
       <button class="lang" data-lang="es" data-i18n-aria="lang.name.es"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" rx="3" fill="#c60b1e"/><rect width="30" height="10" y="5" fill="#ffc400"/></svg></button>
     </div>
     </div>
-    <div class="foot">v34 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
+    <div class="foot">v35 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
   </section>
 
   <!-- configuração -->
@@ -251,15 +251,6 @@
         </div>
       </div>
       <div class="group">
-        <div class="label" data-i18n="ui.chars">Desenho dos jogadores</div>
-        <div class="opts" data-group="charStyle">
-          <button class="opt" data-val="boneco"><span data-i18n="ui.chars.boneco">Boneco</span><small data-i18n="ui.chars.boneco.sub">estilo Wii</small></button>
-          <button class="opt" data-val="atletico"><span data-i18n="ui.chars.atletico">Atlético</span><small data-i18n="ui.chars.atletico.sub">proporção real</small></button>
-          <button class="opt" data-val="vetor"><span data-i18n="ui.chars.vetor">Vetor</span><small data-i18n="ui.chars.vetor.sub">contorno</small></button>
-          <button class="opt" data-val="arcade"><span data-i18n="ui.chars.arcade">Arcade</span><small data-i18n="ui.chars.arcade.sub">cabeçudo</small></button>
-        </div>
-      </div>
-      <div class="group">
         <div class="label" data-i18n="ui.diff">Dificuldade</div>
         <div class="opts" data-group="difficulty">
           <button class="opt" data-val="facil"><span data-i18n="ui.diff.facil">Fácil</span><small data-i18n="ui.diff.facil.sub">golpe automático</small></button>
@@ -270,7 +261,7 @@
       <div class="group">
         <div class="label" data-i18n="ui.upto">Partida até</div>
         <div class="opts" data-group="targetPoints">
-          <button class="opt" data-val="7" data-i18n-points="7">7 pontos</button>
+          <button class="opt" data-val="5" data-i18n-points="5">5 pontos</button>
           <button class="opt" data-val="11" data-i18n-points="11">11 pontos</button>
           <button class="opt" data-val="15" data-i18n-points="15">15 pontos</button>
         </div>
@@ -354,15 +345,6 @@ PB.I18n = (function () {
     'ui.format.singles.sub': '1 contra 1',
     'ui.format.doubles': 'Duplas',
     'ui.format.doubles.sub': '2 contra 2',
-    'ui.chars': 'Desenho dos jogadores',
-    'ui.chars.boneco': 'Boneco',
-    'ui.chars.boneco.sub': 'estilo Wii, com rosto',
-    'ui.chars.atletico': 'Atlético',
-    'ui.chars.atletico.sub': 'proporção real',
-    'ui.chars.vetor': 'Vetor',
-    'ui.chars.vetor.sub': 'contorno, cor chapada',
-    'ui.chars.arcade': 'Arcade',
-    'ui.chars.arcade.sub': 'cabeçudo, traço grosso',
     'ui.diff': 'Dificuldade',
     'ui.diff.facil': 'Fácil',
     'ui.diff.facil.sub': 'golpe automático',
@@ -487,15 +469,6 @@ PB.I18n = (function () {
     'ui.format.singles.sub': '1 against 1',
     'ui.format.doubles': 'Doubles',
     'ui.format.doubles.sub': '2 against 2',
-    'ui.chars': 'Player look',
-    'ui.chars.boneco': 'Figure',
-    'ui.chars.boneco.sub': 'Wii style, with a face',
-    'ui.chars.atletico': 'Athletic',
-    'ui.chars.atletico.sub': 'real proportions',
-    'ui.chars.vetor': 'Vector',
-    'ui.chars.vetor.sub': 'outline, flat colour',
-    'ui.chars.arcade': 'Arcade',
-    'ui.chars.arcade.sub': 'big head, thick line',
     'ui.diff': 'Difficulty',
     'ui.diff.facil': 'Easy',
     'ui.diff.facil.sub': 'automatic swing',
@@ -620,15 +593,6 @@ PB.I18n = (function () {
     'ui.format.singles.sub': '1 contra 1',
     'ui.format.doubles': 'Dobles',
     'ui.format.doubles.sub': '2 contra 2',
-    'ui.chars': 'Aspecto de los jugadores',
-    'ui.chars.boneco': 'Muñeco',
-    'ui.chars.boneco.sub': 'estilo Wii, con cara',
-    'ui.chars.atletico': 'Atlético',
-    'ui.chars.atletico.sub': 'proporción real',
-    'ui.chars.vetor': 'Vector',
-    'ui.chars.vetor.sub': 'contorno, color plano',
-    'ui.chars.arcade': 'Arcade',
-    'ui.chars.arcade.sub': 'cabezón, trazo grueso',
     'ui.diff': 'Dificultad',
     'ui.diff.facil': 'Fácil',
     'ui.diff.facil.sub': 'golpe automático',
@@ -2563,33 +2527,10 @@ PB.Renderer = (function () {
   // a width profile (a thigh swells at the quad and tapers to the knee, a calf
   // bulges high, a forearm narrows to the wrist) and is filled with a gradient
   // laid across the limb, which is what gives a drawn figure its roundness.
-  const BODY_ATHLETIC = {
-    ankle: 0.32, knee: 1.60, hip: 2.86, waist: 3.34, shoulder: 4.68,
-    head: 5.44, headR: 0.36,
-    shoulderHalf: 0.62, hipHalf: 0.40,
-    upperArm: 1.04, foreArm: 0.98,
-    thigh: 1.26, shin: 1.28,
-  };
-  const BODY_ARCADE = {
-    ankle: 0.34, knee: 1.46, hip: 2.58, waist: 3.00, shoulder: 4.22,
-    head: 5.02, headR: 0.52,
-    shoulderHalf: 0.70, hipHalf: 0.46,
-    upperArm: 0.88, foreArm: 0.80,
-    thigh: 1.12, shin: 1.16,
-  };
-
   // half-widths in feet along each bone, start joint to end joint
   const PROFILE_MII = {
     arm:   [[0, 0.145], [0.5, 0.15], [1, 0.13]],
     leg:   [[0, 0.195], [0.5, 0.20], [1, 0.17]],
-  };
-
-  const PROFILE = {
-    thigh:   [[0, 0.30], [0.28, 0.315], [0.68, 0.235], [1, 0.165]],
-    shin:    [[0, 0.165], [0.22, 0.205], [0.58, 0.135], [1, 0.088]],
-    upper:   [[0, 0.205], [0.32, 0.20], [0.75, 0.145], [1, 0.125]],
-    fore:    [[0, 0.125], [0.28, 0.15], [0.72, 0.105], [1, 0.078]],
-    neck:    [[0, 0.135], [1, 0.125]],
   };
 
   // Wii Sports proportions: about three and a half heads tall, thin limbs,
@@ -2602,15 +2543,7 @@ PB.Renderer = (function () {
     thigh: 1.06, shin: 1.02,
   };
 
-  const CHAR_STYLES = {
-    boneco:   { body: BODY_MII, limb: 1.00, shade: true, outline: 0, detail: false, kind: 'mii' },
-    atletico: { body: BODY_ATHLETIC, limb: 1.00, shade: true, outline: 0.014, detail: true },
-    vetor:    { body: BODY_ATHLETIC, limb: 1.22, shade: false, outline: 0.075, detail: false },
-    arcade:   { body: BODY_ARCADE,   limb: 1.42, shade: false, outline: 0.055, detail: false },
-  };
-
-  let BODY = BODY_ATHLETIC;
-  let STYLE = CHAR_STYLES.atletico;
+  const BODY = BODY_MII;
   const OUTLINE_COL = '#131d29';
   const LIGHT = { x: -0.55, y: -0.83 };     // key light, upper left
 
@@ -2680,7 +2613,7 @@ PB.Renderer = (function () {
       const len = Math.hypot(dx, dy) || 1;
       const ux = dx / len, uy = dy / len;
       const nx = -uy, ny = ux;
-      const k = P.s * (o.raw ? 1 : STYLE.limb);
+      const k = P.s;
       const pt = (t, w) => [x1 + ux * len * t + nx * w * k, y1 + uy * len * t + ny * w * k];
 
       const path = new Path2D();
@@ -2715,14 +2648,7 @@ PB.Renderer = (function () {
       cap(x1, y1, startW, -1);
       path.closePath();
 
-      if (STYLE.outline > 0) {
-        ctx.strokeStyle = OUTLINE_COL;
-        ctx.lineWidth = Math.max(1, STYLE.outline * P.s * 2);
-        ctx.lineJoin = 'round';
-        ctx.stroke(path);
-      }
-      ctx.fillStyle = STYLE.shade ? this.crossGradient(ctx, x1, y1, x2, y2, nx, ny, startW, color)
-                                  : color;
+      ctx.fillStyle = this.crossGradient(ctx, x1, y1, x2, y2, nx, ny, startW, color);
       ctx.fill(path);
       return path;
     },
@@ -2741,8 +2667,6 @@ PB.Renderer = (function () {
     },
 
     draw(ctx, cam, p, base, s, isMe) {
-      STYLE = CHAR_STYLES[Renderer.charStyle] || CHAR_STYLES.atletico;
-      BODY = STYLE.body;
       const look = this.look(p);
       const kit = COL.team[p.team];
       const skin = COL.skin[look.skin];
@@ -2890,40 +2814,14 @@ PB.Renderer = (function () {
       // Seen from behind, everything the player holds in front of their chest is
       // behind their back — arms and paddle go under the torso, and only what
       // sticks out past the silhouette shows. Facing the camera, they go on top.
-      const fromBehind = facing > 0;
       const drawPaddle = () =>
         this.paddle(ctx, P, elbow, handP, look, hand, swinging, prog, serveAmt ? 0 : readyAmt, serveAmt);
 
       this.shadow(ctx, P, base, s, stanceHalf, isMe, p);
-      if (STYLE.kind === 'mii') {
-        this.mii(ctx, P, {
-          legs, shL, shR, hipL, hipR, shY, hipY, shPad, shFree,
-          elbow, handP, freeElbow, freeHandR, swA,
-        }, kit, skin, look, facing, turn, drawPaddle);
-        return;
-      }
-      const backLeg = legs[0].depth <= legs[1].depth ? legs[0] : legs[1];
-      const frontLeg = backLeg === legs[0] ? legs[1] : legs[0];
-      const freeInFront = swA > 0 && !fromBehind;
-      const arms = () => {
-        this.arm(ctx, P, shFree, freeElbow, freeHandR, kit, skin, false);
-        this.arm(ctx, P, shPad, elbow, handP, kit, skin, false);
-      };
-
-      this.leg(ctx, P, backLeg, kit, skin, true);
-      if (!freeInFront && !fromBehind) {
-        this.arm(ctx, P, shFree, freeElbow, freeHandR, kit, skin, true);
-      }
-      this.shorts(ctx, P, legs[0], legs[1], hipL, hipR, kit);
-      if (fromBehind) { arms(); drawPaddle(); }
-      this.torso(ctx, P, shL, shR, hipL, hipR, kit, skin, shY, hipY);
-      this.head(ctx, P, shL, shR, shY, skin, look, turn, facing);
-      this.leg(ctx, P, frontLeg, kit, skin, false);
-      if (!fromBehind) {
-        if (freeInFront) this.arm(ctx, P, shFree, freeElbow, freeHandR, kit, skin, false);
-        this.arm(ctx, P, shPad, elbow, handP, kit, skin, false);
-        drawPaddle();
-      }
+      this.mii(ctx, P, {
+        legs, shL, shR, hipL, hipR, shY, hipY, shPad, shFree,
+        elbow, handP, freeElbow, freeHandR, swA,
+      }, kit, skin, look, facing, turn, drawPaddle);
     },
 
     // ── Wii-style figure ───────────────────────────────────────────────────
@@ -3095,268 +2993,6 @@ PB.Renderer = (function () {
       }
     },
 
-    leg(ctx, P, L, kit, skin, far) {
-      const dim = far ? -0.14 : 0;
-      const flesh = tint(skin, dim);
-      // skin first, the whole leg, so no seam shows at the knee
-      this.bone(ctx, P, L.hip.x, L.hip.y + 0.1, L.knee.x, L.knee.y, PROFILE.thigh, flesh);
-      this.bone(ctx, P, L.knee.x, L.knee.y, L.foot.x, L.foot.y + 0.08, PROFILE.shin, flesh);
-
-      if (STYLE.detail) {
-        this.bone(ctx, P, L.foot.x, L.foot.y + 0.30, L.foot.x, L.foot.y + 0.12,
-                  [[0, 0.14], [1, 0.155]], tint('#eef3f7', dim));
-      }
-      this.shoe(ctx, P, L, dim);
-    },
-
-    // toe box, sole plate and heel, pointing the way the foot travels
-    shoe(ctx, P, L, dim) {
-      const dir = L.side >= 0 ? 1 : -1;
-      const x = L.foot.x, y = L.foot.y;
-      const p = (dx, dy) => [P.X(x + dx * dir), P.Y(y + dy)];
-      const path = new Path2D();
-      let q = p(-0.16, 0.30); path.moveTo(q[0], q[1]);
-      q = p(0.10, 0.26); path.lineTo(q[0], q[1]);
-      const c1 = p(0.34, 0.20), c2 = p(0.42, 0.07);
-      path.quadraticCurveTo(c1[0], c1[1], c2[0], c2[1]);
-      q = p(0.40, 0.0); path.lineTo(q[0], q[1]);
-      q = p(-0.20, 0.0); path.lineTo(q[0], q[1]);
-      path.closePath();
-      if (STYLE.outline > 0) {
-        ctx.strokeStyle = OUTLINE_COL;
-        ctx.lineWidth = Math.max(1, STYLE.outline * P.s * 2);
-        ctx.stroke(path);
-      }
-      ctx.fillStyle = tint(COL.shoe, dim);
-      ctx.fill(path);
-      // sole
-      const sole = new Path2D();
-      q = p(-0.20, 0.02); sole.moveTo(q[0], q[1]);
-      q = p(0.40, 0.02); sole.lineTo(q[0], q[1]);
-      q = p(0.40, -0.02); sole.lineTo(q[0], q[1]);
-      q = p(-0.20, -0.02); sole.lineTo(q[0], q[1]);
-      sole.closePath();
-      ctx.fillStyle = tint('#20303f', dim);
-      ctx.fill(sole);
-    },
-
-    arm(ctx, P, sh, elbow, hand, kit, skin, far) {
-      const dim = far ? -0.14 : 0;
-      const flesh = tint(skin, dim);
-      this.bone(ctx, P, sh.x, sh.y, elbow.x, elbow.y, PROFILE.upper, flesh);
-      this.bone(ctx, P, elbow.x, elbow.y, hand.x, hand.y, PROFILE.fore, flesh);
-      // sleeve: a cap of shirt over the shoulder end of the upper arm
-      const t = 0.46;
-      this.bone(ctx, P, sh.x * 0.45, sh.y + 0.02,
-                sh.x + (elbow.x - sh.x) * t, sh.y + (elbow.y - sh.y) * t,
-                [[0, 0.26], [0.55, 0.27], [1, 0.21]], tint(kit.shirt, dim - 0.05));
-      if (STYLE.detail) {
-        const wx = elbow.x + (hand.x - elbow.x) * 0.84, wy = elbow.y + (hand.y - elbow.y) * 0.84;
-        this.bone(ctx, P, wx, wy, hand.x, hand.y, [[0, 0.115], [1, 0.10]], tint(kit.trim, dim));
-      }
-      // hand, a mitten rather than a ball
-      const ang = Math.atan2(hand.y - elbow.y, hand.x - elbow.x);
-      ctx.save();
-      ctx.translate(P.X(hand.x), P.Y(hand.y));
-      ctx.rotate(-ang);
-      const hp = new Path2D();
-      hp.ellipse(P.s * 0.05, 0, P.s * 0.092, P.s * 0.072, 0, 0, Math.PI * 2);
-      if (STYLE.outline > 0.03) {
-        ctx.strokeStyle = OUTLINE_COL;
-        ctx.lineWidth = Math.max(1, STYLE.outline * P.s * 2);
-        ctx.stroke(hp);
-      }
-      ctx.fillStyle = flesh;
-      ctx.fill(hp);
-      ctx.restore();
-    },
-
-    // One pair of shorts spanning both hips, its hems following each thigh.
-    shorts(ctx, P, legA, legB, hipL, hipR, kit) {
-      const left = legA.hip.x <= legB.hip.x ? legA : legB;
-      const right = left === legA ? legB : legA;
-      const X = P.X, Y = P.Y;
-      const hemOf = L => {
-        const t = 0.60;
-        return {
-          x: L.hip.x + (L.knee.x - L.hip.x) * t,
-          y: L.hip.y + (L.knee.y - L.hip.y) * t,
-          nx: (L.knee.y - L.hip.y), ny: -(L.knee.x - L.hip.x),
-        };
-      };
-      const hl = hemOf(left), hr = hemOf(right);
-      const norm = h => {
-        const d = Math.hypot(h.nx, h.ny) || 1;
-        return { x: (h.nx / d) * 0.29, y: (h.ny / d) * 0.29 };
-      };
-      const nl = norm(hl), nr = norm(hr);
-      const path = new Path2D();
-      path.moveTo(X(hipL.x - 0.30), Y(hipL.y + 0.30));
-      path.lineTo(X(hl.x - nl.x), Y(hl.y - nl.y));
-      path.quadraticCurveTo(X(hl.x), Y(hl.y - 0.10), X(hl.x + nl.x), Y(hl.y + nl.y));
-      path.quadraticCurveTo(X((hl.x + hr.x) / 2), Y(Math.max(hl.y, hr.y) + 0.62),
-                            X(hr.x - nr.x), Y(hr.y + nr.y));
-      path.quadraticCurveTo(X(hr.x), Y(hr.y - 0.10), X(hr.x + nr.x), Y(hr.y - nr.y));
-      path.lineTo(X(hipR.x + 0.30), Y(hipR.y + 0.30));
-      path.closePath();
-      if (STYLE.outline > 0) {
-        ctx.strokeStyle = OUTLINE_COL;
-        ctx.lineWidth = Math.max(1.5, STYLE.outline * P.s * 2);
-        ctx.lineJoin = 'round';
-        ctx.stroke(path);
-      }
-      if (STYLE.shade) {
-        const g = ctx.createLinearGradient(X(hipL.x - 0.4), 0, X(hipR.x + 0.4), 0);
-        g.addColorStop(0, tint(kit.shorts, 0.22));
-        g.addColorStop(0.45, kit.shorts);
-        g.addColorStop(1, tint(kit.shorts, -0.30));
-        ctx.fillStyle = g;
-      } else {
-        ctx.fillStyle = kit.shorts;
-      }
-      ctx.fill(path);
-    },
-
-    // A shirt silhouette: deltoid over the shoulder, waist pinch, hem flare.
-    torso(ctx, P, shL, shR, hipL, hipR, kit, skin, shY, hipY) {
-      const midY = (shY + hipY) / 2;
-      const path = new Path2D();
-      const X = P.X, Y = P.Y;
-      path.moveTo(X(shL.x + 0.10), Y(shY + 0.16));
-      path.quadraticCurveTo(X(shL.x - 0.16), Y(shY + 0.10), X(shL.x - 0.20), Y(shY - 0.22));
-      path.quadraticCurveTo(X(shL.x - 0.08), Y(midY + 0.10), X(hipL.x - 0.26), Y(hipY + 0.46));
-      path.quadraticCurveTo(X((hipL.x + hipR.x) / 2), Y(hipY + 0.24), X(hipR.x + 0.26), Y(hipY + 0.46));
-      path.quadraticCurveTo(X(shR.x + 0.10), Y(midY + 0.16), X(shR.x + 0.20), Y(shY - 0.22));
-      path.quadraticCurveTo(X(shR.x + 0.16), Y(shY + 0.10), X(shR.x - 0.10), Y(shY + 0.16));
-      path.quadraticCurveTo(X(0), Y(shY + 0.02), X(shL.x + 0.10), Y(shY + 0.16));
-      path.closePath();
-
-      if (STYLE.outline > 0) {
-        ctx.strokeStyle = OUTLINE_COL;
-        ctx.lineWidth = Math.max(2, STYLE.outline * P.s * 2);
-        ctx.lineJoin = 'round';
-        ctx.stroke(path);
-      }
-      if (STYLE.shade) {
-        const g = ctx.createLinearGradient(X(shL.x - 0.3), 0, X(shR.x + 0.3), 0);
-        g.addColorStop(0, tint(kit.shirt, 0.18));
-        g.addColorStop(0.45, kit.shirt);
-        g.addColorStop(1, tint(kit.shirt, -0.28));
-        ctx.fillStyle = g;
-      } else {
-        ctx.fillStyle = kit.shirt;
-      }
-      ctx.fill(path);
-
-      const collar = new Path2D();
-      collar.moveTo(X(shL.x + 0.12), Y(shY + 0.15));
-      collar.quadraticCurveTo(X(0), Y(shY - 0.10), X(shR.x - 0.12), Y(shY + 0.15));
-      collar.quadraticCurveTo(X(0), Y(shY + 0.03), X(shL.x + 0.12), Y(shY + 0.15));
-      collar.closePath();
-      ctx.fillStyle = kit.trim;
-      ctx.fill(collar);
-    },
-
-    // Skull, jaw and ear — not a circle.
-    head(ctx, P, shL, shR, shY, skin, look, coil, facing) {
-      const cx = (shL.x + shR.x) / 2 + Math.sin(coil) * 0.14;
-      const headY = shY + (BODY.head - BODY.shoulder) + 0.06;
-      const R = BODY.headR;
-      this.bone(ctx, P, cx, shY - 0.02, cx, headY - R * 0.66, PROFILE.neck, tint(skin, -0.22));
-
-      const X = P.X, Y = P.Y;
-      const path = new Path2D();
-      path.moveTo(X(cx - R * 0.94), Y(headY + R * 0.12));
-      path.quadraticCurveTo(X(cx - R * 0.98), Y(headY + R * 1.05), X(cx), Y(headY + R * 1.06));
-      path.quadraticCurveTo(X(cx + R * 0.98), Y(headY + R * 1.05), X(cx + R * 0.94), Y(headY + R * 0.12));
-      path.quadraticCurveTo(X(cx + R * 0.86), Y(headY - R * 0.72), X(cx + R * 0.30), Y(headY - R * 1.02));
-      path.quadraticCurveTo(X(cx), Y(headY - R * 1.16), X(cx - R * 0.30), Y(headY - R * 1.02));
-      path.quadraticCurveTo(X(cx - R * 0.86), Y(headY - R * 0.72), X(cx - R * 0.94), Y(headY + R * 0.12));
-      path.closePath();
-      if (STYLE.outline > 0) {
-        ctx.strokeStyle = OUTLINE_COL;
-        ctx.lineWidth = Math.max(1.5, STYLE.outline * P.s * 2);
-        ctx.stroke(path);
-      }
-      if (STYLE.shade) {
-        const g = ctx.createLinearGradient(X(cx - R), 0, X(cx + R), 0);
-        g.addColorStop(0, tint(skin, 0.16));
-        g.addColorStop(0.5, skin);
-        g.addColorStop(1, tint(skin, -0.26));
-        ctx.fillStyle = g;
-      } else {
-        ctx.fillStyle = skin;
-      }
-      ctx.fill(path);
-
-      // ear on the shaded side
-      const es = facing >= 0 ? 1 : -1;
-      ctx.beginPath();
-      ctx.ellipse(X(cx + es * R * 0.92), Y(headY + R * 0.05), P.s * R * 0.16, P.s * R * 0.26, 0, 0, Math.PI * 2);
-      ctx.fillStyle = tint(skin, -0.18);
-      ctx.fill();
-
-      this.hair(ctx, P, cx, headY, R, look, coil, facing);
-    },
-
-    hair(ctx, P, cx, headY, R, look, coil, facing) {
-      const X = P.X, Y = P.Y;
-      const col = look.hair;
-      const cap = new Path2D();
-      cap.moveTo(X(cx - R * 0.99), Y(headY + R * 0.05));
-      cap.quadraticCurveTo(X(cx - R * 1.02), Y(headY + R * 1.12), X(cx), Y(headY + R * 1.14));
-      cap.quadraticCurveTo(X(cx + R * 1.02), Y(headY + R * 1.12), X(cx + R * 0.99), Y(headY + R * 0.05));
-      // fringe sweeping across the brow
-      cap.quadraticCurveTo(X(cx + R * 0.55), Y(headY + R * 0.30), X(cx + R * 0.12), Y(headY + R * 0.46));
-      cap.quadraticCurveTo(X(cx - R * 0.45), Y(headY + R * 0.62), X(cx - R * 0.99), Y(headY + R * 0.05));
-      cap.closePath();
-      if (STYLE.outline > 0) {
-        ctx.strokeStyle = OUTLINE_COL;
-        ctx.lineWidth = Math.max(1, STYLE.outline * P.s * 1.6);
-        ctx.stroke(cap);
-      }
-      if (STYLE.shade) {
-        const g = ctx.createLinearGradient(X(cx - R), 0, X(cx + R), 0);
-        g.addColorStop(0, tint(col, 0.26));
-        g.addColorStop(0.55, col);
-        g.addColorStop(1, tint(col, -0.22));
-        ctx.fillStyle = g;
-      } else {
-        ctx.fillStyle = col;
-      }
-      ctx.fill(cap);
-
-      if (look.style === 1) {
-        const tx = cx - R * 0.15, ty = headY + R * 0.55;
-        this.bone(ctx, P, tx, ty, tx + Math.sin(coil) * 0.14, ty - 0.62,
-                  [[0, 0.13], [0.45, 0.16], [1, 0.05]], col, { raw: true });
-      } else if (look.style === 2) {
-        for (let i = -1; i <= 1; i++) {
-          ctx.beginPath();
-          ctx.arc(X(cx + i * R * 0.6), Y(headY + R * 1.0), P.s * R * 0.40, 0, Math.PI * 2);
-          ctx.fillStyle = col;
-          ctx.fill();
-        }
-      } else if (look.style === 3) {
-        const brim = new Path2D();
-        brim.moveTo(X(cx - R * 1.0), Y(headY + R * 0.34));
-        brim.quadraticCurveTo(X(cx), Y(headY + R * 0.02), X(cx + R * 1.0), Y(headY + R * 0.34));
-        brim.quadraticCurveTo(X(cx), Y(headY + R * 0.26), X(cx - R * 1.0), Y(headY + R * 0.34));
-        brim.closePath();
-        ctx.fillStyle = tint(col, -0.25);
-        ctx.fill(brim);
-      }
-
-      if (facing < 0) {
-        ctx.fillStyle = 'rgba(35,22,14,0.5)';
-        const eyeR = Math.max(0.5, P.s * R * 0.10);
-        ctx.beginPath();
-        ctx.ellipse(X(cx - R * 0.34), Y(headY + R * 0.16), eyeR, eyeR * 1.2, 0, 0, Math.PI * 2);
-        ctx.ellipse(X(cx + R * 0.34), Y(headY + R * 0.16), eyeR, eyeR * 1.2, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    },
-
     // A pickleball paddle: rounded face, throat, grip with a butt cap.
     paddle(ctx, P, elbow, hand, look, side, swinging, prog, readyAmt, serveAmt) {
       const dx = hand.x - elbow.x, dy = hand.y - elbow.y;
@@ -3404,19 +3040,15 @@ PB.Renderer = (function () {
       grip.closePath();
 
       ctx.strokeStyle = OUTLINE_COL;
-      ctx.lineWidth = Math.max(1, (STYLE.outline || 0.012) * u * 2);
+      ctx.lineWidth = Math.max(1, 0.012 * u * 2);
       ctx.stroke(grip);
       ctx.fillStyle = '#1b2530';
       ctx.fill(grip);
       ctx.stroke(face);
-      if (STYLE.shade) {
-        const g = ctx.createLinearGradient(-w, 0, w, 0);
-        g.addColorStop(0, tint(look.paddle, 0.22));
-        g.addColorStop(1, tint(look.paddle, -0.24));
-        ctx.fillStyle = g;
-      } else {
-        ctx.fillStyle = look.paddle;
-      }
+      const faceGrad = ctx.createLinearGradient(-w, 0, w, 0);
+      faceGrad.addColorStop(0, tint(look.paddle, 0.22));
+      faceGrad.addColorStop(1, tint(look.paddle, -0.24));
+      ctx.fillStyle = faceGrad;
       ctx.fill(face);
       // edge guard
       ctx.strokeStyle = 'rgba(255,255,255,0.22)';
@@ -4523,7 +4155,6 @@ PB.Renderer = (function () {
     }
   }
 
-  Renderer.charStyle = 'boneco';
   Renderer.COL = COL;
   Renderer.Cam = Cam;
   return Renderer;
@@ -5195,7 +4826,11 @@ PB.Tutorial = (function () {
   const renderer = new PB.Renderer(canvas);
   const input = new PB.Input(canvas);
 
-  const DEFAULTS = { format: 'singles', difficulty: 'normal', targetPoints: '11', charStyle: 'boneco' };
+  const DEFAULTS = { format: 'singles', difficulty: 'normal', targetPoints: '11' };
+  // Só entra no cfg o que a tela ainda oferece: uma escolha antiga guardada no
+  // aparelho (7 pontos, o desenho dos jogadores) viraria um botão sem par.
+  const ESCOLHAS = { format: ['singles', 'doubles'], difficulty: ['facil', 'normal', 'dificil'],
+                     targetPoints: ['5', '11', '15'] };
   // Storage can throw outright (private mode, sandboxed frame, site data blocked),
   // so every read and write goes through here.
   const store = {
@@ -5211,10 +4846,13 @@ PB.Tutorial = (function () {
   let sound = store.get('pb.sound') !== '0';
 
   function load() {
-    try {
-      const raw = JSON.parse(store.get('pb.cfg') || '{}');
-      return Object.assign({}, DEFAULTS, raw);
-    } catch (e) { return Object.assign({}, DEFAULTS); }
+    let raw = {};
+    try { raw = JSON.parse(store.get('pb.cfg') || '{}') || {}; } catch (e) { /* não serve */ }
+    const c = Object.assign({}, DEFAULTS);
+    for (const k of Object.keys(DEFAULTS)) {
+      if (ESCOLHAS[k].indexOf(raw[k]) >= 0) c[k] = raw[k];
+    }
+    return c;
   }
   function save() { store.set('pb.cfg', JSON.stringify(cfg)); }
 
@@ -5233,7 +4871,6 @@ PB.Tutorial = (function () {
       const b = e.target.closest('.opt');
       if (!b) return;
       cfg[grp.dataset.group] = b.dataset.val;
-      if (grp.dataset.group === 'charStyle') PB.Renderer.charStyle = cfg.charStyle;
       syncOpts();
       save();
       buzz(8);
@@ -5319,7 +4956,6 @@ PB.Tutorial = (function () {
   $('btn-menu').onclick = () => { match = null; show('scr-title'); };
 
   function start() {
-    PB.Renderer.charStyle = cfg.charStyle;
     PB.Audio.init();
     PB.Audio.setMuted(!sound);
     match = new PB.Match({
@@ -5357,11 +4993,11 @@ PB.Tutorial = (function () {
       else if (e.type === 'bounce') PB.Audio.play('bounce', (e.impact || 8) / 20);
       else if (e.type === 'net') PB.Audio.play('net');
       else if (e.type === 'point') {
-        // The umpire calls it, then the crowd answers. A second serve is not a
-        // point, so nobody claps for it.
+        // The umpire calls it, then the crowd answers — a second serve included,
+        // since the rally that just ended was worth watching either way.
         const spoke = PB.Audio.call(e.call);
         if (!spoke) PB.Audio.play('point');
-        if (e.call !== 'second') PB.Audio.play('crowd', e.cheer || 0.6, e.final, spoke ? 0.38 : 0);
+        PB.Audio.play('crowd', e.cheer || 0.6, e.final, spoke ? 0.38 : 0);
         buzz(28);
       }
     }
@@ -5397,9 +5033,10 @@ PB.Tutorial = (function () {
   // exposed for debugging and automated play-testing
   window.PBGame = { get match() { return match; }, input, renderer, start, cfg: () => cfg };
 
-  // Entry screen: the mark fades up over 1.2 s, holds, then the menu takes over.
+  // Entry screen: the mark fades up over 1.3 s, holds for three, then the menu
+  // takes over.
   // A tap cuts the wait short for anyone who has seen it before.
-  const SPLASH_MS = 2300;
+  const SPLASH_MS = 4300;
   let splashDone = false;
   function leaveSplash() {
     if (splashDone) return;

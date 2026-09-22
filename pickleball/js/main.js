@@ -6,7 +6,11 @@
   const renderer = new PB.Renderer(canvas);
   const input = new PB.Input(canvas);
 
-  const DEFAULTS = { format: 'singles', difficulty: 'normal', targetPoints: '11', charStyle: 'boneco' };
+  const DEFAULTS = { format: 'singles', difficulty: 'normal', targetPoints: '11' };
+  // Só entra no cfg o que a tela ainda oferece: uma escolha antiga guardada no
+  // aparelho (7 pontos, o desenho dos jogadores) viraria um botão sem par.
+  const ESCOLHAS = { format: ['singles', 'doubles'], difficulty: ['facil', 'normal', 'dificil'],
+                     targetPoints: ['5', '11', '15'] };
   // Storage can throw outright (private mode, sandboxed frame, site data blocked),
   // so every read and write goes through here.
   const store = {
@@ -22,10 +26,13 @@
   let sound = store.get('pb.sound') !== '0';
 
   function load() {
-    try {
-      const raw = JSON.parse(store.get('pb.cfg') || '{}');
-      return Object.assign({}, DEFAULTS, raw);
-    } catch (e) { return Object.assign({}, DEFAULTS); }
+    let raw = {};
+    try { raw = JSON.parse(store.get('pb.cfg') || '{}') || {}; } catch (e) { /* não serve */ }
+    const c = Object.assign({}, DEFAULTS);
+    for (const k of Object.keys(DEFAULTS)) {
+      if (ESCOLHAS[k].indexOf(raw[k]) >= 0) c[k] = raw[k];
+    }
+    return c;
   }
   function save() { store.set('pb.cfg', JSON.stringify(cfg)); }
 
@@ -44,7 +51,6 @@
       const b = e.target.closest('.opt');
       if (!b) return;
       cfg[grp.dataset.group] = b.dataset.val;
-      if (grp.dataset.group === 'charStyle') PB.Renderer.charStyle = cfg.charStyle;
       syncOpts();
       save();
       buzz(8);
@@ -130,7 +136,6 @@
   $('btn-menu').onclick = () => { match = null; show('scr-title'); };
 
   function start() {
-    PB.Renderer.charStyle = cfg.charStyle;
     PB.Audio.init();
     PB.Audio.setMuted(!sound);
     match = new PB.Match({
@@ -168,11 +173,11 @@
       else if (e.type === 'bounce') PB.Audio.play('bounce', (e.impact || 8) / 20);
       else if (e.type === 'net') PB.Audio.play('net');
       else if (e.type === 'point') {
-        // The umpire calls it, then the crowd answers. A second serve is not a
-        // point, so nobody claps for it.
+        // The umpire calls it, then the crowd answers — a second serve included,
+        // since the rally that just ended was worth watching either way.
         const spoke = PB.Audio.call(e.call);
         if (!spoke) PB.Audio.play('point');
-        if (e.call !== 'second') PB.Audio.play('crowd', e.cheer || 0.6, e.final, spoke ? 0.38 : 0);
+        PB.Audio.play('crowd', e.cheer || 0.6, e.final, spoke ? 0.38 : 0);
         buzz(28);
       }
     }
@@ -208,9 +213,10 @@
   // exposed for debugging and automated play-testing
   window.PBGame = { get match() { return match; }, input, renderer, start, cfg: () => cfg };
 
-  // Entry screen: the mark fades up over 1.2 s, holds, then the menu takes over.
+  // Entry screen: the mark fades up over 1.3 s, holds for three, then the menu
+  // takes over.
   // A tap cuts the wait short for anyone who has seen it before.
-  const SPLASH_MS = 2300;
+  const SPLASH_MS = 4300;
   let splashDone = false;
   function leaveSplash() {
     if (splashDone) return;

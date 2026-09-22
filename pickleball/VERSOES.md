@@ -5,6 +5,26 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v35
+
+Quatro ajustes pedidos de uma vez.
+
+- **Um desenho só.** O jogo não pergunta mais como os jogadores são desenhados:
+  fica o boneco estilo Wii. Com isso saiu do renderizador a segunda figura
+  inteira — pernas, braços, tronco, cabeça e cabelo da versão atlética, mais os
+  corpos que ninguém desenhava. São 357 linhas a menos e 16 KB a menos no
+  arquivo único. Seis quadros de uma partida de duplas e seis de simples, com o
+  mesmo sorteio e o mesmo relógio, saíram **pixel por pixel idênticos** antes e
+  depois, que é a prova de que só caiu código que não era mais alcançado.
+- **Partida até 5 pontos** no lugar da de 7, com os mesmos dois de vantagem.
+- **O segundo saque agora tem torcida.** Antes o juiz falava "second serve" no
+  silêncio; agora as palmas respondem, como em qualquer outra bola.
+- **A marca 3EMP fica dois segundos a mais.** A subida continua em 1,3 s e a
+  parada passou de 1 s para 3 s, então a marca sai do ar aos 4,3 s.
+
+Quem já tinha jogado com 7 pontos guardados no aparelho cai no padrão de 11; o
+formato e a dificuldade que ele escolheu continuam como estavam.
+
 ## v34
 
 Uma tela de entrada com a marca **3EMP** antes do menu.
