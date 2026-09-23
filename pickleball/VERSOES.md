@@ -5,6 +5,43 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v37
+
+A CPU ganha corpo: reação com piso humano, duas marchas e velocidade por
+direção. E o anel de quique para de mudar de cor no ar.
+
+- **Reação.** A cada golpe do adversário a CPU levava de 0,04 a 0,36 s para ler
+  a bola (a difícil, 0,04–0,16 s: mais rápida que qualquer humano). Agora o
+  piso é **0,25 s** para todas, e o teto é o que muda com a dificuldade:
+  fácil 0,70 s, normal 0,50 s, difícil 0,40 s (`ai.js`, `REACT_MIN`;
+  `match.js`, `SKILL.react`). Medido em partida: mín 0,23 · mediana
+  0,48 / 0,36 / 0,31 · máx 0,68 / 0,48 / 0,38 s.
+- **Duas marchas.** Reposicionar é um deslize a 60% da velocidade máxima; só
+  uma bola para jogar liga o sprint (`p.chasing`, `cpuPace`).
+- **Direção.** A CPU está sempre de frente para a rede: para a frente 100%,
+  de lado 80%, de costas 65%. Só a CPU; o polegar do jogador não mudou.
+  Medido (difícil): corrida frente 12,9 · lado 11,0 · costas 8,9 ft/s.
+- **Anel de quique.** O ponto previsto era recalculado a cada quadro por uma
+  amostragem grossa (1/120 s) que derivava em polegadas ao longo do voo; perto
+  de uma linha o anel piscava entre branco e vermelho. Agora o quique é
+  calculado uma vez por voo, com o passo do próprio motor (1/300 s), e fica
+  fixo até a bola quicar ou tocar a rede. Em 3.424 voos: 5 trocas antes, todas
+  a menos de 6 in da linha; zero depois.
+
+**Efeito na dificuldade**, medido com um jogador substituto fixo (anda pelo
+alvo da IA, reage na hora, golpe automático), 12 partidas por linha:
+
+| | Simples antes → depois | Duplas antes → depois |
+|---|---|---|
+| Fácil | 62% → 88% | 62% → 64% |
+| Normal | 51% → 79% | 49% → 54% |
+| Difícil | 18% → 51% | 30% → 30% |
+
+Em duplas quase não muda. Em simples fica bem mais fácil, porque uma CPU
+sozinha cobre a quadra inteira e as três mudanças se somam: com o deslize a
+75% ou 90% fica em 75/63/40 e 77/68/36. A calibração da dificuldade de simples
+é uma decisão à parte.
+
 ## v36
 
 A rede e a bola passam a ser desenhadas **em pé, na escala do chão**, como os

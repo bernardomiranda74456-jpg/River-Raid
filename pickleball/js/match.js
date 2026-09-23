@@ -14,9 +14,9 @@ PB.Match = (function () {
   // `accel` is how sharply a CPU gets going, in the same units as the human's
   // (see HUMAN_ACCEL): lower is heavier off the mark.
   const SKILL = {
-    facil:   { opp: 0.40, mate: 0.56, accel: 6.5, assist: true,  autoSwing: true  },
-    normal:  { opp: 0.63, mate: 0.68, accel: 8.0, assist: true,  autoSwing: false },
-    dificil: { opp: 0.86, mate: 0.80, accel: 9.5, assist: false, autoSwing: false },
+    facil:   { opp: 0.40, mate: 0.56, accel: 6.5, react: 0.70, assist: true,  autoSwing: true  },
+    normal:  { opp: 0.63, mate: 0.68, accel: 8.0, react: 0.50, assist: true,  autoSwing: false },
+    dificil: { opp: 0.86, mate: 0.80, accel: 9.5, react: 0.40, assist: false, autoSwing: false },
   };
 
   const MOVE_SPEED = 13.2;    // ft/s: the baseline the CPU is built on
@@ -69,6 +69,17 @@ PB.Match = (function () {
   }
   function accelOf(p) { return p.accel || HUMAN_ACCEL; }
 
+  // A CPU has two gears and a facing. Repositioning is a shuffle at a fraction
+  // of its top speed; only a ball worth chasing gets the sprint. And it faces
+  // the net the whole time: running forward is full pace, sliding sideways
+  // about 80% of it, backpedalling about 65%.
+  const SHUFFLE = 0.60, SIDE = 0.80, BACK = 0.65;
+  function cpuPace(p, ux, uz) {
+    const gear = p.chasing ? 1 : SHUFFLE;
+    const forward = uz * C.teamSign(p.team) < 0;       // toward the net
+    return gear * (SIDE * ux * ux + (forward ? 1 : BACK) * uz * uz);
+  }
+
   let nextId = 0;
 
   function mkPlayer(team, ctrl, courtSide, skill, name) {
@@ -119,6 +130,7 @@ PB.Match = (function () {
       }
       for (const p of this.players) {
         p.accel = p.ctrl === 'cpu' ? d.accel : HUMAN_ACCEL;
+        p.reactMax = d.react;                 // slowest a CPU may be to read a shot
         p.speedBoost = p.ctrl === 'cpu' ? rampComp(d.accel) : 1;
       }
       this.nameEveryone();
@@ -358,12 +370,18 @@ PB.Match = (function () {
     }
 
     updatePrediction() {
-      const b = this.ball;
+      const b = this.ball, r = this.rally;
       if (!b.live) { this.pred = null; return; }
       const tr = P.trace(b, 2.4, 1 / 120);
-      let landing = null;
-      for (const s of tr) { if (s.bounced) { landing = s; break; } }
-      this.pred = { trace: tr, landing };
+      // The landing is settled once per flight, not re-traced every frame: a
+      // flight is deterministic, and re-sampling it coarsely moved the
+      // predicted bounce by inches, which near a line flipped the ring
+      // between in and out in mid-air. A bounce or a net touch starts a new
+      // flight, so the key changes and the landing is worked out again.
+      const key = r.shotCount + ':' + r.bounces + ':' + (r.netTouch ? 1 : 0);
+      const landing = this.pred && this.pred.key === key ? this.pred.landing
+        : P.predictLanding(b, 5, 1 / 300);
+      this.pred = { trace: tr, landing, key };
     }
 
     stepBall(dt, deadBall) {
@@ -715,7 +733,7 @@ PB.Match = (function () {
       }
       const mag = Math.hypot(dx, dz);
       if (mag > 1) { dx /= mag; dz /= mag; }
-      const speed = topSpeed(p);
+      const speed = topSpeed(p) * (p.ctrl === 'cpu' ? cpuPace(p, dx, dz) : 1);
       const tvx = dx * speed, tvz = dz * speed;
       const k = Math.min(1, dt * accelOf(p));
       p.vx += (tvx - p.vx) * k;
@@ -889,6 +907,7 @@ PB.Match = (function () {
   Match.HUMAN_SPEED = HUMAN_SPEED;
   Match.topSpeed = topSpeed;
   Match.accelOf = accelOf;
+  Match.cpuPace = cpuPace;
   Match.HUMAN_ACCEL = HUMAN_ACCEL;
   Match.rampComp = rampComp;
   Match.SMASH_HIGH = SMASH_HIGH;

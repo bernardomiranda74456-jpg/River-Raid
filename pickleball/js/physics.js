@@ -85,9 +85,9 @@ PB.Physics = (function () {
 
   // Where does this ball first touch the ground? Returns null if it never does
   // inside `maxT`.
-  function predictLanding(b, maxT) {
+  function predictLanding(b, maxT, stepDt) {
     const s = copy(b);
-    const dt = 1 / 240;
+    const dt = stepDt || 1 / 240;
     const ev = {};
     for (let t = 0; t < (maxT || 5); t += dt) {
       ev.bounce = false;

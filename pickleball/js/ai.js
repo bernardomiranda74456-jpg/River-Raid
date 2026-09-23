@@ -9,6 +9,7 @@ var PB = (function () {
 PB.AI = (function () {
   const C = PB.Court;
 
+  const REACT_MIN = 0.25;   // s: nobody reads a ball faster than this
   function rnd(a, b) { return a + Math.random() * (b - a); }
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
@@ -77,7 +78,9 @@ PB.AI = (function () {
     const a = p.ai;
     if (a.lastShot !== m.rally.shotCount) {
       a.lastShot = m.rally.shotCount;
-      a.timer = rnd(0.10, 0.42) * (1.25 - p.skill);
+      // Reading a shot takes at least a human's visual reaction, whatever the
+      // difficulty; what skill buys is the ceiling, not the floor.
+      a.timer = rnd(REACT_MIN, Math.max(REACT_MIN, p.reactMax || 0.5));
       a.target = null;
     }
     a.timer -= dt;
@@ -104,6 +107,7 @@ PB.AI = (function () {
       }
     }
 
+    p.chasing = false;
     if (m.state !== 'live') {
       p.tx = p.x; p.tz = p.z;                 // hold still between points
       return;
@@ -121,6 +125,7 @@ PB.AI = (function () {
         }
         spot = { x: clamp(cp.x, -11.5, 11.5), z: clamp(Math.abs(z), 1.4, 24.5) * sign };
         a.target = spot;
+        p.chasing = true;                     // a ball to play: the sprint gear
       }
     }
     if (!spot) spot = a.target && a.timer > 0 ? a.target : homeSpot(m, p);
