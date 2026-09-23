@@ -5,6 +5,29 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v36
+
+A rede e a bola passam a ser desenhadas **em pé, na escala do chão**, como os
+bonecos e o juiz já eram.
+
+Medindo o jogo contra uma foto de transmissão: as dimensões da quadra estão
+exatas e os bonecos têm 30% da largura da quadra onde pisam, como um homem de
+6 ft (a foto dá 31%). O que estava fora era a rede em retrato: 0,099 da largura
+da quadra em vez de 2,83 ÷ 20 = 0,142, porque ela era projetada pela câmera
+inclinada (43° olhando para baixo) enquanto os bonecos eram desenhados na
+altura cheia — a rede batia no joelho do juiz.
+
+- `Cam.up(x, h, z)`: o ponto no chão pela câmera, e a altura em pés vezes a
+  escala desse ponto. Rede, fita, malha, postes, bola, rastro e a bola na mão
+  do sacador usam isso agora.
+- Rede ÷ largura da quadra: **0,142** em retrato e deitado.
+- Rede ÷ juiz ao lado dela: 0,527 (real 2,83 ÷ 5,64 = 0,50).
+- Uma bola a 2,5 ft aparece abaixo da fita e a 3,3 ft acima, nas duas
+  orientações.
+
+A câmera não mudou: baixá-la ao ângulo da TV faria a metade da quadra virar uma
+faixa de 100 px num celular em pé.
+
 ## v35
 
 Quatro ajustes pedidos de uma vez.

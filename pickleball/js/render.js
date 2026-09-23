@@ -151,6 +151,17 @@ PB.Renderer = (function () {
     return { x: this.cx + dx * s, y: this.cy - cy * s, s, cz };
   };
 
+  // Anything that stands on the court is drawn upright, facing the camera: the
+  // figures already were (their height is feet-to-head times the scale at the
+  // feet), and the net and the ball follow the same rule here. Projecting a
+  // height through the pitched camera instead squashes it — in portrait the
+  // camera looks down at 43°, and a net drawn that way read knee-high beside
+  // players drawn at full height.
+  Cam.prototype.up = function (x, h, z) {
+    const g = this.proj(x, 0, z);
+    return { x: g.x, y: g.y - h * g.s, s: g.s, cz: g.cz };
+  };
+
 
   // ── character rig ────────────────────────────────────────────────────────
   // Bodies are drawn from profiled outlines, not primitives: every bone carries
@@ -434,7 +445,7 @@ PB.Renderer = (function () {
         elbow = ik(shPad.x, shPad.y, handP.x, handP.y, BODY.upperArm, BODY.foreArm, -hand * 0.55);
         let hold = { x: -hand * 0.55, y: shY - 1.15 };
         if (p.serveHold) {
-          const q = cam.proj(p.serveHold.x, p.serveHold.y, p.serveHold.z);
+          const q = cam.up(p.serveHold.x, p.serveHold.y, p.serveHold.z);
           hold = { x: (q.x - base.x) / s, y: (base.y - q.y) / s };
         }
         freeHandR = reachable(shFree, hold, armLen);
@@ -1186,7 +1197,7 @@ PB.Renderer = (function () {
       ctx.beginPath();
       for (let i = 0; i <= steps; i++) {
         const x = -N + (2 * N * i) / steps;
-        const p = cam.proj(x, C.netHeightAt(x), 0);
+        const p = cam.up(x, C.netHeightAt(x), 0);
         if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
       }
       for (let i = steps; i >= 0; i--) {
@@ -1204,13 +1215,13 @@ PB.Renderer = (function () {
       ctx.beginPath();
       for (let i = 0; i <= 22; i++) {
         const x = -N + (2 * N * i) / 22;
-        const a = cam.proj(x, C.netHeightAt(x), 0), b = cam.proj(x, 0, 0);
+        const a = cam.up(x, C.netHeightAt(x), 0), b = cam.proj(x, 0, 0);
         ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
       }
       for (let k = 1; k <= 5; k++) {
         for (let i = 0; i <= steps; i++) {
           const x = -N + (2 * N * i) / steps;
-          const p = cam.proj(x, (C.netHeightAt(x) * k) / 6, 0);
+          const p = cam.up(x, (C.netHeightAt(x) * k) / 6, 0);
           if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
         }
       }
@@ -1222,14 +1233,14 @@ PB.Renderer = (function () {
       ctx.beginPath();
       for (let i = 0; i <= steps; i++) {
         const x = -N + (2 * N * i) / steps;
-        const p = cam.proj(x, C.netHeightAt(x), 0);
+        const p = cam.up(x, C.netHeightAt(x), 0);
         if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
       }
       ctx.stroke();
 
       // posts
       for (const px of [-N, N]) {
-        const a = cam.proj(px, 0, 0), b = cam.proj(px, C.NET_H_POST + 0.15, 0);
+        const a = cam.proj(px, 0, 0), b = cam.up(px, C.NET_H_POST + 0.15, 0);
         ctx.strokeStyle = '#20303f';
         ctx.lineWidth = Math.max(2, a.s * 0.22);
         ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
@@ -1308,7 +1319,7 @@ PB.Renderer = (function () {
 
       // faint drop line: the single cheapest depth cue in a perspective view
       if (b.live && b.y > 0.6) {
-        const top = cam.proj(b.x, b.y, b.z);
+        const top = cam.up(b.x, b.y, b.z);
         ctx.save();
         ctx.strokeStyle = 'rgba(255,255,255,0.16)';
         ctx.lineWidth = 1;
@@ -1322,7 +1333,7 @@ PB.Renderer = (function () {
 
       for (let i = 0; i < this.trail.length; i++) {
         const t = this.trail[i];
-        const q = cam.proj(t.x, t.y, t.z);
+        const q = cam.up(t.x, t.y, t.z);
         ctx.save();
         // the streak thickens toward the ball, so the colour reads even on a
         // short flight instead of being a row of faint specks
@@ -1335,7 +1346,7 @@ PB.Renderer = (function () {
         ctx.restore();
       }
 
-      const q = cam.proj(b.x, b.y, b.z);
+      const q = cam.up(b.x, b.y, b.z);
       const r = ballRadius(q.s);
       const g = ctx.createRadialGradient(q.x - r * 0.35, q.y - r * 0.4, r * 0.1, q.x, q.y, r);
       g.addColorStop(0, '#f4ffb0');
