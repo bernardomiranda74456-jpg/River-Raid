@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boliche</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: monospace;
+      color: #fff;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      border: 2px solid #333;
+      aspect-ratio: 360 / 640;
+      height: min(calc(100vh - 40px), calc((100vw - 16px) * 16 / 9));
+      width: auto;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #controls {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #888;
+      text-align: center;
+      padding: 0 16px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="controls">← →: Posicionar &nbsp;|&nbsp; ESPAÇO: Confirmar &nbsp;|&nbsp; Mouse/toque também funciona</div>
+  <script src="bowling.js"></script>
+</body>
+</html>
