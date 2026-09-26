@@ -5,6 +5,14 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v38
+
+Patrocínio no piso só nas cozinhas. Os dois logos que ficavam na parte azul
+da quadra, onde a bola cai, saíram. Os das cozinhas se deslocaram para os
+lados, de forma simétrica vista da câmera: o de cima (atrás da rede) 4 ft
+para a esquerda, o de baixo 4 ft para a direita, os dois ainda inteiros
+dentro dos 20 ft da faixa.
+
 ## v37
 
 A CPU ganha corpo: reação com piso humano, duas marchas e velocidade por

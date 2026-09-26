@@ -1395,13 +1395,13 @@ PB.Renderer = (function () {
     drawFloorLogos(ctx, cam, onCourt) {
       const F = cam.side === 1 ? -1 : 1;
       if (onCourt) {
-        // One in each half, back where the rally lives, held down so they
-        // never read as a ball, and one in each kitchen: white on the red
-        // band, which is the strongest contrast the court has to offer.
-        groundLogo(ctx, cam, 'oi', 0, 15.5 * F, 5.0, 0.30);
-        groundLogo(ctx, cam, 'telerj', 0, -15.5 * F, 3.4, 0.26);
-        groundLogo(ctx, cam, 'varig', 0, 3.5 * F, 9.0, 0.58);
-        groundLogo(ctx, cam, 'varig', 0, -3.5 * F, 9.0, 0.58);
+        // Only the kitchens carry a logo: white on the red band, which is the
+        // strongest contrast the court has, and off the blue where the ball
+        // lands. The pair is offset the same way on both halves as seen from
+        // the camera, the far one toward the left, the near one toward the
+        // right (F keeps that true whichever side the camera is on).
+        groundLogo(ctx, cam, 'varig', -4.0 * F, 3.5 * F, 9.0, 0.58);
+        groundLogo(ctx, cam, 'varig', 4.0 * F, -3.5 * F, 9.0, 0.58);
         return;
       }
       // out in the surround, where nothing is at stake, they run at full
