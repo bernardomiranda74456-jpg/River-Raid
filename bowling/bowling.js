@@ -15,12 +15,12 @@ const LANE_L  = 80;
 const LANE_R  = 280;
 const LANE_CX = (LANE_L + LANE_R) / 2;
 const GUTTER  = 22;
-const CARD_H  = 74;        // scorecard height at the top
-const PIT_Y   = 90;        // anything past this line falls into the pit
-const HEAD_Y  = 270;       // pin 1
+const CARD_H  = 104;       // scorecard height at the top
+const PIT_Y   = 118;       // anything past this line falls into the pit
+const HEAD_Y  = 298;       // pin 1
 const ROW_GAP = 50;
 const PIN_GAP = 58;
-const DECK_Y  = 330;       // on the pin deck the side walls kick pins back
+const DECK_Y  = 358;       // on the pin deck the side walls kick pins back
 const FOUL_Y  = 572;
 const START_Y = 604;
 const PIN_R   = 11;
@@ -47,14 +47,15 @@ for (let row = 0; row < 4; row++)
 
 // ─── State ───────────────────────────────────────────────────────────────────
 let state;          // title | position | aim | spin | power | rolling | settle | gameover
-let frames;         // frames[f] = pins knocked per roll
-let frameIdx;
+let players;        // [{ name, color, frames, frameIdx, done }]
+let cur;            // index of the player on the lane
+let numPlayers = 1;
 let pins, ball;
 let meterT;
 let aim, spin, power;
 let rollTimer, settleTimer;
 let standingBefore;
-let message, messageTimer;
+let message, messageTimer, messageQueue = [];
 let hiScore = loadHiScore();
 let dragging = false;
 
@@ -123,11 +124,26 @@ function newBall() {
   ball = { x: LANE_CX, y: START_Y, vx: 0, vy: 0, spin: 0, gutter: false, inPit: false, roll: 0 };
 }
 
-function startGame() {
-  frames = Array.from({ length: 10 }, () => []);
-  frameIdx = 0;
-  message = ''; messageTimer = 0;
+const PLAYER_STYLE = [
+  { name: 'J1', color: '#4f7cff', ball: ['#6f8cff', '#2a3fb8', '#141c5c'] },
+  { name: 'J2', color: '#ff5a4f', ball: ['#ff8a7a', '#c0302a', '#5c1414'] },
+];
+
+function makePlayers(n) {
+  return PLAYER_STYLE.slice(0, n).map(st => ({
+    ...st, frames: Array.from({ length: 10 }, () => []), frameIdx: 0, done: false,
+  }));
+}
+
+function player() { return players[cur]; }
+
+function startGame(n) {
+  numPlayers = n || numPlayers;
+  players = makePlayers(numPlayers);
+  cur = 0;
+  message = ''; messageTimer = 0; messageQueue = [];
   rackPins();
+  if (numPlayers > 1) showMessage(`VEZ DO ${player().name}`);
   startRoll();
 }
 
@@ -295,7 +311,7 @@ function scoreFrames(frames) {
   return out;
 }
 
-function totalScore() {
+function totalScore(frames) {
   const s = scoreFrames(frames);
   for (let f = 9; f >= 0; f--) if (s[f] !== null) return s[f];
   return 0;
@@ -304,17 +320,19 @@ function totalScore() {
 function recordRoll() {
   const left = pins.filter(p => !p.down && !p.gone).length;
   const knocked = standingBefore - left;
-  const f = frameIdx;
-  const fr = frames[f];
+  const pl = player();
+  const f = pl.frameIdx;
+  const fr = pl.frames[f];
   fr.push(knocked);
   const marks = frameMarks(fr, f);
   const last = marks[marks.length - 1];
 
-  let fresh = false, over = false;
+  let fresh = false, turnOver = false;
   if (f < 9) {
-    if (fr.length === 2 || knocked === 10) { frameIdx++; fresh = true; }
+    if (fr.length === 2 || knocked === 10) { pl.frameIdx++; turnOver = true; }
   } else if (fr.length === 3 || (fr.length === 2 && marks[0] !== 'X' && marks[1] !== '/')) {
-    over = true;
+    pl.done = true;
+    turnOver = true;
   } else {
     fresh = last === 'X' || last === '/';
   }
@@ -324,32 +342,60 @@ function recordRoll() {
   else if (knocked === 0) showMessage(ball.gutter ? 'CANALETA!' : 'ZERO');
   else showMessage(knocked === 1 ? '1 PINO' : `${knocked} PINOS`);
 
-  if (over) {
-    const total = totalScore();
-    if (total > hiScore) { hiScore = total; saveHiScore(); }
+  if (players.every(p => p.done)) {
+    const best = Math.max(...players.map(p => totalScore(p.frames)));
+    if (best > hiScore) { hiScore = best; saveHiScore(); }
     state = 'gameover';
     return;
   }
-  if (fresh) rackPins(); else sweepPins();
+  if (turnOver) {
+    cur = (cur + 1) % players.length;
+    rackPins();
+    if (players.length > 1) showMessage(`VEZ DO ${player().name}`);
+  } else if (fresh) rackPins();
+  else sweepPins();
   startRoll();
 }
 
 function showMessage(text) {
-  message = text;
-  messageTimer = 90;
+  messageQueue.push(text);
+  if (messageTimer <= 0) nextMessage();
+}
+
+function nextMessage() {
+  message = messageQueue.shift() || '';
+  messageTimer = message ? 90 : 0;
 }
 
 // ─── Input ───────────────────────────────────────────────────────────────────
-function onAction() {
+// Player-count buttons on the title and game-over screens.
+const MENU_BUTTONS = [
+  { n: 1, label: '1 JOGADOR', y: 440 },
+  { n: 2, label: '2 JOGADORES', y: 490 },
+];
+const MENU_X = 90, MENU_W = 180, MENU_H = 38;
+
+function menuButtonAt(pos) {
+  if (!pos || pos.x < MENU_X || pos.x > MENU_X + MENU_W) return null;
+  const b = MENU_BUTTONS.find(b => pos.y >= b.y && pos.y <= b.y + MENU_H);
+  return b ? b.n : null;
+}
+
+function onAction(pos) {
   initAudio();
-  if (state === 'title' || state === 'gameover') startGame();
-  else lockPhase();
+  if (state === 'title' || state === 'gameover') {
+    const n = menuButtonAt(pos);
+    // Off the buttons, a tap on the game-over screen repeats the last mode.
+    if (n || state === 'gameover' || !pos) startGame(n);
+  } else lockPhase();
 }
 
 document.addEventListener('keydown', e => {
   keys[e.code] = true;
   if (['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.code)) e.preventDefault();
   if ((e.code === 'Space' || e.code === 'Enter') && !e.repeat) onAction();
+  if ((state === 'title' || state === 'gameover') && (e.code === 'Digit1' || e.code === 'Numpad1')) { initAudio(); startGame(1); }
+  if ((state === 'title' || state === 'gameover') && (e.code === 'Digit2' || e.code === 'Numpad2')) { initAudio(); startGame(2); }
 });
 document.addEventListener('keyup', e => { keys[e.code] = false; });
 
@@ -370,7 +416,7 @@ canvas.addEventListener('pointerdown', e => {
     canvas.setPointerCapture(e.pointerId);
     placeBall(pointerPos(e).x);
   } else {
-    onAction();
+    onAction(pointerPos(e));
   }
 });
 canvas.addEventListener('pointermove', e => {
@@ -384,7 +430,7 @@ canvas.addEventListener('pointercancel', () => { dragging = false; });
 
 // ─── Update ──────────────────────────────────────────────────────────────────
 function update() {
-  if (messageTimer > 0) messageTimer--;
+  if (messageTimer > 0 && --messageTimer === 0) nextMessage();
   meterT++;
 
   switch (state) {
@@ -524,12 +570,13 @@ function drawPin(p) {
 
 function drawBall(b) {
   if (b.inPit) return;
+  const colors = players ? player().ball : PLAYER_STYLE[0].ball;
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
   ctx.beginPath(); ctx.arc(b.x + 3, b.y + 4, BALL_R, 0, Math.PI * 2); ctx.fill();
   const g = ctx.createRadialGradient(b.x - 6, b.y - 6, 2, b.x, b.y, BALL_R);
-  g.addColorStop(0, '#6f8cff');
-  g.addColorStop(0.6, '#2a3fb8');
-  g.addColorStop(1, '#141c5c');
+  g.addColorStop(0, colors[0]);
+  g.addColorStop(0.6, colors[1]);
+  g.addColorStop(1, colors[2]);
   ctx.fillStyle = g;
   ctx.beginPath(); ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2); ctx.fill();
 
@@ -625,73 +672,81 @@ function drawScorecard() {
   ctx.fillStyle = '#0d1b2a';
   ctx.fillRect(0, 0, W, CARD_H);
 
-  const scores = scoreFrames(frames);
-  const x0 = 8, y0 = 22, fw = 32, lastW = 56, rowH = 18;
-  ctx.font = 'bold 9px monospace';
+  const nameW = 30, x0 = 38, fw = 29, lastW = 48, rowH = 30, bw = 12;
+  const playing = state !== 'gameover' && state !== 'title';
   ctx.textAlign = 'center';
-  for (let f = 0; f < 10; f++) {
-    const x = x0 + f * fw;
-    const w = f < 9 ? fw : lastW;
-    const current = (state !== 'gameover' && state !== 'title') && f === frameIdx;
-    ctx.fillStyle = current ? '#fff6d5' : '#f4f4f4';
-    ctx.fillRect(x, y0, w, rowH * 2);
-    ctx.strokeStyle = '#223';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x + 0.5, y0 + 0.5, w - 1, rowH * 2 - 1);
+  ctx.font = 'bold 9px monospace';
+  ctx.fillStyle = '#8fa3b8';
+  for (let f = 0; f < 10; f++) ctx.fillText(String(f + 1), x0 + f * fw + (f < 9 ? fw : lastW) / 2, 12);
 
-    ctx.fillStyle = '#8fa3b8';
-    ctx.fillText(String(f + 1), x + w / 2, y0 - 5);
+  const list = players || makePlayers(1);
+  list.forEach((pl, r) => {
+    const y0 = 18 + r * (rowH + 4);
+    const active = playing && r === cur;
+    const scores = scoreFrames(pl.frames);
 
-    const boxes = f < 9 ? 2 : 3;
-    const bw = 13;
-    const marks = frameMarks(frames[f], f);
-    for (let k = 0; k < boxes; k++) {
-      const bx = x + w - bw * (boxes - k);
-      ctx.strokeRect(bx + 0.5, y0 + 0.5, bw, 13);
-      const mk = marks[k];
-      if (mk) {
-        ctx.fillStyle = mk === 'X' || mk === '/' ? '#c0392b' : '#111';
-        ctx.font = 'bold 10px monospace';
-        ctx.fillText(mk, bx + bw / 2 + 0.5, y0 + 11);
+    ctx.fillStyle = active ? pl.color : '#1f3147';
+    ctx.fillRect(6, y0, nameW, rowH);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(pl.name, 6 + nameW / 2, y0 + 11);
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText(String(totalScore(pl.frames)), 6 + nameW / 2, y0 + 25);
+
+    for (let f = 0; f < 10; f++) {
+      const x = x0 + f * fw;
+      const w = f < 9 ? fw : lastW;
+      ctx.fillStyle = active && f === pl.frameIdx ? '#fff6d5' : '#f4f4f4';
+      ctx.fillRect(x, y0, w, rowH);
+      ctx.strokeStyle = '#223';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 0.5, y0 + 0.5, w - 1, rowH - 1);
+
+      const boxes = f < 9 ? 2 : 3;
+      const marks = frameMarks(pl.frames[f], f);
+      ctx.font = 'bold 9px monospace';
+      for (let k = 0; k < boxes; k++) {
+        const bx = x + w - bw * (boxes - k);
+        ctx.strokeRect(bx - 0.5, y0 + 0.5, bw, 12);
+        const mk = marks[k];
+        if (mk) {
+          ctx.fillStyle = mk === 'X' || mk === '/' ? '#c0392b' : '#111';
+          ctx.fillText(mk, bx + bw / 2, y0 + 10);
+        }
+      }
+      if (scores[f] !== null && pl.frames[f].length > 0) {
+        ctx.fillStyle = '#111';
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText(String(scores[f]), x + w / 2, y0 + 25);
       }
     }
-    if (scores[f] !== null && frames[f].length > 0) {
-      ctx.fillStyle = '#111';
-      ctx.font = 'bold 12px monospace';
-      ctx.fillText(String(scores[f]), x + w / 2, y0 + 31);
-    }
-    ctx.font = 'bold 9px monospace';
-  }
+  });
 
-  ctx.textAlign = 'left';
+  ctx.textAlign = 'right';
   ctx.fillStyle = '#8fa3b8';
   ctx.font = 'bold 10px monospace';
-  ctx.fillText(`TOTAL ${totalScore()}`, 8, CARD_H - 6);
-  ctx.textAlign = 'right';
   ctx.fillText(`RECORDE ${hiScore}`, W - 8, CARD_H - 6);
 }
 
 function drawSidebar() {
   if (state === 'title' || state === 'gameover') return;
+  const pl = player();
+  const rows = [
+    ['FRAME', String(Math.min(pl.frameIdx, 9) + 1)],
+    ['BOLA', String(pl.frames[Math.min(pl.frameIdx, 9)].length + 1)],
+    ['PINOS', String(pins.filter(p => !p.down && !p.gone).length)],
+  ];
+  if (players.length > 1) rows.unshift(['VEZ', pl.name]);
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#8fa3b8';
-  ctx.font = 'bold 10px monospace';
-  ctx.fillText('FRAME', 29, 130);
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 22px monospace';
-  ctx.fillText(String(Math.min(frameIdx, 9) + 1), 29, 156);
-  ctx.fillStyle = '#8fa3b8';
-  ctx.font = 'bold 10px monospace';
-  ctx.fillText('BOLA', 29, 190);
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 22px monospace';
-  ctx.fillText(String(frames[Math.min(frameIdx, 9)].length + 1), 29, 216);
-  ctx.fillStyle = '#8fa3b8';
-  ctx.font = 'bold 10px monospace';
-  ctx.fillText('PINOS', 29, 250);
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 22px monospace';
-  ctx.fillText(String(pins.filter(p => !p.down && !p.gone).length), 29, 276);
+  rows.forEach(([label, value], i) => {
+    const y = 160 + i * 60;
+    ctx.fillStyle = '#8fa3b8';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(label, 29, y);
+    ctx.fillStyle = label === 'VEZ' ? pl.color : '#fff';
+    ctx.font = 'bold 22px monospace';
+    ctx.fillText(value, 29, y + 26);
+  });
 }
 
 function drawMessage() {
@@ -707,7 +762,8 @@ function drawMessage() {
   ctx.lineWidth = 6;
   ctx.strokeStyle = '#1a1a22';
   ctx.strokeText(message, 0, 0);
-  ctx.fillStyle = message === 'STRIKE!' ? '#ffd23f' : message === 'SPARE!' ? '#4fd1ff' : '#fff';
+  const turnOf = players && players.find(p => message === `VEZ DO ${p.name}`);
+  ctx.fillStyle = message === 'STRIKE!' ? '#ffd23f' : message === 'SPARE!' ? '#4fd1ff' : turnOf ? turnOf.color : '#fff';
   ctx.fillText(message, 0, 0);
   ctx.restore();
 }
@@ -717,15 +773,26 @@ function drawOverlay(title, lines) {
   ctx.fillRect(0, CARD_H, W, H - CARD_H);
   ctx.textAlign = 'center';
   ctx.fillStyle = '#ffd23f';
-  ctx.font = 'bold 40px monospace';
-  ctx.fillText(title, W / 2, 250);
+  ctx.font = 'bold 36px monospace';
+  ctx.fillText(title, W / 2, 230);
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 13px monospace';
-  lines.forEach((l, i) => ctx.fillText(l, W / 2, 300 + i * 24));
-  if (Math.floor(Date.now() / 500) % 2 === 0) {
-    ctx.fillStyle = '#ffd23f';
-    ctx.fillText('ESPAÇO ou TOQUE para jogar', W / 2, 300 + lines.length * 24 + 30);
+  lines.forEach((l, i) => ctx.fillText(l, W / 2, 280 + i * 24));
+
+  for (const b of MENU_BUTTONS) {
+    const selected = b.n === numPlayers;
+    ctx.fillStyle = selected ? '#ffd23f' : 'rgba(255,255,255,0.12)';
+    ctx.fillRect(MENU_X, b.y, MENU_W, MENU_H);
+    ctx.strokeStyle = '#ffd23f';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(MENU_X + 1, b.y + 1, MENU_W - 2, MENU_H - 2);
+    ctx.fillStyle = selected ? '#1a1a22' : '#fff';
+    ctx.font = 'bold 15px monospace';
+    ctx.fillText(b.label, W / 2, b.y + 24);
   }
+  ctx.fillStyle = '#8fa3b8';
+  ctx.font = 'bold 11px monospace';
+  ctx.fillText('Toque num botão ou tecle 1 / 2', W / 2, 560);
 }
 
 function draw() {
@@ -753,20 +820,24 @@ function draw() {
       '2. Trave a direção',
       '3. Trave o efeito (curva)',
       '4. Trave a força',
-      `Recorde: ${hiScore}`,
     ]);
   } else if (state === 'gameover') {
-    const total = totalScore();
-    drawOverlay('FIM DE JOGO', [
-      `Pontuação: ${total}`,
-      total >= hiScore && total > 0 ? 'NOVO RECORDE!' : `Recorde: ${hiScore}`,
-    ]);
+    const totals = players.map(p => totalScore(p.frames));
+    const best = Math.max(...totals);
+    const record = best >= hiScore && best > 0 ? 'NOVO RECORDE!' : `Recorde: ${hiScore}`;
+    if (players.length === 1) {
+      drawOverlay('FIM DE JOGO', [`Pontuação: ${totals[0]}`, record]);
+    } else {
+      const winners = players.filter((p, i) => totals[i] === best);
+      drawOverlay(winners.length > 1 ? 'EMPATE!' : `${winners[0].name} VENCEU!`,
+        [...players.map((p, i) => `${p.name}: ${totals[i]}`), record]);
+    }
   }
 }
 
 // ─── Main loop ───────────────────────────────────────────────────────────────
-frames = Array.from({ length: 10 }, () => []);
-frameIdx = 0;
+players = null;
+cur = 0;
 rackPins();
 newBall();
 state = 'title';
