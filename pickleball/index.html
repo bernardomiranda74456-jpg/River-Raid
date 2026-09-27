@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0d1622">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="description" content="Pickleball Forever: jogo de pickleball para celular com simples, duplas, 1 ou 2 jogadores e regras oficiais.">
+<meta name="description" content="Pickleball Forever: jogo de pickleball de duplas para celular, com regras oficiais.">
 <title>Pickleball Forever</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -224,7 +224,7 @@
   <section id="scr-title" class="screen">
     <h1 class="logo"><img src="img/logo.png" alt="Pickleball Forever" width="900" height="606" decoding="async"></h1>
     <div class="title-side">
-      <p class="tag" data-i18n="ui.tag">Simples ou duplas contra a CPU. Regras oficiais, cozinha e tudo.</p>
+      <p class="tag" data-i18n="ui.tag">Duplas contra a CPU. Regras oficiais, cozinha e tudo.</p>
       <div class="card">
         <button class="btn outline" id="btn-tutorial" data-i18n="ui.tutorial">TUTORIAL</button>
         <button class="btn" id="btn-play" data-i18n="ui.play">JOGAR</button>
@@ -244,18 +244,10 @@
     <div class="card">
       <h2 data-i18n="ui.setup">Configurar partida</h2>
       <div class="group">
-        <div class="label" data-i18n="ui.format">Formato</div>
-        <div class="opts" data-group="format">
-          <button class="opt" data-val="singles"><span data-i18n="ui.format.singles">Simples</span><small data-i18n="ui.format.singles.sub">1 contra 1</small></button>
-          <button class="opt" data-val="doubles"><span data-i18n="ui.format.doubles">Duplas</span><small data-i18n="ui.format.doubles.sub">2 contra 2</small></button>
-        </div>
-      </div>
-      <div class="group">
         <div class="label" data-i18n="ui.diff">Dificuldade</div>
         <div class="opts" data-group="difficulty">
           <button class="opt" data-val="facil"><span data-i18n="ui.diff.facil">Fácil</span><small data-i18n="ui.diff.facil.sub">golpe automático</small></button>
-          <button class="opt" data-val="normal"><span data-i18n="ui.diff.normal">Normal</span><small data-i18n="ui.diff.normal.sub">faltas assistidas</small></button>
-          <button class="opt" data-val="dificil"><span data-i18n="ui.diff.dificil">Difícil</span><small data-i18n="ui.diff.dificil.sub">sem perdão</small></button>
+          <button class="opt" data-val="pro"><span data-i18n="ui.diff.pro">Pro</span><small data-i18n="ui.diff.pro.sub">faltas assistidas</small></button>
         </div>
       </div>
       <div class="group">
@@ -263,7 +255,13 @@
         <div class="opts" data-group="targetPoints">
           <button class="opt" data-val="5" data-i18n-points="5">5 pontos</button>
           <button class="opt" data-val="11" data-i18n-points="11">11 pontos</button>
-          <button class="opt" data-val="15" data-i18n-points="15">15 pontos</button>
+        </div>
+      </div>
+      <div class="group">
+        <div class="label" data-i18n="ui.sets">Sets</div>
+        <div class="opts" data-group="sets">
+          <button class="opt" data-val="1" data-i18n="ui.sets.1">Melhor de 1</button>
+          <button class="opt" data-val="3" data-i18n="ui.sets.3">Melhor de 3</button>
         </div>
       </div>
       <button class="btn" id="btn-start" data-i18n="ui.start">COMEÇAR</button>
@@ -305,7 +303,7 @@
     <div class="card" style="align-items:center;text-align:center">
       <h2 id="over-title" data-i18n="ui.over">Fim de jogo</h2>
       <div class="final" id="over-score">11 - 5</div>
-      <p class="muted" id="over-sub"></p>
+      <p class="muted" id="over-sub" style="white-space:pre-line"></p>
       <button class="btn" id="btn-rematch" data-i18n="ui.rematch">Revanche</button>
       <button class="btn ghost" id="btn-menu" data-i18n="ui.menu">Menu</button>
     </div>

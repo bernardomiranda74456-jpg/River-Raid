@@ -5,6 +5,27 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v39
+
+O menu de partida fica com três escolhas.
+
+- **Só duplas.** O formato saiu do menu; o motor ainda joga simples porque os
+  testes de regra usam esse caso, mas o jogo abre sempre duplas.
+- **Dois níveis: Fácil e Pro.** Pro é o antigo Normal, com os mesmos números
+  (`SKILL.pro`). O Difícil saiu; as regras sem perdão que ele ligava
+  continuam no motor como `assist: false`, que só os testes usam.
+- **Até 5 ou 11 pontos.** A opção de 15 saiu.
+- **Melhor de 1 ou melhor de 3.** Um set é um jogo até 5 ou 11 com dois de
+  vantagem. Na melhor de 3, o set seguinte começa do zero, em 0-0-2, com o
+  outro time abrindo o saque; uma faixa mostra "Set para …" e o placar de sets
+  enquanto o saque é esperado, e sai quando a bola entra em jogo. O título do
+  HUD passa a trazer "SET 2 · 1-0". A tela final mostra os sets em grande e os
+  jogos embaixo (11-3, 11-7). Os lados não trocam na tela: o jogador sempre
+  olha a quadra da própria linha de fundo.
+
+Uma escolha antiga guardada no aparelho (Normal, Difícil, 15 pontos, simples)
+cai no padrão: Pro, 11 pontos, melhor de 1.
+
 ## v38
 
 Patrocínio no piso só nas cozinhas. Os dois logos que ficavam na parte azul

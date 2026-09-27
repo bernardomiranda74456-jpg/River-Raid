@@ -14,9 +14,8 @@ PB.Match = (function () {
   // `accel` is how sharply a CPU gets going, in the same units as the human's
   // (see HUMAN_ACCEL): lower is heavier off the mark.
   const SKILL = {
-    facil:   { opp: 0.40, mate: 0.56, accel: 6.5, react: 0.70, assist: true,  autoSwing: true  },
-    normal:  { opp: 0.63, mate: 0.68, accel: 8.0, react: 0.50, assist: true,  autoSwing: false },
-    dificil: { opp: 0.86, mate: 0.80, accel: 9.5, react: 0.40, assist: false, autoSwing: false },
+    facil: { opp: 0.40, mate: 0.56, accel: 6.5, react: 0.70, assist: true, autoSwing: true  },
+    pro:   { opp: 0.63, mate: 0.68, accel: 8.0, react: 0.50, assist: true, autoSwing: false },
   };
 
   const MOVE_SPEED = 13.2;    // ft/s: the baseline the CPU is built on
@@ -101,13 +100,16 @@ PB.Match = (function () {
     constructor(cfg) {
       this.cfg = Object.assign({
         format: 'singles',      // 'singles' | 'doubles'
-        difficulty: 'normal',
+        difficulty: 'pro',
         targetPoints: 11,
         winBy: 2,
+        sets: 1,                // games in the match: best of 1 or best of 3
       }, cfg || {});
 
-      const d = SKILL[this.cfg.difficulty] || SKILL.normal;
-      this.assistRules = d.assist;
+      const d = SKILL[this.cfg.difficulty] || SKILL.pro;
+      // `assist` in the config overrides the tier: the rules tests play with
+      // every fault called, which no menu level does any more.
+      this.assistRules = this.cfg.assist !== undefined ? this.cfg.assist : d.assist;
       this.autoSwing = d.autoSwing;
       nextId = 0;
 
@@ -138,6 +140,7 @@ PB.Match = (function () {
       this.ball = P.newBall();
       this.score = [0, 0];
       this.servingTeam = 0;
+      this.firstServingTeam = 0;
       this.serverNumber = doubles ? 2 : 1;      // 0-0-2 start
       this.serverIdx = 0;
       this.state = 'ready';
@@ -150,7 +153,11 @@ PB.Match = (function () {
       this.cheerDur = 2.6;
       this.cheerLevel = 0;
       this.rallyLog = [];
-      this.winner = -1;
+      this.winner = -1;                       // this game's winner
+      this.sets = [0, 0];                     // games won so far
+      this.game = 1;
+      this.history = [];                      // each finished game's score
+      this.matchWinner = -1;
       this.pred = null;
       this.paused = false;
       this.pendingSwing = {};
@@ -256,6 +263,7 @@ PB.Match = (function () {
     }
 
     doServe(aim, power) {
+      this.banner = null;
       const server = this.players[this.serverIdx];
       const sSign = this.serveXSign;
       const behind = Math.abs(server.z) >= C.HALF_L + 0.05;
@@ -885,9 +893,45 @@ PB.Match = (function () {
     }
 
     afterPoint() {
-      if (this.winner >= 0) { this.state = 'gameover'; this.banner = null; return; }
+      if (this.winner >= 0) {
+        this.sets[this.winner]++;
+        this.history.push(this.score.slice());
+        const need = this.cfg.sets >= 3 ? 2 : 1;
+        if (this.sets[this.winner] >= need) {
+          this.matchWinner = this.winner;
+          this.state = 'gameover'; this.banner = null;
+          return;
+        }
+        this.nextGame();
+        return;
+      }
       this.banner = null;
       this.prepareServe();
+    }
+
+    // The next game of a best-of-three: score back to nought, the other team
+    // opens the serving (0-0-2 again in doubles), everyone back to the side
+    // they started on. Ends are not switched on screen: the player always
+    // looks up the court from their own baseline.
+    nextGame() {
+      const wonBy = this.winner;
+      this.game++;
+      this.score = [0, 0];
+      this.winner = -1;
+      this.sideOut = false;
+      this.firstServingTeam = 1 - this.firstServingTeam;
+      this.servingTeam = this.firstServingTeam;
+      this.serverNumber = this.isDoubles() ? 2 : 1;
+      for (const p of this.players) p.courtSide = this.mates(p.team)[0] === p ? 'R' : 'L';
+      this.serverIdx = undefined;
+      this.prepareServe();
+      // the set result stays up while the next serve is waited for
+      this.banner = {
+        label: T('banner.setwon', { team: T(wonBy === 0 ? 'team.1' : 'team.2') }),
+        sub: T('banner.sets', { a: this.sets[0], b: this.sets[1] }),
+        team: wonBy, sideOut: false, w: '',
+      };
+      this.events.push({ type: 'set', winner: wonBy, sets: this.sets.slice() });
     }
   }
 

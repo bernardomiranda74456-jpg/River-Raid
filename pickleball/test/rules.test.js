@@ -22,7 +22,7 @@ function eq(actual, expected, what) {
 }
 function ok(cond, what) { if (!cond) throw new Error(what || 'condição falsa'); }
 
-const mk = cfg => new PB.Match(Object.assign({ format: 'singles', difficulty: 'normal' }, cfg));
+const mk = cfg => new PB.Match(Object.assign({ format: 'singles', difficulty: 'pro' }, cfg));
 
 // Puts a rally in the state right after `shotCount` hits by `hitter`.
 function midRally(m, hitter, shotCount, bounces) {
@@ -89,7 +89,7 @@ test('saque longo demais é falta', () => {
 
 // ── two-bounce rule ───────────────────────────────────────────────────────
 test('voleio antes do quique é falta quando as regras são estritas', () => {
-  const m = mk({ difficulty: 'dificil' });
+  const m = mk({ assist: false });
   m.servingTeam = 1;                 // deixa o humano recebendo
   m.serverIdx = m.players.find(p => p.team === 1).id;
   m.prepareServe();
@@ -103,7 +103,7 @@ test('voleio antes do quique é falta quando as regras são estritas', () => {
 });
 
 test('no modo assistido o voleio do saque é bloqueado em vez de virar falta', () => {
-  const m = mk({ difficulty: 'normal' });   // assistRules = true
+  const m = mk({ difficulty: 'pro' });   // assistRules = true
   m.servingTeam = 1;
   m.serverIdx = m.players.find(p => p.team === 1).id;
   m.prepareServe();
@@ -118,7 +118,7 @@ test('no modo assistido o voleio do saque é bloqueado em vez de virar falta', (
 });
 
 test('o terceiro golpe também tem que esperar o quique', () => {
-  const m = mk({ difficulty: 'dificil' });
+  const m = mk({ assist: false });
   const human = m.players[m.humanIdx];          // time 0, que sacou
   midRally(m, 1, 2, 0);                        // devolução do adversário, no ar
   m.ball.x = human.x; m.ball.z = human.z; m.ball.y = 2.5;
@@ -128,7 +128,7 @@ test('o terceiro golpe também tem que esperar o quique', () => {
 });
 
 test('a partir do quarto golpe o voleio é liberado', () => {
-  const m = mk({ difficulty: 'dificil' });
+  const m = mk({ assist: false });
   const human = m.players[m.humanIdx];
   midRally(m, 1, 3, 0);                        // já passou dos dois quiques
   human.z = C.teamSign(0) * 12;                // longe da cozinha
@@ -174,7 +174,7 @@ test('uma partida recém-criada já aceita um golpe', () => {
 });
 
 test('só o recebedor da diagonal pode devolver o saque', () => {
-  const m = mk({ format: 'doubles', difficulty: 'dificil' });
+  const m = mk({ format: 'doubles', assist: false });
   m.servingTeam = 0;
   m.prepareServe();
   const receiver = m.players[m.receiverIdx];
@@ -189,7 +189,7 @@ test('só o recebedor da diagonal pode devolver o saque', () => {
 });
 
 test('o recebedor correto devolve normalmente', () => {
-  const m = mk({ format: 'doubles', difficulty: 'dificil' });
+  const m = mk({ format: 'doubles', assist: false });
   m.servingTeam = 0;
   m.prepareServe();
   const receiver = m.players[m.receiverIdx];
@@ -212,7 +212,7 @@ test('segundo quique do mesmo lado perde o rally', () => {
 
 // ── kitchen ───────────────────────────────────────────────────────────────
 test('voleio com o pé na cozinha é falta', () => {
-  const m = mk({ difficulty: 'dificil' });
+  const m = mk({ assist: false });
   const human = m.players[m.humanIdx];
   midRally(m, 1, 3, 0);                       // adversário bateu, sem quique
   human.x = 2; human.z = C.teamSign(0) * 3;   // dentro da cozinha
@@ -223,7 +223,7 @@ test('voleio com o pé na cozinha é falta', () => {
 });
 
 test('voleio fora da cozinha é legal', () => {
-  const m = mk({ difficulty: 'dificil' });
+  const m = mk({ assist: false });
   const human = m.players[m.humanIdx];
   midRally(m, 1, 3, 0);
   human.x = 2; human.z = C.teamSign(0) * (C.KITCHEN + 1);
@@ -235,7 +235,7 @@ test('voleio fora da cozinha é legal', () => {
 });
 
 test('voleio com o pé da frente sobre a linha é falta, mesmo com o centro fora', () => {
-  const m = mk({ difficulty: 'dificil' });
+  const m = mk({ assist: false });
   const human = m.players[m.humanIdx];
   midRally(m, 1, 3, 0);
   human.x = 2;
@@ -250,7 +250,7 @@ test('voleio com o pé da frente sobre a linha é falta, mesmo com o centro fora
 });
 
 test('voleio com um passo de folga da linha é legal', () => {
-  const m = mk({ difficulty: 'dificil' });
+  const m = mk({ assist: false });
   const human = m.players[m.humanIdx];
   midRally(m, 1, 3, 0);
   human.x = 2; human.speedN = 0; human.lunge = 0;
@@ -263,7 +263,7 @@ test('voleio com um passo de folga da linha é legal', () => {
 });
 
 test('correndo, a pegada aumenta e a folga exigida também', () => {
-  const m = mk({ difficulty: 'dificil' });
+  const m = mk({ assist: false });
   const p = m.players[m.humanIdx];
   p.z = C.teamSign(0) * (C.KITCHEN + 0.7);
   p.speedN = 0; p.lunge = 0;
@@ -281,7 +281,7 @@ test('a zona de não-voleio termina na linha lateral', () => {
 });
 
 test('entrar na cozinha por impulso após o voleio é falta', () => {
-  const m = mk({ difficulty: 'dificil' });
+  const m = mk({ assist: false });
   const human = m.players[m.humanIdx];
   m.state = 'live';
   human.volleyMomentum = 0.4;
@@ -291,7 +291,7 @@ test('entrar na cozinha por impulso após o voleio é falta', () => {
 });
 
 test('a CPU é segurada fora da cozinha em vez de cometer a falta', () => {
-  const m = mk({ difficulty: 'dificil' });
+  const m = mk({ assist: false });
   const cpu = m.players.find(p => p.ctrl === 'cpu');
   m.state = 'live';
   cpu.volleyMomentum = 0.4;
@@ -303,7 +303,7 @@ test('a CPU é segurada fora da cozinha em vez de cometer a falta', () => {
 
 // ── scoring ───────────────────────────────────────────────────────────────
 test('sacar com o pé dentro da quadra é falta no modo estrito', () => {
-  const m = mk({ difficulty: 'dificil' });
+  const m = mk({ assist: false });
   const server = m.players[m.serverIdx];
   server.z = C.teamSign(server.team) * (C.HALF_L - 1.5);   // pisou dentro
   m.doServe({ x: -m.serveXSign * 4, z: C.teamSign(1) * 17 }, 1);
@@ -312,7 +312,7 @@ test('sacar com o pé dentro da quadra é falta no modo estrito', () => {
 });
 
 test('no modo assistido o sacador é reposicionado em vez de perder o ponto', () => {
-  const m = mk({ difficulty: 'normal' });
+  const m = mk({ difficulty: 'pro' });
   const server = m.players[m.serverIdx];
   server.z = C.teamSign(server.team) * (C.HALF_L - 1.5);
   m.doServe({ x: -m.serveXSign * 4, z: C.teamSign(1) * 17 }, 1);
@@ -322,7 +322,7 @@ test('no modo assistido o sacador é reposicionado em vez de perder o ponto', ()
 });
 
 test('sacar da metade errada é corrigido ou é falta', () => {
-  const m = mk({ difficulty: 'dificil' });
+  const m = mk({ assist: false });
   const server = m.players[m.serverIdx];
   server.x = -m.serveXSign * 4;                     // metade errada
   m.doServe({ x: -m.serveXSign * 4, z: C.teamSign(1) * 17 }, 1);
@@ -441,7 +441,7 @@ test('bola que não passa da rede é falta de quem bateu', () => {
 });
 
 test('o parceiro da CPU não rebate a bola que a própria dupla acabou de bater', () => {
-  const m = mk({ format: 'doubles', difficulty: 'dificil' });
+  const m = mk({ format: 'doubles', assist: false });
   const [a, b] = m.mates(0);
   midRally(m, a.id, 3, 0);
   // a weak shot by a, dying on their own side, right at b's feet
@@ -455,7 +455,7 @@ test('o parceiro da CPU não rebate a bola que a própria dupla acabou de bater'
 });
 
 test('humano que bate na bola do parceiro comete falta de dois golpes', () => {
-  const m = mk({ format: 'doubles', difficulty: 'dificil' });
+  const m = mk({ format: 'doubles', assist: false });
   const a = m.players[m.humanIdx];
   const b = m.mates(a.team).find(p => p.id !== a.id);
   b.ctrl = 'human';                              // para poder forçar o golpe
@@ -470,7 +470,7 @@ test('humano que bate na bola do parceiro comete falta de dois golpes', () => {
 });
 
 test('no nível normal o segundo golpe da dupla vira aviso, e o golpe é descartado', () => {
-  const m = mk({ format: 'doubles', difficulty: 'normal' });
+  const m = mk({ format: 'doubles', difficulty: 'pro' });
   const a = m.players[m.humanIdx];
   const b = m.mates(a.team).find(p => p.id !== a.id);
   b.ctrl = 'human';
@@ -603,14 +603,72 @@ test('a CPU acelera mais devagar que o jogador, e mais devagar no fácil', () =>
   const A = PB.Match.accelOf;
   const h = PB.Match.HUMAN_ACCEL;
   const k = {};
-  for (const d of ['facil', 'normal', 'dificil']) {
+  for (const d of ['facil', 'pro']) {
     const m = mk({ format: 'doubles', difficulty: d });
     eq(A(m.players[m.humanIdx]), h, d + ': o jogador não mudou');
     const cpu = m.players.find(p => p.ctrl === 'cpu');
     k[d] = A(cpu);
     ok(k[d] < h, d + ': a CPU é mais pesada que o jogador');
   }
-  ok(k.facil < k.normal && k.normal < k.dificil, 'quanto mais difícil, mais afiada a arrancada');
+  ok(k.facil < k.pro, 'no pro a arrancada é mais afiada');
+});
+
+// ── sets ──────────────────────────────────────────────────────────────────
+function fechaJogo(m, vencedor) {
+  // leva o placar ao match point do vencedor e fecha com um ponto dele sacando
+  m.servingTeam = vencedor; m.serverNumber = 2;
+  m.serverIdx = m.mates(vencedor)[0].id;
+  m.score = vencedor === 0 ? [10, 3] : [3, 10];
+  m.rally.over = false;
+  m.endRally(1 - vencedor, 'fora');
+  m.afterPoint();
+}
+
+test('melhor de 1: o jogo acaba e a partida acaba junto', () => {
+  const m = mk({ format: 'doubles', sets: 1 });
+  fechaJogo(m, 0);
+  eq(m.sets, [1, 0], 'sets');
+  eq(m.matchWinner, 0, 'partida decidida');
+  eq(m.state, 'gameover', 'estado');
+});
+
+test('melhor de 3: o primeiro set abre o segundo do zero, com o outro time sacando', () => {
+  const m = mk({ format: 'doubles', sets: 3 });
+  eq(m.servingTeam, 0, 'o time 0 abre o primeiro set');
+  fechaJogo(m, 0);
+  eq(m.sets, [1, 0], 'sets');
+  eq(m.matchWinner, -1, 'partida segue');
+  eq(m.game, 2, 'segundo set');
+  eq(m.score, [0, 0], 'placar zerado');
+  eq(m.servingTeam, 1, 'o outro time abre o segundo set');
+  eq(m.serverNumber, 2, 'começa 0-0-2');
+  eq(m.players[m.serverIdx].team, 1, 'o sacador é do time 1');
+  eq(m.state, 'ready', 'à espera do saque');
+  ok(m.banner && m.banner.sub === PB.I18n.t('banner.sets', { a: 1, b: 0 }), 'faixa com o placar de sets');
+  eq(m.history, [[11, 3]], 'histórico do set');
+});
+
+test('melhor de 3: dois sets fecham a partida, um a um vai ao terceiro', () => {
+  const m = mk({ format: 'doubles', sets: 3 });
+  fechaJogo(m, 0);
+  fechaJogo(m, 1);
+  eq(m.sets, [1, 1], 'um a um');
+  eq(m.game, 3, 'terceiro set');
+  eq(m.servingTeam, 0, 'o time 0 abre o terceiro');
+  eq(m.matchWinner, -1, 'ainda em jogo');
+  fechaJogo(m, 1);
+  eq(m.sets, [1, 2], 'sets finais');
+  eq(m.matchWinner, 1, 'time 1 leva a partida');
+  eq(m.state, 'gameover', 'estado');
+  eq(m.history.length, 3, 'três sets no histórico');
+});
+
+test('a faixa do set sai quando o saque acontece', () => {
+  const m = mk({ format: 'doubles', sets: 3 });
+  fechaJogo(m, 0);
+  ok(m.banner, 'faixa no ar');
+  m.doServe({ x: 0, z: 18 }, 0.8);
+  eq(m.banner, null, 'faixa limpa no saque');
 });
 
 test('a compensação mantém a perseguição de um segundo como era antes', () => {
@@ -634,7 +692,7 @@ test('a compensação mantém a perseguição de um segundo como era antes', () 
 });
 
 test('a velocidade do jogador não mudou', () => {
-  const m = mk({ format: 'doubles', difficulty: 'dificil' });
+  const m = mk({ format: 'doubles', assist: false });
   const you = m.players[m.humanIdx];
   eq(+PB.Match.topSpeed(you).toFixed(2), +PB.Match.HUMAN_SPEED.toFixed(2), 'topo do jogador intocado');
   eq(you.speedBoost, 1, 'o jogador não leva compensação');
@@ -643,7 +701,7 @@ test('a velocidade do jogador não mudou', () => {
 // Fires a drive at a CPU standing at the net, landing `margin` ft past the
 // baseline, and says whether that CPU volleyed it instead of letting it go.
 function outBallTrial(margin, side) {
-  const m = mk({ format: 'doubles', difficulty: 'normal' });
+  const m = mk({ format: 'doubles', difficulty: 'pro' });
   const you = m.players[m.humanIdx];
   const team = side === 'mate' ? you.team : 1 - you.team;
   const cpu = m.players.find(p => p.ctrl === 'cpu' && p.team === team);

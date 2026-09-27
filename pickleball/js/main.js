@@ -6,11 +6,10 @@
   const renderer = new PB.Renderer(canvas);
   const input = new PB.Input(canvas);
 
-  const DEFAULTS = { format: 'singles', difficulty: 'normal', targetPoints: '11' };
+  const DEFAULTS = { difficulty: 'pro', targetPoints: '11', sets: '1' };
   // Só entra no cfg o que a tela ainda oferece: uma escolha antiga guardada no
   // aparelho (7 pontos, o desenho dos jogadores) viraria um botão sem par.
-  const ESCOLHAS = { format: ['singles', 'doubles'], difficulty: ['facil', 'normal', 'dificil'],
-                     targetPoints: ['5', '11', '15'] };
+  const ESCOLHAS = { difficulty: ['facil', 'pro'], targetPoints: ['5', '11'], sets: ['1', '3'] };
   // Storage can throw outright (private mode, sandboxed frame, site data blocked),
   // so every read and write goes through here.
   const store = {
@@ -139,9 +138,10 @@
     PB.Audio.init();
     PB.Audio.setMuted(!sound);
     match = new PB.Match({
-      format: cfg.format,
+      format: 'doubles',
       difficulty: cfg.difficulty,
       targetPoints: parseInt(cfg.targetPoints, 10),
+      sets: parseInt(cfg.sets, 10),
     });
     input.reset();
     renderer.trail.length = 0;
@@ -187,15 +187,16 @@
   function gameOver() {
     const m = match;
     PB.Audio.play('win');
-    const s = m.score;
-    const won = m.players[m.humanIdx].team === m.winner;
+    const bo3 = m.cfg.sets >= 3;
+    const won = m.players[m.humanIdx].team === m.matchWinner;
     $('over-title').textContent = I18n.t(won ? 'ui.over.win' : 'ui.over.lose');
-    $('over-score').textContent = `${s[0]} - ${s[1]}`;
+    // best of three: the big number is the sets, the games go underneath
+    $('over-score').textContent = bo3 ? `${m.sets[0]} - ${m.sets[1]}` : `${m.score[0]} - ${m.score[1]}`;
     $('over-sub').textContent = I18n.t('ui.over.sub', {
-      format: I18n.t(m.cfg.format === 'doubles' ? 'ui.format.doubles' : 'ui.format.singles'),
       n: m.cfg.targetPoints,
+      sets: I18n.t('ui.sets.' + m.cfg.sets),
       diff: I18n.t('ui.diff.' + m.cfg.difficulty),
-    });
+    }) + (bo3 ? '\n' + I18n.t('ui.over.games', { list: m.history.map(g => g.join('-')).join(', ') }) : '');
     show('scr-over');
   }
 

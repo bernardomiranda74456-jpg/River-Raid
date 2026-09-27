@@ -1630,7 +1630,8 @@ PB.Renderer = (function () {
       ctx.fillStyle = 'rgba(255,255,255,0.82)';
       ctx.font = `700 ${10.5 * k}px system-ui, sans-serif`;
       ctx.textAlign = 'left';
-      const title = T('hud.title', { format: T(m.isDoubles() ? 'hud.doubles' : 'hud.singles'), n: m.cfg.targetPoints });
+      let title = T('hud.title', { n: m.cfg.targetPoints });
+      if (m.cfg.sets >= 3) title += '  ·  ' + T('hud.set', { g: m.game, a: m.sets[0], b: m.sets[1] });
       ctx.fillText(spaced(title), x + 8 * k, y + head / 2);
 
       // one row per team
@@ -1699,7 +1700,7 @@ PB.Renderer = (function () {
       ctx.fillStyle = 'rgba(255,255,255,0.45)';
       ctx.font = `700 ${8.5 * k}px system-ui, sans-serif`;
       ctx.textAlign = 'left';
-      ctx.fillText(spaced(m.isDoubles() ? T('hud.call') : 'PICKLEBALL FOREVER'), x + 8 * k, fy);
+      ctx.fillText(spaced(T('hud.call')), x + 8 * k, fy);
       ctx.textAlign = 'right';
       ctx.fillStyle = 'rgba(255,255,255,0.92)';
       ctx.font = `800 ${11 * k}px system-ui, sans-serif`;
@@ -1723,7 +1724,7 @@ PB.Renderer = (function () {
       ctx.fillText(t.label, bx + bw / 2, by + 26);
       ctx.fillStyle = 'rgba(255,255,255,0.75)';
       ctx.font = '600 12px system-ui, sans-serif';
-      ctx.fillText(t.sideOut ? T('banner.sideout') : T('banner.point', { team: T(t.team === 0 ? 'team.1' : 'team.2') }),
+      ctx.fillText(t.sub || (t.sideOut ? T('banner.sideout') : T('banner.point', { team: T(t.team === 0 ? 'team.1' : 'team.2') })),
         bx + bw / 2, by + 46);
       ctx.restore();
     }
