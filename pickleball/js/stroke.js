@@ -60,6 +60,16 @@ PB.Stroke = (function () {
 
   const goesOut = power => depthAt(power) > BASELINE;
 
+  // A slice always goes into the opponent's kitchen. Its length only says
+  // where in it: a short flick dies by the net, a long one lands a step short
+  // of the kitchen line. The far end stays inside the 7 ft band on purpose.
+  const SLICE = [[0.06, 3.0], [0.46, 6.2]];
+  function sliceDepth(power) {
+    const [[p0, d0], [p1, d1]] = SLICE;
+    return lerp(d0, d1, Math.max(0, Math.min(1, (power - p0) / (p1 - p0))));
+  }
+  const SLICE_COLOR = 'rgb(158,240,26)';   // the soft end of the ramp
+
   // ── reading the path ──────────────────────────────────────────────────────
   // A gesture is measured against the screen height so it feels the same on any
   // device. `pts` are raw screen points, oldest first.
@@ -104,7 +114,10 @@ PB.Stroke = (function () {
     let travel = 0;
     for (let i = 1; i < pts.length; i++) travel += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
 
-    const lob = arc > ARC && travel > H * 0.12;
+    // Only a stroke that goes up the screen can be a lob. A stroke that comes
+    // down is a slice, the short game: however it bends, it is never a lob.
+    const slice = dy > 0;
+    const lob = !slice && arc > ARC && travel > H * 0.12;
     const len = lob ? travel : chord;
     // A lob's side is the side its arc bulges to: a C (bulging left) sends it
     // left, a reversed C sends it right. Where the stroke ends up still adds on.
@@ -114,11 +127,11 @@ PB.Stroke = (function () {
     return {
       power: Math.max(0, Math.min(1.15, len / (H * FULL))),
       lateral,
-      arc, lob,
+      arc, lob, slice,
       up: -dy,
       chord, travel,
     };
   }
 
-  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, measure, tilt, bulge, FULL, SIDE, SIDE_DEG, MIN, ARC, LOB_SIDE };
+  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, sliceDepth, SLICE_COLOR, measure, tilt, bulge, FULL, SIDE, SIDE_DEG, MIN, ARC, LOB_SIDE };
 })();

@@ -538,12 +538,12 @@ test('trocar de idioma troca as chamadas e o tutorial', () => {
   PB.I18n.setLang(antes);
 });
 
-test('os oito passos do tutorial vêm inteiros nos três idiomas', () => {
+test('os nove passos do tutorial vêm inteiros nos três idiomas', () => {
   const antes = PB.I18n.lang;
   for (const l of PB.I18n.LANGS) {
     PB.I18n.setLang(l);
     const st = PB.Tutorial.steps();
-    eq(st.length, 8, l + ': oito passos');
+    eq(st.length, 9, l + ': nove passos');
     for (const s of st) {
       ok(s.title && s.title.indexOf('tut.') < 0, l + ': título traduzido');
       ok(s.body && s.body.indexOf('tut.') < 0, l + ': texto traduzido');
@@ -1082,6 +1082,53 @@ test('bola que chega antes da reação: longe do corpo passa, no corpo às vezes
   }
   eq(fundo, 0, 'bola a um braço de distância nunca é bloqueada por reflexo');
   ok(bloqueou > 20 && bloqueou < 80, `no corpo, parte volta (${bloqueou} de 100)`);
+});
+
+test('deslize para baixo é slice, e nunca lob, mesmo curvado', () => {
+  const H = 844;
+  const reto = S.measure([{ x: 300, y: 400 }, { x: 300, y: 520 }], H);
+  ok(reto.slice && !reto.lob, 'reto para baixo é slice');
+  const curvo = S.measure(Array.from({ length: 21 }, (_, i) =>
+    ({ x: 300 - Math.sin(Math.PI * i / 20) * 70, y: 400 + 180 * i / 20 })), H);
+  ok(curvo.slice && !curvo.lob, 'para baixo em arco continua slice');
+  const esq = S.measure([{ x: 300, y: 400 }, { x: 240, y: 500 }], H);
+  const dir = S.measure([{ x: 300, y: 400 }, { x: 360, y: 500 }], H);
+  ok(esq.lateral < -0.4 && dir.lateral > 0.4, `para baixo e à esquerda vai à esquerda (${esq.lateral.toFixed(2)}), à direita vai à direita (${dir.lateral.toFixed(2)})`);
+  const cima = S.measure([{ x: 300, y: 520 }, { x: 300, y: 400 }], H);
+  eq(cima.slice, false, 'para cima não é slice');
+});
+
+test('o slice cai na cozinha adversária, da rede ou do fundo, e mais comprido cai mais fundo', () => {
+  const m = mk({});
+  const p = m.players[0];
+  const land = (bz, power, lateral) => {
+    m.state = 'live';
+    midRally(m, 1, 3, 1);
+    cleanContact(m, p);
+    p.x = 0; m.ball.x = 0; p.z = bz; m.ball.z = bz + 0.3;
+    m.executeHit(p, humanSwing(m, p, { power, lateral: lateral || 0, slice: true }));
+    return { L: PB.Physics.predictLanding(m.ball, 5), style: m.ball.style };
+  };
+  for (const [bz, estilo] of [[-7.6, 'dink'], [-21, 'drop']]) {
+    const curto = land(bz, 0.08), longo = land(bz, 0.45);
+    eq(curto.style, estilo, `de z=${bz} o slice é ${estilo}`);
+    for (const r of [curto, longo]) ok(r.L.z > 0 && r.L.z < C.KITCHEN, `de z=${bz} cai na cozinha (${r.L.z.toFixed(1)})`);
+    ok(longo.L.z > curto.L.z + 1.5, `mais comprido, mais fundo (${curto.L.z.toFixed(1)} → ${longo.L.z.toFixed(1)})`);
+    const e = land(bz, 0.2, -0.8), d = land(bz, 0.2, 0.8);
+    ok(e.L.x < -4 && d.L.x > 4, `o lado do slice é o lado da bola (${e.L.x.toFixed(1)} / ${d.L.x.toFixed(1)})`);
+  }
+});
+
+test('no saque, o slice manda o saque suave para o lado dele', () => {
+  const m = mk({});
+  const me = m.players[m.humanIdx];
+  m.serverIdx = me.id; m.servingTeam = me.team; m.state = 'ready'; m.stateT = 1;
+  let aimed = null;
+  const orig = m.doServe.bind(m);
+  m.doServe = (aim, pw) => { aimed = { aim, pw }; };
+  m.update(1 / 60, { p1: { mx: 0, mz: 0, swipe: { lateral: 0, power: 0.9, lob: false, slice: true, arc: 0 } } });
+  ok(aimed, 'sacou');
+  ok(aimed.pw < 0.9, `saque suave (${aimed.pw.toFixed(2)})`);
 });
 
 test('deslize mais longo é mais forte', () => {

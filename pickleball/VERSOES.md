@@ -5,6 +5,28 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v41
+
+Gesto novo para a bola curta: **deslizar para baixo**, como um slice.
+
+- Deslize para baixo e a bola vai **sempre curta, para a cozinha** do
+  adversário: da rede sai um dink, do fundo um drop (o terceiro golpe clássico).
+- **Para baixo e à esquerda manda para a esquerda; para baixo e à direita, para a
+  direita**, com a mesma regra de largura da v40.
+- O comprimento escolhe onde cai dentro da cozinha: um toque curto morre junto da
+  rede (3 ft), o deslize comprido cai perto da linha (6,2 ft).
+- O traço do slice aparece inteiro em verde claro, porque não há força para
+  medir. Um deslize para baixo nunca vira lob, mesmo curvado; lob continua sendo
+  arco para cima.
+- No saque, o slice manda o saque suave (como o toque) para o lado do deslize.
+- Tutorial com um passo novo, "Bola curta: deslize para baixo", com o gesto
+  desenhado e a mão animada; o verde da régua de força passa a dizer "meia
+  quadra", porque a bola na cozinha agora é o slice.
+
+Medido no motor, slice de 30 a 240 px: **100% na cozinha com golpe limpo**, da
+rede e do fundo; com contato médio ou ruim, o slice mais comprido às vezes passa
+da linha (61–85%), e o curtíssimo às vezes para na rede (até 6%).
+
 ## v40
 
 Três correções de jogabilidade no Pro.

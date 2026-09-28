@@ -607,9 +607,9 @@ PB.Match = (function () {
       if (!swing.target) {
         // The stroke itself is the aim: how far you pulled is how deep it lands,
         // and how far sideways is how wide. Pull past the line and it goes out.
-        const depth = swing.human !== undefined
-          ? PB.Stroke.depthAt(swing.power)
-          : this.depthForStyle(style, swing.depth);
+        const depth = swing.human === undefined ? this.depthForStyle(style, swing.depth)
+          : swing.slice ? PB.Stroke.sliceDepth(swing.power)
+          : PB.Stroke.depthAt(swing.power);
         tz = oSign * depth;
         // The tilt of the stroke picks the spot across the court, whatever the
         // power. Straight up goes straight ahead from where the ball is; a full
@@ -677,6 +677,9 @@ PB.Match = (function () {
     // `smashable` decides that separately.
     pickStyleFromSwipe(p, sw, volley, from) {
       const nearNet = Math.abs(p.z) < 10.5;
+      // the slice is the short game on purpose: a dink at the net, a drop from
+      // further back, and it wins even over a smash the height would allow
+      if (sw.slice) return nearNet ? 'dink' : 'drop';
       if (sw.lob) return 'lob';
       if (this.smashable(p, volley, from, sw)) return 'smash';
       if (sw.power <= 0.16) return nearNet ? 'dink' : 'drop';
@@ -710,14 +713,16 @@ PB.Match = (function () {
         if (this.state === 'ready' && p.id === this.serverIdx) {
           // The serve reads the same stroke: how far you pulled is how deep it
           // goes, and the box is the only thing keeping it honest.
-          const depth = Math.max(0, Math.min(1, power / 0.78));
+          // a slice is not a serve: it sends the gentle one, like a tap, to its side
+          const pw = sw.slice ? 0.42 : power;
+          const depth = Math.max(0, Math.min(1, pw / 0.78));
           const aim = this.serveTarget(lateral * sign, depth, this.assistRules);
-          this.doServe(aim, 0.7 + 0.3 * Math.min(1, power));
+          this.doServe(aim, 0.7 + 0.3 * Math.min(1, pw));
           inputs[slot].swipe = null;
           return;
         }
         this.pendingSwing[p.id] = {
-          lateral: lateral * sign, power, lob: !!sw.lob,
+          lateral: lateral * sign, power, lob: !!sw.lob, slice: !!sw.slice,
           human: true, quality: 1, t: 0,
         };
         inputs[slot].swipe = null;

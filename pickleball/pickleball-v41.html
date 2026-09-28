@@ -156,6 +156,14 @@
     63%, 100% { top: 78%; opacity: 0 }
   }
   .hand.tap { left: 50%; top: 62%; animation: h-tap 1.8s ease-out infinite; }
+  /* the slice: down and to the side, over the drawn gesture on the left */
+  .hand.slice { left: 13%; animation: h-slice 1.9s cubic-bezier(.3,0,.2,1) infinite; }
+  @keyframes h-slice {
+    0%, 18% { top: 43%; left: 13.3%; opacity: 1 }
+    45% { top: 64%; left: 7%; opacity: 1 }
+    62% { top: 66%; left: 6.5%; opacity: 0 }
+    63%, 100% { top: 43%; left: 13.3%; opacity: 0 }
+  }
   @keyframes h-tap { 0%, 60% { transform: scale(1); opacity: .95 } 75% { transform: scale(1.9); opacity: .25 } 100% { transform: scale(1); opacity: .95 } }
   .streak { position: absolute; opacity: .45; }
   .ball-dot {
@@ -236,7 +244,7 @@
       <button class="lang" data-lang="es" data-i18n-aria="lang.name.es"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" rx="3" fill="#c60b1e"/><rect width="30" height="10" y="5" fill="#ffc400"/></svg></button>
     </div>
     </div>
-    <div class="foot">v40 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
+    <div class="foot">v41 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
   </section>
 
   <!-- configuração -->
@@ -418,7 +426,7 @@ PB.I18n = (function () {
     'tut.lbl.red': 'vermelho: sai',
     'tut.lbl.pink': 'rosa: na linha',
     'tut.lbl.orange': 'laranja: bem funda',
-    'tut.lbl.green': 'verde: bola curta',
+    'tut.lbl.green': 'verde: meia quadra',
     'tut.lbl.pull1': 'quanto mais',
     'tut.lbl.pull2': 'você puxa,',
     'tut.lbl.pull3': 'mais forte',
@@ -428,6 +436,9 @@ PB.I18n = (function () {
 
     'tut.lob.title': 'Lob é um arco',
     'tut.lob.body': '<p>Um deslize <b>em arco acentuado</b> vira lob. Arco para a esquerda é lob para a esquerda, arco para a direita é lob para a direita.</p><p>O tamanho do arco também conta: arco maior joga o lob mais para o fundo.</p>',
+    'tut.slice.title': 'Bola curta: deslize para baixo',
+    'tut.slice.body': '<p>Deslize <b>para baixo</b>, como um slice, e a bola sai <b>curta, na cozinha</b> do adversário. Na rede ela vira uma deixadinha (dink); do fundo, um drop.</p><p><b>Para baixo e para a esquerda</b> manda a bola para a esquerda; <b>para baixo e para a direita</b>, para a direita. Deslize curto cai perto da rede, e o mais comprido cai perto da linha da cozinha.</p>',
+    'tut.lbl.slice': 'para baixo',
 
     'tut.smash.title': 'Smash se conquista',
     'tut.smash.body': '<p>Não existe botão de smash. Ele se conquista de dois jeitos, e os dois são sobre <b>altura</b>.</p><p>Um: o adversário <b>tenta um lob e você pega a bola no alto</b>, antes dela quicar. Dois: você está <b>na rede e a bola sobe acima dela</b>, e aí dá para bater para baixo.</p><p>Com a bola na altura da rede ou abaixo não sai smash, por mais que você puxe: para passar a rede ela teria que subir. A força e a direção do seu deslize valem igual, e no vermelho ela sai igual.</p>',
@@ -540,7 +551,7 @@ PB.I18n = (function () {
     'tut.lbl.red': 'red: out',
     'tut.lbl.pink': 'pink: on the line',
     'tut.lbl.orange': 'orange: deep',
-    'tut.lbl.green': 'green: short ball',
+    'tut.lbl.green': 'green: mid-court',
     'tut.lbl.pull1': 'the further',
     'tut.lbl.pull2': 'you pull,',
     'tut.lbl.pull3': 'the harder',
@@ -550,6 +561,9 @@ PB.I18n = (function () {
 
     'tut.lob.title': 'A lob is an arc',
     'tut.lob.body': '<p>A swipe with a <b>pronounced arc</b> becomes a lob. Arc to the left is a lob to the left, arc to the right is a lob to the right.</p><p>The size of the arc counts too: a bigger arc throws the lob deeper.</p>',
+    'tut.slice.title': 'Short ball: swipe down',
+    'tut.slice.body': '<p>Swipe <b>down</b>, like a slice, and the ball goes <b>short, into the opponent\'s kitchen</b>. At the net it is a dink; from the back, a drop.</p><p><b>Down and to the left</b> sends it left; <b>down and to the right</b>, right. A short swipe dies by the net, a longer one lands near the kitchen line.</p>',
+    'tut.lbl.slice': 'swipe down',
 
     'tut.smash.title': 'A smash is earned',
     'tut.smash.body': '<p>There is no smash button. It is earned in two ways, and both are about <b>height</b>.</p><p>One: your opponent <b>tries a lob and you take the ball high</b>, before it bounces. Two: you are <b>at the net and the ball sits above it</b>, so you can hit down on it.</p><p>With the ball level with the net or below it there is no smash, however hard you pull: to clear the net it would have to go up. Power and direction of your swipe count the same, and on red it still goes out.</p>',
@@ -662,7 +676,7 @@ PB.I18n = (function () {
     'tut.lbl.red': 'rojo: sale',
     'tut.lbl.pink': 'rosa: en la línea',
     'tut.lbl.orange': 'naranja: profunda',
-    'tut.lbl.green': 'verde: bola corta',
+    'tut.lbl.green': 'verde: media pista',
     'tut.lbl.pull1': 'cuanto más',
     'tut.lbl.pull2': 'estiras,',
     'tut.lbl.pull3': 'más fuerte',
@@ -672,6 +686,9 @@ PB.I18n = (function () {
 
     'tut.lob.title': 'El globo es un arco',
     'tut.lob.body': '<p>Un deslizamiento <b>en arco marcado</b> sale como globo. Arco a la izquierda es globo a la izquierda, arco a la derecha es globo a la derecha.</p><p>El tamaño del arco también cuenta: un arco mayor manda el globo más al fondo.</p>',
+    'tut.slice.title': 'Bola corta: desliza hacia abajo',
+    'tut.slice.body': '<p>Desliza <b>hacia abajo</b>, como un slice, y la bola sale <b>corta, a la cocina</b> del rival. En la red es un dink; desde el fondo, un drop.</p><p><b>Abajo y a la izquierda</b> la manda a la izquierda; <b>abajo y a la derecha</b>, a la derecha. Un deslizamiento corto cae junto a la red; uno más largo, cerca de la línea de la cocina.</p>',
+    'tut.lbl.slice': 'hacia abajo',
 
     'tut.smash.title': 'El remate se gana',
     'tut.smash.body': '<p>No hay botón de remate. Se gana de dos maneras, y las dos son cuestión de <b>altura</b>.</p><p>Una: el rival <b>intenta un globo y tú coges la bola arriba</b>, antes de que bote. Dos: estás <b>en la red y la bola queda por encima de ella</b>, y entonces puedes golpear hacia abajo.</p><p>Con la bola a la altura de la red o por debajo no sale remate, por mucho que estires: para pasar la red tendría que subir. La fuerza y la dirección de tu deslizamiento valen igual, y en rojo sale igual.</p>',
@@ -1415,6 +1432,16 @@ PB.Stroke = (function () {
 
   const goesOut = power => depthAt(power) > BASELINE;
 
+  // A slice always goes into the opponent's kitchen. Its length only says
+  // where in it: a short flick dies by the net, a long one lands a step short
+  // of the kitchen line. The far end stays inside the 7 ft band on purpose.
+  const SLICE = [[0.06, 3.0], [0.46, 6.2]];
+  function sliceDepth(power) {
+    const [[p0, d0], [p1, d1]] = SLICE;
+    return lerp(d0, d1, Math.max(0, Math.min(1, (power - p0) / (p1 - p0))));
+  }
+  const SLICE_COLOR = 'rgb(158,240,26)';   // the soft end of the ramp
+
   // ── reading the path ──────────────────────────────────────────────────────
   // A gesture is measured against the screen height so it feels the same on any
   // device. `pts` are raw screen points, oldest first.
@@ -1459,7 +1486,10 @@ PB.Stroke = (function () {
     let travel = 0;
     for (let i = 1; i < pts.length; i++) travel += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
 
-    const lob = arc > ARC && travel > H * 0.12;
+    // Only a stroke that goes up the screen can be a lob. A stroke that comes
+    // down is a slice, the short game: however it bends, it is never a lob.
+    const slice = dy > 0;
+    const lob = !slice && arc > ARC && travel > H * 0.12;
     const len = lob ? travel : chord;
     // A lob's side is the side its arc bulges to: a C (bulging left) sends it
     // left, a reversed C sends it right. Where the stroke ends up still adds on.
@@ -1469,13 +1499,13 @@ PB.Stroke = (function () {
     return {
       power: Math.max(0, Math.min(1.15, len / (H * FULL))),
       lateral,
-      arc, lob,
+      arc, lob, slice,
       up: -dy,
       chord, travel,
     };
   }
 
-  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, measure, tilt, bulge, FULL, SIDE, SIDE_DEG, MIN, ARC, LOB_SIDE };
+  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, sliceDepth, SLICE_COLOR, measure, tilt, bulge, FULL, SIDE, SIDE_DEG, MIN, ARC, LOB_SIDE };
 })();
 
 </script>
@@ -2089,9 +2119,9 @@ PB.Match = (function () {
       if (!swing.target) {
         // The stroke itself is the aim: how far you pulled is how deep it lands,
         // and how far sideways is how wide. Pull past the line and it goes out.
-        const depth = swing.human !== undefined
-          ? PB.Stroke.depthAt(swing.power)
-          : this.depthForStyle(style, swing.depth);
+        const depth = swing.human === undefined ? this.depthForStyle(style, swing.depth)
+          : swing.slice ? PB.Stroke.sliceDepth(swing.power)
+          : PB.Stroke.depthAt(swing.power);
         tz = oSign * depth;
         // The tilt of the stroke picks the spot across the court, whatever the
         // power. Straight up goes straight ahead from where the ball is; a full
@@ -2159,6 +2189,9 @@ PB.Match = (function () {
     // `smashable` decides that separately.
     pickStyleFromSwipe(p, sw, volley, from) {
       const nearNet = Math.abs(p.z) < 10.5;
+      // the slice is the short game on purpose: a dink at the net, a drop from
+      // further back, and it wins even over a smash the height would allow
+      if (sw.slice) return nearNet ? 'dink' : 'drop';
       if (sw.lob) return 'lob';
       if (this.smashable(p, volley, from, sw)) return 'smash';
       if (sw.power <= 0.16) return nearNet ? 'dink' : 'drop';
@@ -2192,14 +2225,16 @@ PB.Match = (function () {
         if (this.state === 'ready' && p.id === this.serverIdx) {
           // The serve reads the same stroke: how far you pulled is how deep it
           // goes, and the box is the only thing keeping it honest.
-          const depth = Math.max(0, Math.min(1, power / 0.78));
+          // a slice is not a serve: it sends the gentle one, like a tap, to its side
+          const pw = sw.slice ? 0.42 : power;
+          const depth = Math.max(0, Math.min(1, pw / 0.78));
           const aim = this.serveTarget(lateral * sign, depth, this.assistRules);
-          this.doServe(aim, 0.7 + 0.3 * Math.min(1, power));
+          this.doServe(aim, 0.7 + 0.3 * Math.min(1, pw));
           inputs[slot].swipe = null;
           return;
         }
         this.pendingSwing[p.id] = {
-          lateral: lateral * sign, power, lob: !!sw.lob,
+          lateral: lateral * sign, power, lob: !!sw.lob, slice: !!sw.slice,
           human: true, quality: 1, t: 0,
         };
         inputs[slot].swipe = null;
@@ -4198,9 +4233,12 @@ PB.Renderer = (function () {
     // The stroke is the only gauge the player gets: while the thumb is down the
     // path is drawn in the colour its own length has earned, so you watch the
     // shot get stronger under your finger and stop before it sails.
-    strokePath(ctx, pts, power, alpha) {
+    strokePath(ctx, pts, power, alpha, slice) {
       if (!pts || pts.length < 2) return;
       const S = PB.Stroke;
+      // a slice has no force to show: it always goes short, so it is drawn in
+      // the soft colour from end to end
+      const colour = f => slice ? S.SLICE_COLOR : S.colorAt(power * f);
       ctx.save();
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
@@ -4212,7 +4250,7 @@ PB.Renderer = (function () {
         const a = pts[i - 1], b = pts[i];
         run += Math.hypot(b.x - a.x, b.y - a.y);
         const f = run / total;
-        ctx.strokeStyle = S.colorAt(power * f);
+        ctx.strokeStyle = colour(f);
         ctx.globalAlpha = alpha * (0.45 + 0.55 * f);
         ctx.lineWidth = 4 + 6 * f;
         ctx.beginPath();
@@ -4223,7 +4261,7 @@ PB.Renderer = (function () {
       // the head of the stroke carries the colour the shot will actually get
       const tip = pts[pts.length - 1];
       ctx.globalAlpha = alpha;
-      ctx.fillStyle = S.colorAt(power);
+      ctx.fillStyle = colour(1);
       ctx.beginPath();
       ctx.arc(tip.x, tip.y, 9, 0, Math.PI * 2);
       ctx.fill();
@@ -4245,10 +4283,10 @@ PB.Renderer = (function () {
       // live strokes, then the ghost of the one just released
       if (input.strokes && input.strokes.p1) {
         const st = input.strokes.p1;
-        this.strokePath(ctx, st.pts, st.power, 1);
+        this.strokePath(ctx, st.pts, st.power, 1, st.slice);
       }
       for (const s of input.swipeFx) {
-        this.strokePath(ctx, s.pts, s.power, Math.max(0, s.life) * 0.8);
+        this.strokePath(ctx, s.pts, s.power, Math.max(0, s.life) * 0.8, s.slice);
       }
     }
 
@@ -4376,7 +4414,7 @@ PB.Input = (function () {
         if (pt.path.length > 220) pt.path.shift();
         const m = PB.Stroke.measure(pt.path, this.strokeH());
         const st = this.strokes[pt.slot];
-        if (st) { st.power = m ? m.power : 0; st.lob = !!(m && m.lob); }
+        if (st) { st.power = m ? m.power : 0; st.lob = !!(m && m.lob); st.slice = !!(m && m.slice); }
       }
     }
 
@@ -4393,11 +4431,11 @@ PB.Input = (function () {
         // The stroke reads on release: the whole path is the gesture, and only
         // then is its power and its bow settled.
         const m = PB.Stroke.measure(pt.path, this.strokeH());
-        if (m && (m.up > 0 || m.lob)) {
+        if (m && (m.up > 0 || m.lob || m.slice)) {
           this.state[pt.slot].swipe = {
-            lateral: m.lateral, power: m.power, lob: m.lob, arc: m.arc,
+            lateral: m.lateral, power: m.power, lob: m.lob, slice: m.slice, arc: m.arc,
           };
-          this.swipeFx.push({ pts: pt.path.slice(), power: m.power, life: 1 });
+          this.swipeFx.push({ pts: pt.path.slice(), power: m.power, slice: m.slice, life: 1 });
         } else if (this.serveSlots[pt.slot]) {
           // a plain tap still serves, gently, down the middle
           this.state[pt.slot].swipe = { lateral: 0, power: 0.42, lob: false, arc: 0 };
@@ -4773,7 +4811,7 @@ PB.Audio = (function () {
 </script>
 <script>
 'use strict';
-// Eight-step tutorial. Every step draws its own little stage so the gesture is
+// Nine-step tutorial. Every step draws its own little stage so the gesture is
 // shown rather than described, and the way back to the menu never moves. The
 // steps are built on demand, because every word in them, the labels inside the
 // drawings included, comes from the language table.
@@ -4866,6 +4904,23 @@ PB.Tutorial = (function () {
          <path d="M150,142 Q240,90 204,44" fill="none" stroke="#ffd166" stroke-width="3.4"
                stroke-dasharray="8 6" marker-end="url(#ah)" opacity=".55"/>` }),
       body: T('tut.lob.body'),
+    },
+    {
+      title: T('tut.slice.title'),
+      // arrowheads sized in drawing units, so a thick line does not inflate them
+      stage: court({ kitchen: true, extra:
+        `<defs><marker id="ahs" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"
+                 markerUnits="userSpaceOnUse"><path d="M0,0 L8,4.5 L0,9 z" fill="#9ef01a"/></marker></defs>
+         <path d="M150,142 Q141,94 137,66" fill="none" stroke="#9ef01a" stroke-width="2.2"
+               stroke-dasharray="6 5" marker-end="url(#ahs)"/>
+         <path d="M150,142 Q159,94 163,66" fill="none" stroke="#9ef01a" stroke-width="2.2"
+               stroke-dasharray="6 5" marker-end="url(#ahs)"/>
+         <line x1="38" y1="72" x2="20" y2="108" stroke="#9ef01a" stroke-width="3" stroke-linecap="round" marker-end="url(#ahs)"/>
+         <line x1="42" y1="72" x2="60" y2="108" stroke="#9ef01a" stroke-width="3" stroke-linecap="round" marker-end="url(#ahs)"/>
+         <text x="40" y="62" fill="#9ef01a" font-size="10" font-weight="800"
+               text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.slice'))}</text>` })
+             + `<div class="hand slice"></div>`,
+      body: T('tut.slice.body'),
     },
     {
       title: T('tut.smash.title'),

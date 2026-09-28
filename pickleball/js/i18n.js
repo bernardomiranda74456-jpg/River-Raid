@@ -105,7 +105,7 @@ PB.I18n = (function () {
     'tut.lbl.red': 'vermelho: sai',
     'tut.lbl.pink': 'rosa: na linha',
     'tut.lbl.orange': 'laranja: bem funda',
-    'tut.lbl.green': 'verde: bola curta',
+    'tut.lbl.green': 'verde: meia quadra',
     'tut.lbl.pull1': 'quanto mais',
     'tut.lbl.pull2': 'você puxa,',
     'tut.lbl.pull3': 'mais forte',
@@ -115,6 +115,9 @@ PB.I18n = (function () {
 
     'tut.lob.title': 'Lob é um arco',
     'tut.lob.body': '<p>Um deslize <b>em arco acentuado</b> vira lob. Arco para a esquerda é lob para a esquerda, arco para a direita é lob para a direita.</p><p>O tamanho do arco também conta: arco maior joga o lob mais para o fundo.</p>',
+    'tut.slice.title': 'Bola curta: deslize para baixo',
+    'tut.slice.body': '<p>Deslize <b>para baixo</b>, como um slice, e a bola sai <b>curta, na cozinha</b> do adversário. Na rede ela vira uma deixadinha (dink); do fundo, um drop.</p><p><b>Para baixo e para a esquerda</b> manda a bola para a esquerda; <b>para baixo e para a direita</b>, para a direita. Deslize curto cai perto da rede, e o mais comprido cai perto da linha da cozinha.</p>',
+    'tut.lbl.slice': 'para baixo',
 
     'tut.smash.title': 'Smash se conquista',
     'tut.smash.body': '<p>Não existe botão de smash. Ele se conquista de dois jeitos, e os dois são sobre <b>altura</b>.</p><p>Um: o adversário <b>tenta um lob e você pega a bola no alto</b>, antes dela quicar. Dois: você está <b>na rede e a bola sobe acima dela</b>, e aí dá para bater para baixo.</p><p>Com a bola na altura da rede ou abaixo não sai smash, por mais que você puxe: para passar a rede ela teria que subir. A força e a direção do seu deslize valem igual, e no vermelho ela sai igual.</p>',
@@ -227,7 +230,7 @@ PB.I18n = (function () {
     'tut.lbl.red': 'red: out',
     'tut.lbl.pink': 'pink: on the line',
     'tut.lbl.orange': 'orange: deep',
-    'tut.lbl.green': 'green: short ball',
+    'tut.lbl.green': 'green: mid-court',
     'tut.lbl.pull1': 'the further',
     'tut.lbl.pull2': 'you pull,',
     'tut.lbl.pull3': 'the harder',
@@ -237,6 +240,9 @@ PB.I18n = (function () {
 
     'tut.lob.title': 'A lob is an arc',
     'tut.lob.body': '<p>A swipe with a <b>pronounced arc</b> becomes a lob. Arc to the left is a lob to the left, arc to the right is a lob to the right.</p><p>The size of the arc counts too: a bigger arc throws the lob deeper.</p>',
+    'tut.slice.title': 'Short ball: swipe down',
+    'tut.slice.body': '<p>Swipe <b>down</b>, like a slice, and the ball goes <b>short, into the opponent\'s kitchen</b>. At the net it is a dink; from the back, a drop.</p><p><b>Down and to the left</b> sends it left; <b>down and to the right</b>, right. A short swipe dies by the net, a longer one lands near the kitchen line.</p>',
+    'tut.lbl.slice': 'swipe down',
 
     'tut.smash.title': 'A smash is earned',
     'tut.smash.body': '<p>There is no smash button. It is earned in two ways, and both are about <b>height</b>.</p><p>One: your opponent <b>tries a lob and you take the ball high</b>, before it bounces. Two: you are <b>at the net and the ball sits above it</b>, so you can hit down on it.</p><p>With the ball level with the net or below it there is no smash, however hard you pull: to clear the net it would have to go up. Power and direction of your swipe count the same, and on red it still goes out.</p>',
@@ -349,7 +355,7 @@ PB.I18n = (function () {
     'tut.lbl.red': 'rojo: sale',
     'tut.lbl.pink': 'rosa: en la línea',
     'tut.lbl.orange': 'naranja: profunda',
-    'tut.lbl.green': 'verde: bola corta',
+    'tut.lbl.green': 'verde: media pista',
     'tut.lbl.pull1': 'cuanto más',
     'tut.lbl.pull2': 'estiras,',
     'tut.lbl.pull3': 'más fuerte',
@@ -359,6 +365,9 @@ PB.I18n = (function () {
 
     'tut.lob.title': 'El globo es un arco',
     'tut.lob.body': '<p>Un deslizamiento <b>en arco marcado</b> sale como globo. Arco a la izquierda es globo a la izquierda, arco a la derecha es globo a la derecha.</p><p>El tamaño del arco también cuenta: un arco mayor manda el globo más al fondo.</p>',
+    'tut.slice.title': 'Bola corta: desliza hacia abajo',
+    'tut.slice.body': '<p>Desliza <b>hacia abajo</b>, como un slice, y la bola sale <b>corta, a la cocina</b> del rival. En la red es un dink; desde el fondo, un drop.</p><p><b>Abajo y a la izquierda</b> la manda a la izquierda; <b>abajo y a la derecha</b>, a la derecha. Un deslizamiento corto cae junto a la red; uno más largo, cerca de la línea de la cocina.</p>',
+    'tut.lbl.slice': 'hacia abajo',
 
     'tut.smash.title': 'El remate se gana',
     'tut.smash.body': '<p>No hay botón de remate. Se gana de dos maneras, y las dos son cuestión de <b>altura</b>.</p><p>Una: el rival <b>intenta un globo y tú coges la bola arriba</b>, antes de que bote. Dos: estás <b>en la red y la bola queda por encima de ella</b>, y entonces puedes golpear hacia abajo.</p><p>Con la bola a la altura de la red o por debajo no sale remate, por mucho que estires: para pasar la red tendría que subir. La fuerza y la dirección de tu deslizamiento valen igual, y en rojo sale igual.</p>',

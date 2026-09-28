@@ -156,6 +156,14 @@
     63%, 100% { top: 78%; opacity: 0 }
   }
   .hand.tap { left: 50%; top: 62%; animation: h-tap 1.8s ease-out infinite; }
+  /* the slice: down and to the side, over the drawn gesture on the left */
+  .hand.slice { left: 13%; animation: h-slice 1.9s cubic-bezier(.3,0,.2,1) infinite; }
+  @keyframes h-slice {
+    0%, 18% { top: 43%; left: 13.3%; opacity: 1 }
+    45% { top: 64%; left: 7%; opacity: 1 }
+    62% { top: 66%; left: 6.5%; opacity: 0 }
+    63%, 100% { top: 43%; left: 13.3%; opacity: 0 }
+  }
   @keyframes h-tap { 0%, 60% { transform: scale(1); opacity: .95 } 75% { transform: scale(1.9); opacity: .25 } 100% { transform: scale(1); opacity: .95 } }
   .streak { position: absolute; opacity: .45; }
   .ball-dot {

@@ -1,5 +1,5 @@
 'use strict';
-// Eight-step tutorial. Every step draws its own little stage so the gesture is
+// Nine-step tutorial. Every step draws its own little stage so the gesture is
 // shown rather than described, and the way back to the menu never moves. The
 // steps are built on demand, because every word in them, the labels inside the
 // drawings included, comes from the language table.
@@ -92,6 +92,23 @@ PB.Tutorial = (function () {
          <path d="M150,142 Q240,90 204,44" fill="none" stroke="#ffd166" stroke-width="3.4"
                stroke-dasharray="8 6" marker-end="url(#ah)" opacity=".55"/>` }),
       body: T('tut.lob.body'),
+    },
+    {
+      title: T('tut.slice.title'),
+      // arrowheads sized in drawing units, so a thick line does not inflate them
+      stage: court({ kitchen: true, extra:
+        `<defs><marker id="ahs" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"
+                 markerUnits="userSpaceOnUse"><path d="M0,0 L8,4.5 L0,9 z" fill="#9ef01a"/></marker></defs>
+         <path d="M150,142 Q141,94 137,66" fill="none" stroke="#9ef01a" stroke-width="2.2"
+               stroke-dasharray="6 5" marker-end="url(#ahs)"/>
+         <path d="M150,142 Q159,94 163,66" fill="none" stroke="#9ef01a" stroke-width="2.2"
+               stroke-dasharray="6 5" marker-end="url(#ahs)"/>
+         <line x1="38" y1="72" x2="20" y2="108" stroke="#9ef01a" stroke-width="3" stroke-linecap="round" marker-end="url(#ahs)"/>
+         <line x1="42" y1="72" x2="60" y2="108" stroke="#9ef01a" stroke-width="3" stroke-linecap="round" marker-end="url(#ahs)"/>
+         <text x="40" y="62" fill="#9ef01a" font-size="10" font-weight="800"
+               text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.slice'))}</text>` })
+             + `<div class="hand slice"></div>`,
+      body: T('tut.slice.body'),
     },
     {
       title: T('tut.smash.title'),

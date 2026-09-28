@@ -104,7 +104,7 @@ PB.Input = (function () {
         if (pt.path.length > 220) pt.path.shift();
         const m = PB.Stroke.measure(pt.path, this.strokeH());
         const st = this.strokes[pt.slot];
-        if (st) { st.power = m ? m.power : 0; st.lob = !!(m && m.lob); }
+        if (st) { st.power = m ? m.power : 0; st.lob = !!(m && m.lob); st.slice = !!(m && m.slice); }
       }
     }
 
@@ -121,11 +121,11 @@ PB.Input = (function () {
         // The stroke reads on release: the whole path is the gesture, and only
         // then is its power and its bow settled.
         const m = PB.Stroke.measure(pt.path, this.strokeH());
-        if (m && (m.up > 0 || m.lob)) {
+        if (m && (m.up > 0 || m.lob || m.slice)) {
           this.state[pt.slot].swipe = {
-            lateral: m.lateral, power: m.power, lob: m.lob, arc: m.arc,
+            lateral: m.lateral, power: m.power, lob: m.lob, slice: m.slice, arc: m.arc,
           };
-          this.swipeFx.push({ pts: pt.path.slice(), power: m.power, life: 1 });
+          this.swipeFx.push({ pts: pt.path.slice(), power: m.power, slice: m.slice, life: 1 });
         } else if (this.serveSlots[pt.slot]) {
           // a plain tap still serves, gently, down the middle
           this.state[pt.slot].swipe = { lateral: 0, power: 0.42, lob: false, arc: 0 };

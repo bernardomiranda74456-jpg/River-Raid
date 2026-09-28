@@ -1732,9 +1732,12 @@ PB.Renderer = (function () {
     // The stroke is the only gauge the player gets: while the thumb is down the
     // path is drawn in the colour its own length has earned, so you watch the
     // shot get stronger under your finger and stop before it sails.
-    strokePath(ctx, pts, power, alpha) {
+    strokePath(ctx, pts, power, alpha, slice) {
       if (!pts || pts.length < 2) return;
       const S = PB.Stroke;
+      // a slice has no force to show: it always goes short, so it is drawn in
+      // the soft colour from end to end
+      const colour = f => slice ? S.SLICE_COLOR : S.colorAt(power * f);
       ctx.save();
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
@@ -1746,7 +1749,7 @@ PB.Renderer = (function () {
         const a = pts[i - 1], b = pts[i];
         run += Math.hypot(b.x - a.x, b.y - a.y);
         const f = run / total;
-        ctx.strokeStyle = S.colorAt(power * f);
+        ctx.strokeStyle = colour(f);
         ctx.globalAlpha = alpha * (0.45 + 0.55 * f);
         ctx.lineWidth = 4 + 6 * f;
         ctx.beginPath();
@@ -1757,7 +1760,7 @@ PB.Renderer = (function () {
       // the head of the stroke carries the colour the shot will actually get
       const tip = pts[pts.length - 1];
       ctx.globalAlpha = alpha;
-      ctx.fillStyle = S.colorAt(power);
+      ctx.fillStyle = colour(1);
       ctx.beginPath();
       ctx.arc(tip.x, tip.y, 9, 0, Math.PI * 2);
       ctx.fill();
@@ -1779,10 +1782,10 @@ PB.Renderer = (function () {
       // live strokes, then the ghost of the one just released
       if (input.strokes && input.strokes.p1) {
         const st = input.strokes.p1;
-        this.strokePath(ctx, st.pts, st.power, 1);
+        this.strokePath(ctx, st.pts, st.power, 1, st.slice);
       }
       for (const s of input.swipeFx) {
-        this.strokePath(ctx, s.pts, s.power, Math.max(0, s.life) * 0.8);
+        this.strokePath(ctx, s.pts, s.power, Math.max(0, s.life) * 0.8, s.slice);
       }
     }
 
