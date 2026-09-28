@@ -111,7 +111,7 @@ PB.I18n = (function () {
     'tut.lbl.pull3': 'mais forte',
 
     'tut.aim.title': 'A direção é a inclinação do deslize',
-    'tut.aim.body': '<p>Deslize <b>reto para cima</b> e a bola vai reta para a frente. Incline o deslize e ela vira: <b>quanto mais deitado, mais fechado o ângulo</b>, até quase na horizontal, que manda a bola no canto.</p><p>A direção sozinha nunca põe a bola fora pela lateral. É o mesmo deslize: o comprimento dá a força e a inclinação dá o lado.</p>',
+    'tut.aim.body': '<p>Deslize <b>reto para cima</b> e a bola vai reta para a frente. Incline o deslize e ela abre: <b>quanto mais deitado, mais perto da lateral</b>, até quase na horizontal, que manda a bola junto da linha. <b>Fraca ou forte, a mesma inclinação cai no mesmo lugar</b> da largura.</p><p>A direção sozinha nunca põe a bola fora pela lateral. É o mesmo deslize: o comprimento dá a força e a inclinação dá o lado.</p>',
 
     'tut.lob.title': 'Lob é um arco',
     'tut.lob.body': '<p>Um deslize <b>em arco acentuado</b> vira lob. Arco para a esquerda é lob para a esquerda, arco para a direita é lob para a direita.</p><p>O tamanho do arco também conta: arco maior joga o lob mais para o fundo.</p>',
@@ -233,7 +233,7 @@ PB.I18n = (function () {
     'tut.lbl.pull3': 'the harder',
 
     'tut.aim.title': 'Direction is the tilt of the swipe',
-    'tut.aim.body': '<p>Swipe <b>straight up</b> and the ball goes straight ahead. Tilt the swipe and it turns: <b>the flatter the swipe, the sharper the angle</b>, until almost horizontal, which sends the ball into the corner.</p><p>Direction alone never sends the ball wide. It is one swipe: its length gives the power, its tilt gives the side.</p>',
+    'tut.aim.body': '<p>Swipe <b>straight up</b> and the ball goes straight ahead. Tilt the swipe and it opens up: <b>the flatter the swipe, the closer to the sideline</b>, until almost horizontal, which puts the ball right by the line. <b>Soft or hard, the same tilt lands in the same place</b> across the court.</p><p>Direction alone never sends the ball wide. It is one swipe: its length gives the power, its tilt gives the side.</p>',
 
     'tut.lob.title': 'A lob is an arc',
     'tut.lob.body': '<p>A swipe with a <b>pronounced arc</b> becomes a lob. Arc to the left is a lob to the left, arc to the right is a lob to the right.</p><p>The size of the arc counts too: a bigger arc throws the lob deeper.</p>',
@@ -355,7 +355,7 @@ PB.I18n = (function () {
     'tut.lbl.pull3': 'más fuerte',
 
     'tut.aim.title': 'La dirección es la inclinación',
-    'tut.aim.body': '<p>Desliza <b>recto hacia arriba</b> y la bola va recta al frente. Inclina el deslizamiento y gira: <b>cuanto más tumbado, más cerrado el ángulo</b>, hasta casi horizontal, que manda la bola a la esquina.</p><p>La dirección por sí sola nunca saca la bola por el lateral. Es el mismo gesto: el largo da la fuerza y la inclinación da el lado.</p>',
+    'tut.aim.body': '<p>Desliza <b>recto hacia arriba</b> y la bola va recta al frente. Inclina el deslizamiento y se abre: <b>cuanto más tumbado, más cerca del lateral</b>, hasta casi horizontal, que deja la bola junto a la línea. <b>Suave o fuerte, la misma inclinación cae en el mismo sitio</b> a lo ancho.</p><p>La dirección por sí sola nunca saca la bola por el lateral. Es el mismo gesto: el largo da la fuerza y la inclinación da el lado.</p>',
 
     'tut.lob.title': 'El globo es un arco',
     'tut.lob.body': '<p>Un deslizamiento <b>en arco marcado</b> sale como globo. Arco a la izquierda es globo a la izquierda, arco a la derecha es globo a la derecha.</p><p>El tamaño del arco también cuenta: un arco mayor manda el globo más al fondo.</p>',

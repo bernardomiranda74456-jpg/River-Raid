@@ -716,6 +716,8 @@ function outBallTrial(margin, side) {
   b.vx = v.vx; b.vy = v.vy; b.vz = v.vz; b.spin = v.spin;
   b.live = true; b.resting = false;
   cpu.x = 0; cpu.z = sign * (C.KITCHEN + 1.1); cpu.atNet = true; cpu.hitCd = 0;
+  // this trial is about the in/out call, not reaction: the CPU has read the shot
+  cpu.ai.lastShot = m.rally.shotCount; cpu.ai.timer = 0;
   const shots0 = m.rally.shotCount;
   for (let f = 0; f < 240 && !m.rally.over; f++) m.update(1 / 60, null);
   return m.rally.shotCount > shots0;      // true = rebateu
@@ -1022,12 +1024,64 @@ test('reto vai reto em frente, deitado vai no canto sem sair', () => {
     const reto = land(x, 0);
     ok(reto && Math.abs(reto.x - x) < 0.6, `reto de x=${x} cai em frente (${reto && reto.x.toFixed(1)})`);
     const esq = land(x, -1);
-    ok(esq && esq.x < -8.2 && esq.x > -C.HALF_W, `todo à esquerda de x=${x} cai junto à lateral, dentro (${esq && esq.x.toFixed(1)})`);
+    ok(esq && esq.x < -7.4 && esq.x > -8.6, `todo à esquerda de x=${x} cai a 2 ft da lateral, dentro (${esq && esq.x.toFixed(1)})`);
     const dir = land(x, 1);
-    ok(dir && dir.x > 8.2 && dir.x < C.HALF_W, `todo à direita de x=${x} cai junto à lateral, dentro (${dir && dir.x.toFixed(1)})`);
+    ok(dir && dir.x > 7.4 && dir.x < 8.6, `todo à direita de x=${x} cai a 2 ft da lateral, dentro (${dir && dir.x.toFixed(1)})`);
   }
   const meio = land(0, -0.5);
-  ok(meio && meio.x < -2 && meio.x > -8, `meia inclinação cai no meio do caminho (${meio && meio.x.toFixed(1)})`);
+  ok(meio && meio.x < -2 && meio.x > -6, `meia inclinação cai no meio do caminho (${meio && meio.x.toFixed(1)})`);
+});
+
+test('a mesma inclinação abre a bola igual, fraca ou forte', () => {
+  const m = mk({});
+  const p = m.players[0];
+  const land = (power, lateral, bz) => {
+    m.state = 'live';
+    midRally(m, 1, 3, 1);
+    cleanContact(m, p);
+    p.x = 0; m.ball.x = 0; p.z = bz; m.ball.z = bz + 0.3;
+    m.executeHit(p, humanSwing(m, p, { power, lateral }));
+    return PB.Physics.predictLanding(m.ball, 5);
+  };
+  for (const lat of [-0.6, 0.6, 1]) {
+    const dink = land(0.08, lat, -7.6), fundo = land(0.5, lat, -21);
+    ok(Math.abs(dink.x - fundo.x) < 0.8, `inclinação ${lat}: dink em ${dink.x.toFixed(1)}, bola funda em ${fundo.x.toFixed(1)}`);
+  }
+});
+
+test('o lob vai para o lado da barriga do arco', () => {
+  const H = 844;
+  const arco = lado => Array.from({ length: 21 }, (_, i) =>
+    ({ x: 200 + lado * Math.sin(Math.PI * i / 20) * 70, y: 700 - 180 * i / 20 }));
+  const c = S.measure(arco(-1), H), inv = S.measure(arco(1), H);
+  ok(c.lob && inv.lob, 'os dois arcos são lob');
+  ok(c.lateral < -0.5, `arco em C vai para a esquerda (${c.lateral.toFixed(2)})`);
+  ok(inv.lateral > 0.5, `arco invertido vai para a direita (${inv.lateral.toFixed(2)})`);
+  const reto = S.measure([{ x: 300, y: 700 }, { x: 300, y: 520 }], H);
+  eq(reto.lob, false, 'deslize reto não é lob');
+});
+
+test('bola que chega antes da reação: longe do corpo passa, no corpo às vezes volta mole', () => {
+  let passou = 0, bloqueou = 0, fundo = 0;
+  for (let i = 0; i < 200; i++) {
+    const m = mk({ format: 'doubles' });
+    const cpu = m.players.find(p => p.ctrl === 'cpu' && p.team === 1);
+    m.state = 'live'; midRally(m, 0, 5, 0);
+    cpu.x = 0; cpu.z = 8.5; cpu.vx = cpu.vz = 0; cpu.hitCd = 0; cpu.lunge = 0;
+    cpu.ai.lastShot = m.rally.shotCount; cpu.ai.timer = 0.3;        // ainda lendo a bola
+    for (const q of m.players) if (q !== cpu && q.team === 1) { q.x = -9; q.z = 20; }  // o parceiro longe
+    const perto = i % 2 === 0;
+    Object.assign(m.ball, { x: perto ? 0.5 : 2.6, y: 3.0, z: 7.0, vx: 0, vy: 0, vz: 45, live: true, resting: false });
+    const antes = m.rally.shotCount;
+    m.checkHits();
+    if (m.rally.shotCount > antes) {
+      bloqueou++;
+      if (!perto) fundo++;
+      eq(m.ball.style, 'drop', 'o reflexo é um bloqueio mole');
+    } else passou++;
+  }
+  eq(fundo, 0, 'bola a um braço de distância nunca é bloqueada por reflexo');
+  ok(bloqueou > 20 && bloqueou < 80, `no corpo, parte volta (${bloqueou} de 100)`);
 });
 
 test('deslize mais longo é mais forte', () => {

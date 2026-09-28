@@ -73,6 +73,16 @@ PB.Stroke = (function () {
   const tilt = (dx, len) => len > 0 ? Math.max(-1, Math.min(1, (dx / len) / SIDE_SIN)) : 0;
   const MIN  = 0.030;       // below this it is a touch, not a stroke
   const ARC  = 0.26;        // bow-to-chord ratio that reads as a lob
+  const LOB_SIDE = 0.75;    // how far toward its side a lob's arc sends it
+
+  // Which way the path bulges on screen, -1 left or +1 right: the middle of
+  // the path against the middle of its chord, which reads the same whether the
+  // stroke went up or down the screen.
+  function bulge(pts, a, b) {
+    const mid = pts[Math.floor(pts.length / 2)];
+    const off = mid.x - (a.x + b.x) / 2;
+    return Math.abs(off) < 1 ? 0 : Math.sign(off);
+  }
 
   function measure(pts, H) {
     if (!pts || pts.length < 2) return null;
@@ -96,14 +106,19 @@ PB.Stroke = (function () {
 
     const lob = arc > ARC && travel > H * 0.12;
     const len = lob ? travel : chord;
+    // A lob's side is the side its arc bulges to: a C (bulging left) sends it
+    // left, a reversed C sends it right. Where the stroke ends up still adds on.
+    const lateral = lob
+      ? Math.max(-1, Math.min(1, LOB_SIDE * bulge(pts, a, b) + tilt(dx, chord)))
+      : tilt(dx, chord);
     return {
       power: Math.max(0, Math.min(1.15, len / (H * FULL))),
-      lateral: tilt(dx, chord),
+      lateral,
       arc, lob,
       up: -dy,
       chord, travel,
     };
   }
 
-  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, measure, tilt, FULL, SIDE, SIDE_DEG, MIN, ARC };
+  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, measure, tilt, bulge, FULL, SIDE, SIDE_DEG, MIN, ARC, LOB_SIDE };
 })();

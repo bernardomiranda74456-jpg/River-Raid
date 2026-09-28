@@ -20,9 +20,9 @@ PB.Match = (function () {
 
   const MOVE_SPEED = 13.2;    // ft/s: the baseline the CPU is built on
   const HUMAN_SPEED = 14.52;  // the player runs 10% above that, on purpose
-  // aiming: a full sideways stroke turns the shot AIM_MAX from straight ahead,
-  // AIM_CURVE keeps small tilts gentle, AIM_EDGE is the widest landing allowed
-  const AIM_MAX = 30 * Math.PI / 180, AIM_CURVE = 1.6, AIM_EDGE = 9.0;
+  // aiming: a full sideways stroke lands AIM_EDGE feet out, whatever the power;
+  // AIM_CURVE keeps small tilts gentle
+  const AIM_CURVE = 1.2, AIM_EDGE = 8.0;
   // Where the server stands while waiting: one step behind the baseline, and
   // between the centre line and the sideline of the half they must serve from.
   const SERVE_Z = 23.2, SERVE_X_MIN = 0.65;
@@ -542,6 +542,26 @@ PB.Match = (function () {
       } else {
         if (bad) return;                                  // the CPU never breaks the rules
         if (PB.AI.letsItGo(this, p)) return;              // reading the ball as going out
+        // Reaction holds the paddle as well as the feet. A ball that gets here
+        // before the CPU has read it can only be met by reflex, with the paddle
+        // where it already was: a ball into the body is sometimes blocked back,
+        // soft and loose; one at arm's length goes by. If the ball is still in
+        // reach once the reaction is done, it is played normally.
+        if (p.ai.timer > 0) {
+          if (p.ai.reflexShot !== this.rally.shotCount) {
+            p.ai.reflexShot = this.rally.shotCount;
+            const b = this.ball;
+            const onBody = Math.max(0, Math.min(1, 1 - Math.hypot(b.x - p.x, b.z - p.z) / (p.reach * 0.8)));
+            p.ai.reflexBlock = Math.random() < onBody * 0.75;
+          }
+          if (!p.ai.reflexBlock) return;
+          const oSign = C.teamSign(1 - p.team);
+          swing = { style: 'drop', quality: 0.45,
+                    target: { x: (Math.random() * 2 - 1) * 3.5, z: oSign * (5 + Math.random() * 4.5) } };
+          this.pendingSwing[p.id] = null;
+          this.executeHit(p, swing);
+          return;
+        }
         // decide once per shot: checkHits runs several times per frame, and
         // re-rolling here meant the miss almost never stuck
         if (p.ai.missShot !== this.rally.shotCount) {
@@ -591,15 +611,16 @@ PB.Match = (function () {
           ? PB.Stroke.depthAt(swing.power)
           : this.depthForStyle(style, swing.depth);
         tz = oSign * depth;
-        // The tilt of the stroke is the angle of the shot. Straight up goes
-        // straight ahead from where the ball is; a full sideways pull turns it
-        // AIM_MAX degrees toward that side, sharper the further it leans. The
-        // target stops at the sideline, never past it: the colour ramp warns
-        // about depth, nothing warns about width, so width cannot fault alone.
+        // The tilt of the stroke picks the spot across the court, whatever the
+        // power. Straight up goes straight ahead from where the ball is; a full
+        // sideways pull lands AIM_EDGE feet out, two feet inside the sideline,
+        // and everything between is a share of the way there. An angle used to
+        // do this job, which gave a short ball almost no width and sent a long
+        // one past the line. The colour ramp warns about depth; nothing warns
+        // about width, so width alone never puts the ball out.
         const lat = Math.max(-1, Math.min(1, swing.lateral || 0));
-        const ang = Math.sign(lat) * Math.pow(Math.abs(lat), AIM_CURVE) * AIM_MAX;
-        tx = from.x + Math.tan(ang) * Math.abs(tz - from.z);
-        tx = Math.max(-AIM_EDGE, Math.min(AIM_EDGE, tx));
+        const x0 = Math.max(-AIM_EDGE, Math.min(AIM_EDGE, from.x));
+        tx = x0 + (Math.sign(lat) * AIM_EDGE - x0) * Math.pow(Math.abs(lat), AIM_CURVE);
       }
       // timing/skill scatter
       const jitter = (1 - q) * 5.0;

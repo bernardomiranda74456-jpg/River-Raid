@@ -5,6 +5,28 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v40
+
+Três correções de jogabilidade no Pro.
+
+- **A reação também segura a raquete.** O tempo de reação da CPU só atrasava o
+  deslocamento: se a bola entrava no alcance, ela rebatia na hora, mesmo sem
+  ter reagido. Agora, enquanto ela ainda está lendo a bola, só existe reflexo:
+  bola no corpo às vezes volta num bloqueio mole (e atacável); bola a um braço
+  de distância passa. Se a bola ainda estiver ao alcance quando a leitura
+  termina, ela joga normal. Bolas disparadas contra a CPU Pro na cozinha:
+  smash (chega em 0,32 s) devolvido 100% → ~48%. Speedup (0,56 s), drive e dink
+  seguem devolvidos, porque chegam depois do teto de reação do Pro (0,50 s).
+- **A inclinação escolhe o ponto na largura, não um ângulo.** O ângulo dava
+  pouca largura à bola curta e mandava a longa para fora. Agora a mesma
+  inclinação cai no mesmo lugar da largura, fraca ou forte: 20° → 2,9 ft,
+  35° → 4,8, 50° → 6,5, deitado → 8,0 ft (2 ft para dentro da lateral). Bola
+  forte toda aberta com erro de contato: 28–30% fora → 1–3%.
+- **O lob vai para o lado do arco.** A direção vinha da linha entre o começo e
+  o fim do deslize; num arco em C essas pontas ficam alinhadas e o lob ia reto.
+  Agora a barriga do arco dá o lado (C → esquerda, C invertido → direita), como
+  o tutorial já dizia; medido: −5,4 ft e +5,9 ft.
+
 ## v39
 
 O menu de partida fica com três escolhas.

@@ -236,7 +236,7 @@
       <button class="lang" data-lang="es" data-i18n-aria="lang.name.es"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" rx="3" fill="#c60b1e"/><rect width="30" height="10" y="5" fill="#ffc400"/></svg></button>
     </div>
     </div>
-    <div class="foot">v39 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
+    <div class="foot">v40 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
   </section>
 
   <!-- configuração -->
@@ -424,7 +424,7 @@ PB.I18n = (function () {
     'tut.lbl.pull3': 'mais forte',
 
     'tut.aim.title': 'A direção é a inclinação do deslize',
-    'tut.aim.body': '<p>Deslize <b>reto para cima</b> e a bola vai reta para a frente. Incline o deslize e ela vira: <b>quanto mais deitado, mais fechado o ângulo</b>, até quase na horizontal, que manda a bola no canto.</p><p>A direção sozinha nunca põe a bola fora pela lateral. É o mesmo deslize: o comprimento dá a força e a inclinação dá o lado.</p>',
+    'tut.aim.body': '<p>Deslize <b>reto para cima</b> e a bola vai reta para a frente. Incline o deslize e ela abre: <b>quanto mais deitado, mais perto da lateral</b>, até quase na horizontal, que manda a bola junto da linha. <b>Fraca ou forte, a mesma inclinação cai no mesmo lugar</b> da largura.</p><p>A direção sozinha nunca põe a bola fora pela lateral. É o mesmo deslize: o comprimento dá a força e a inclinação dá o lado.</p>',
 
     'tut.lob.title': 'Lob é um arco',
     'tut.lob.body': '<p>Um deslize <b>em arco acentuado</b> vira lob. Arco para a esquerda é lob para a esquerda, arco para a direita é lob para a direita.</p><p>O tamanho do arco também conta: arco maior joga o lob mais para o fundo.</p>',
@@ -546,7 +546,7 @@ PB.I18n = (function () {
     'tut.lbl.pull3': 'the harder',
 
     'tut.aim.title': 'Direction is the tilt of the swipe',
-    'tut.aim.body': '<p>Swipe <b>straight up</b> and the ball goes straight ahead. Tilt the swipe and it turns: <b>the flatter the swipe, the sharper the angle</b>, until almost horizontal, which sends the ball into the corner.</p><p>Direction alone never sends the ball wide. It is one swipe: its length gives the power, its tilt gives the side.</p>',
+    'tut.aim.body': '<p>Swipe <b>straight up</b> and the ball goes straight ahead. Tilt the swipe and it opens up: <b>the flatter the swipe, the closer to the sideline</b>, until almost horizontal, which puts the ball right by the line. <b>Soft or hard, the same tilt lands in the same place</b> across the court.</p><p>Direction alone never sends the ball wide. It is one swipe: its length gives the power, its tilt gives the side.</p>',
 
     'tut.lob.title': 'A lob is an arc',
     'tut.lob.body': '<p>A swipe with a <b>pronounced arc</b> becomes a lob. Arc to the left is a lob to the left, arc to the right is a lob to the right.</p><p>The size of the arc counts too: a bigger arc throws the lob deeper.</p>',
@@ -668,7 +668,7 @@ PB.I18n = (function () {
     'tut.lbl.pull3': 'más fuerte',
 
     'tut.aim.title': 'La dirección es la inclinación',
-    'tut.aim.body': '<p>Desliza <b>recto hacia arriba</b> y la bola va recta al frente. Inclina el deslizamiento y gira: <b>cuanto más tumbado, más cerrado el ángulo</b>, hasta casi horizontal, que manda la bola a la esquina.</p><p>La dirección por sí sola nunca saca la bola por el lateral. Es el mismo gesto: el largo da la fuerza y la inclinación da el lado.</p>',
+    'tut.aim.body': '<p>Desliza <b>recto hacia arriba</b> y la bola va recta al frente. Inclina el deslizamiento y se abre: <b>cuanto más tumbado, más cerca del lateral</b>, hasta casi horizontal, que deja la bola junto a la línea. <b>Suave o fuerte, la misma inclinación cae en el mismo sitio</b> a lo ancho.</p><p>La dirección por sí sola nunca saca la bola por el lateral. Es el mismo gesto: el largo da la fuerza y la inclinación da el lado.</p>',
 
     'tut.lob.title': 'El globo es un arco',
     'tut.lob.body': '<p>Un deslizamiento <b>en arco marcado</b> sale como globo. Arco a la izquierda es globo a la izquierda, arco a la derecha es globo a la derecha.</p><p>El tamaño del arco también cuenta: un arco mayor manda el globo más al fondo.</p>',
@@ -1428,6 +1428,16 @@ PB.Stroke = (function () {
   const tilt = (dx, len) => len > 0 ? Math.max(-1, Math.min(1, (dx / len) / SIDE_SIN)) : 0;
   const MIN  = 0.030;       // below this it is a touch, not a stroke
   const ARC  = 0.26;        // bow-to-chord ratio that reads as a lob
+  const LOB_SIDE = 0.75;    // how far toward its side a lob's arc sends it
+
+  // Which way the path bulges on screen, -1 left or +1 right: the middle of
+  // the path against the middle of its chord, which reads the same whether the
+  // stroke went up or down the screen.
+  function bulge(pts, a, b) {
+    const mid = pts[Math.floor(pts.length / 2)];
+    const off = mid.x - (a.x + b.x) / 2;
+    return Math.abs(off) < 1 ? 0 : Math.sign(off);
+  }
 
   function measure(pts, H) {
     if (!pts || pts.length < 2) return null;
@@ -1451,16 +1461,21 @@ PB.Stroke = (function () {
 
     const lob = arc > ARC && travel > H * 0.12;
     const len = lob ? travel : chord;
+    // A lob's side is the side its arc bulges to: a C (bulging left) sends it
+    // left, a reversed C sends it right. Where the stroke ends up still adds on.
+    const lateral = lob
+      ? Math.max(-1, Math.min(1, LOB_SIDE * bulge(pts, a, b) + tilt(dx, chord)))
+      : tilt(dx, chord);
     return {
       power: Math.max(0, Math.min(1.15, len / (H * FULL))),
-      lateral: tilt(dx, chord),
+      lateral,
       arc, lob,
       up: -dy,
       chord, travel,
     };
   }
 
-  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, measure, tilt, FULL, SIDE, SIDE_DEG, MIN, ARC };
+  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, measure, tilt, bulge, FULL, SIDE, SIDE_DEG, MIN, ARC, LOB_SIDE };
 })();
 
 </script>
@@ -1487,9 +1502,9 @@ PB.Match = (function () {
 
   const MOVE_SPEED = 13.2;    // ft/s: the baseline the CPU is built on
   const HUMAN_SPEED = 14.52;  // the player runs 10% above that, on purpose
-  // aiming: a full sideways stroke turns the shot AIM_MAX from straight ahead,
-  // AIM_CURVE keeps small tilts gentle, AIM_EDGE is the widest landing allowed
-  const AIM_MAX = 30 * Math.PI / 180, AIM_CURVE = 1.6, AIM_EDGE = 9.0;
+  // aiming: a full sideways stroke lands AIM_EDGE feet out, whatever the power;
+  // AIM_CURVE keeps small tilts gentle
+  const AIM_CURVE = 1.2, AIM_EDGE = 8.0;
   // Where the server stands while waiting: one step behind the baseline, and
   // between the centre line and the sideline of the half they must serve from.
   const SERVE_Z = 23.2, SERVE_X_MIN = 0.65;
@@ -2009,6 +2024,26 @@ PB.Match = (function () {
       } else {
         if (bad) return;                                  // the CPU never breaks the rules
         if (PB.AI.letsItGo(this, p)) return;              // reading the ball as going out
+        // Reaction holds the paddle as well as the feet. A ball that gets here
+        // before the CPU has read it can only be met by reflex, with the paddle
+        // where it already was: a ball into the body is sometimes blocked back,
+        // soft and loose; one at arm's length goes by. If the ball is still in
+        // reach once the reaction is done, it is played normally.
+        if (p.ai.timer > 0) {
+          if (p.ai.reflexShot !== this.rally.shotCount) {
+            p.ai.reflexShot = this.rally.shotCount;
+            const b = this.ball;
+            const onBody = Math.max(0, Math.min(1, 1 - Math.hypot(b.x - p.x, b.z - p.z) / (p.reach * 0.8)));
+            p.ai.reflexBlock = Math.random() < onBody * 0.75;
+          }
+          if (!p.ai.reflexBlock) return;
+          const oSign = C.teamSign(1 - p.team);
+          swing = { style: 'drop', quality: 0.45,
+                    target: { x: (Math.random() * 2 - 1) * 3.5, z: oSign * (5 + Math.random() * 4.5) } };
+          this.pendingSwing[p.id] = null;
+          this.executeHit(p, swing);
+          return;
+        }
         // decide once per shot: checkHits runs several times per frame, and
         // re-rolling here meant the miss almost never stuck
         if (p.ai.missShot !== this.rally.shotCount) {
@@ -2058,15 +2093,16 @@ PB.Match = (function () {
           ? PB.Stroke.depthAt(swing.power)
           : this.depthForStyle(style, swing.depth);
         tz = oSign * depth;
-        // The tilt of the stroke is the angle of the shot. Straight up goes
-        // straight ahead from where the ball is; a full sideways pull turns it
-        // AIM_MAX degrees toward that side, sharper the further it leans. The
-        // target stops at the sideline, never past it: the colour ramp warns
-        // about depth, nothing warns about width, so width cannot fault alone.
+        // The tilt of the stroke picks the spot across the court, whatever the
+        // power. Straight up goes straight ahead from where the ball is; a full
+        // sideways pull lands AIM_EDGE feet out, two feet inside the sideline,
+        // and everything between is a share of the way there. An angle used to
+        // do this job, which gave a short ball almost no width and sent a long
+        // one past the line. The colour ramp warns about depth; nothing warns
+        // about width, so width alone never puts the ball out.
         const lat = Math.max(-1, Math.min(1, swing.lateral || 0));
-        const ang = Math.sign(lat) * Math.pow(Math.abs(lat), AIM_CURVE) * AIM_MAX;
-        tx = from.x + Math.tan(ang) * Math.abs(tz - from.z);
-        tx = Math.max(-AIM_EDGE, Math.min(AIM_EDGE, tx));
+        const x0 = Math.max(-AIM_EDGE, Math.min(AIM_EDGE, from.x));
+        tx = x0 + (Math.sign(lat) * AIM_EDGE - x0) * Math.pow(Math.abs(lat), AIM_CURVE);
       }
       // timing/skill scatter
       const jitter = (1 - q) * 5.0;
