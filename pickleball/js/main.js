@@ -37,10 +37,11 @@
 
   // ── screens ──────────────────────────────────────────────────────────────
   const screens = ['scr-splash', 'scr-title', 'scr-setup', 'scr-tutorial', 'scr-pause', 'scr-over'];
+  // The company mark is shown in silence and the music comes in as it closes.
   // The menu screens share one loop; the match itself has none, so the
   // rally sounds and the crowd carry it. The end-of-match cue is started by
   // gameOver, and the pause screen keeps the match's silence.
-  const MENU_SCREENS = ['scr-splash', 'scr-title', 'scr-setup', 'scr-tutorial'];
+  const MENU_SCREENS = ['scr-title', 'scr-setup', 'scr-tutorial'];
   function show(id) {
     if (MENU_SCREENS.indexOf(id) >= 0) PB.Audio.music('menu');
     else if (id === null) PB.Audio.stopMusic(0.6);
@@ -248,6 +249,12 @@
   $('scr-splash').addEventListener('pointerdown', leaveSplash);
 
   PB.Audio.setMuted(!sound);
+  // The audio is created at boot rather than on the first tap, so the menu
+  // music is decoded and ready by the time the company mark closes. Where the
+  // browser lets a page play before any touch it starts right there; where it
+  // does not (iPhone), it is already queued and plays from its first note on
+  // the first touch.
+  PB.Audio.init();
   paintLangs();
   paintSound();
   syncOpts();

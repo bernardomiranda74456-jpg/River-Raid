@@ -244,7 +244,7 @@
       <button class="lang" data-lang="es" data-i18n-aria="lang.name.es"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" rx="3" fill="#c60b1e"/><rect width="30" height="10" y="5" fill="#ffc400"/></svg></button>
     </div>
     </div>
-    <div class="foot">v42 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
+    <div class="foot">v43 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
   </section>
 
   <!-- configuração -->
@@ -4763,7 +4763,7 @@ PB.Audio = (function () {
   function unlock() {
     if (!ctx || ctx.state === 'running' || ctx.state === 'closed') return;
     try {
-      ctx.resume();
+      quiet(ctx.resume());
       const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
       const src = ctx.createBufferSource();
       src.buffer = buf;
@@ -4775,9 +4775,11 @@ PB.Audio = (function () {
   // Outside a gesture a resume may be refused, but trying costs nothing; iOS
   // reports an interrupted context as 'interrupted', not 'suspended'.
   function resume() {
-    try { if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume(); } catch (e) { /* ignore */ }
+    try { if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') quiet(ctx.resume()); } catch (e) { /* ignore */ }
   }
   function state() { return ctx ? ctx.state : 'none'; }
+  // a refused resume() is expected outside a gesture, not an error
+  function quiet(p) { if (p && p.catch) p.catch(() => {}); }
   // the page went to the background: nothing should keep playing there
   function suspend() { try { if (ctx && ctx.state === 'running') ctx.suspend(); } catch (e) { /* ignore */ } }
 
@@ -5121,10 +5123,11 @@ PB.Tutorial = (function () {
 
   // ── screens ──────────────────────────────────────────────────────────────
   const screens = ['scr-splash', 'scr-title', 'scr-setup', 'scr-tutorial', 'scr-pause', 'scr-over'];
+  // The company mark is shown in silence and the music comes in as it closes.
   // The menu screens share one loop; the match itself has none, so the
   // rally sounds and the crowd carry it. The end-of-match cue is started by
   // gameOver, and the pause screen keeps the match's silence.
-  const MENU_SCREENS = ['scr-splash', 'scr-title', 'scr-setup', 'scr-tutorial'];
+  const MENU_SCREENS = ['scr-title', 'scr-setup', 'scr-tutorial'];
   function show(id) {
     if (MENU_SCREENS.indexOf(id) >= 0) PB.Audio.music('menu');
     else if (id === null) PB.Audio.stopMusic(0.6);
@@ -5332,6 +5335,12 @@ PB.Tutorial = (function () {
   $('scr-splash').addEventListener('pointerdown', leaveSplash);
 
   PB.Audio.setMuted(!sound);
+  // The audio is created at boot rather than on the first tap, so the menu
+  // music is decoded and ready by the time the company mark closes. Where the
+  // browser lets a page play before any touch it starts right there; where it
+  // does not (iPhone), it is already queued and plays from its first note on
+  // the first touch.
+  PB.Audio.init();
   paintLangs();
   paintSound();
   syncOpts();

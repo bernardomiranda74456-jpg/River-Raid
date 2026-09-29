@@ -161,7 +161,7 @@ PB.Audio = (function () {
   function unlock() {
     if (!ctx || ctx.state === 'running' || ctx.state === 'closed') return;
     try {
-      ctx.resume();
+      quiet(ctx.resume());
       const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
       const src = ctx.createBufferSource();
       src.buffer = buf;
@@ -173,9 +173,11 @@ PB.Audio = (function () {
   // Outside a gesture a resume may be refused, but trying costs nothing; iOS
   // reports an interrupted context as 'interrupted', not 'suspended'.
   function resume() {
-    try { if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume(); } catch (e) { /* ignore */ }
+    try { if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') quiet(ctx.resume()); } catch (e) { /* ignore */ }
   }
   function state() { return ctx ? ctx.state : 'none'; }
+  // a refused resume() is expected outside a gesture, not an error
+  function quiet(p) { if (p && p.catch) p.catch(() => {}); }
   // the page went to the background: nothing should keep playing there
   function suspend() { try { if (ctx && ctx.state === 'running') ctx.suspend(); } catch (e) { /* ignore */ } }
 

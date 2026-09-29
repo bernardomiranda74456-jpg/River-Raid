@@ -5,6 +5,16 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v43
+
+A música do menu entra quando a logo da empresa fecha. A logo fica em silêncio.
+
+O áudio passa a nascer na abertura do jogo, e não no primeiro toque, então o
+tema já está decodificado e pronto quando a logo termina. Onde o navegador deixa
+uma página tocar antes de qualquer toque, ele entra ali mesmo, sozinho. O iPhone
+não deixa nenhuma página tocar som antes do primeiro toque na tela: lá o tema
+fica engatilhado quando a logo fecha e começa do início no primeiro toque.
+
 ## v42
 
 Força igual com o celular deitado, som que volta sozinho, e música.
