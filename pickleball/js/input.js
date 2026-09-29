@@ -11,6 +11,7 @@ PB.Input = (function () {
   // thumb speed, as a fraction of the viewport height per second, that means
   // "run flat out"; the small dead zone swallows a resting finger's tremor
   const MOVE_FULL = 0.34, MOVE_DEAD = 0.04, MOVE_SMOOTH = 0.045, MOVE_GAIN = 0.72;
+  const STROKE_FIT = 1.75;   // the stroke ruler never exceeds this many screen heights
 
   class Input {
     constructor(canvas) {
@@ -108,10 +109,16 @@ PB.Input = (function () {
       }
     }
 
-    // Gestures are measured against the height of one player's viewport, so a
-    // stroke means the same thing on a phone and on a tablet.
+    // The ruler a stroke is measured against. It follows the device, not the
+    // way it is held: the long side of the screen, so the same thumb movement
+    // is the same shot in portrait and in landscape. Lying down the screen is
+    // short, though, and the whole colour ramp still has to fit in it, so the
+    // ruler never exceeds STROKE_FIT screen heights; on a phone that leaves a
+    // landscape stroke about a quarter stronger than the same one upright,
+    // where measuring by height alone made it more than twice as strong.
     strokeH() {
-      return this.canvas.clientHeight;
+      const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+      return Math.min(Math.max(w, h), STROKE_FIT * h);
     }
 
     up(e) {

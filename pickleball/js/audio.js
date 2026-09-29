@@ -12,6 +12,11 @@ PB.Audio = (function () {
   let applause = null, applauseTried = false;
   // the umpire's spoken calls, decoded once alongside the applause
   const calls = {};
+  // music: decoded tracks, what is playing, and what was asked for before it
+  // could play (no context yet, or the track still decoding)
+  const music = {};
+  let musicSrc = null, musicGain = null, musicName = null, musicPending = null;
+  const MUSIC_VOL = { menu: 0.5, win: 0.8, lose: 0.8 };
 
   // Audio is a nicety: if the context cannot be created (older iOS, a frame
   // without permission, an autoplay policy) the game must carry on silently.
@@ -33,7 +38,71 @@ PB.Audio = (function () {
     unlock();
     loadApplause();
     loadCalls();
+    loadMusic();
   }
+
+  function loadMusic() {
+    if (!ctx || !PB.MUSIC_MP3) return;
+    for (const name in PB.MUSIC_MP3) {
+      if (music[name] !== undefined) continue;
+      music[name] = null;
+      try {
+        const bin = atob(PB.MUSIC_MP3[name]);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        ctx.decodeAudioData(bytes.buffer, buf => {
+          music[name] = buf;
+          if (musicPending === name) playMusic(name);
+        }, () => { music[name] = null; });
+      } catch (e) { music[name] = null; }
+    }
+  }
+
+  // Start a track, fading out whatever was playing. `menu` loops; the end cues
+  // play once. Asking for a track that cannot play yet remembers it, and it
+  // starts as soon as it can. Music goes through the master gain, so muting
+  // silences it without losing its place. Returns false only when there is no
+  // music to play at all, so the caller can fall back to a synthesised cue.
+  function playMusic(name) {
+    if (!PB.MUSIC_MP3 || !PB.MUSIC_MP3[name]) return false;
+    if (musicName === name && musicSrc) return true;
+    fadeOutMusic(0.5);
+    musicPending = name;
+    if (!ctx || !music[name]) return true;
+    try {
+      const now = ctx.currentTime;
+      const src = ctx.createBufferSource();
+      src.buffer = music[name];
+      src.loop = name === 'menu';
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(MUSIC_VOL[name] || 0.6, now + 0.3);
+      src.connect(g); g.connect(master);
+      src.start(now);
+      src.onended = () => { if (musicSrc === src) { musicSrc = null; musicName = null; } };
+      musicSrc = src; musicGain = g; musicName = name; musicPending = null;
+    } catch (e) { /* music is a nicety */ }
+    return true;
+  }
+
+  function fadeOutMusic(secs) {
+    const src = musicSrc, g = musicGain;
+    musicSrc = null; musicGain = null; musicName = null;
+    if (!src || !ctx) return;
+    try {
+      const now = ctx.currentTime;
+      g.gain.cancelScheduledValues(now);
+      g.gain.setValueAtTime(g.gain.value, now);
+      g.gain.linearRampToValueAtTime(0, now + secs);
+      src.stop(now + secs + 0.05);
+    } catch (e) { /* already stopped */ }
+  }
+
+  function stopMusic(secs) {
+    musicPending = null;
+    fadeOutMusic(secs === undefined ? 0.6 : secs);
+  }
+  function musicPlaying() { return musicName; }
 
   function loadApplause() {
     if (applauseTried || !ctx || !PB.APPLAUSE_MP3) return;
@@ -83,26 +152,32 @@ PB.Audio = (function () {
   }
 
   // iOS keeps a fresh context suspended and only honours resume() from inside a
-  // user gesture, so this runs on every tap until the context reports running.
-  // Playing one silent sample in the same gesture is the classic unlock for
-  // older WebKit, and it is harmless everywhere else.
-  let unlocked = false;
+  // user gesture. It can also stop a running context later on (an interruption:
+  // the phone turning, a notification, the app losing the audio session), and
+  // then only another gesture brings it back. So this is not a one-time unlock:
+  // every tap checks, and a context that is not running gets resumed there,
+  // with one silent sample played in the same gesture, the classic unlock for
+  // WebKit that is harmless everywhere else.
   function unlock() {
-    if (!ctx || unlocked) return;
+    if (!ctx || ctx.state === 'running' || ctx.state === 'closed') return;
     try {
-      if (ctx.state === 'suspended') ctx.resume();
+      ctx.resume();
       const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
       const src = ctx.createBufferSource();
       src.buffer = buf;
       src.connect(ctx.destination);
       src.start(0);
-      if (ctx.state === 'running') unlocked = true;
-      else ctx.resume().then(() => { unlocked = ctx.state === 'running'; }).catch(() => {});
     } catch (e) { /* ignore */ }
   }
 
-  function resume() { try { if (ctx && ctx.state === 'suspended') ctx.resume(); } catch (e) { /* ignore */ } }
+  // Outside a gesture a resume may be refused, but trying costs nothing; iOS
+  // reports an interrupted context as 'interrupted', not 'suspended'.
+  function resume() {
+    try { if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume(); } catch (e) { /* ignore */ }
+  }
   function state() { return ctx ? ctx.state : 'none'; }
+  // the page went to the background: nothing should keep playing there
+  function suspend() { try { if (ctx && ctx.state === 'running') ctx.suspend(); } catch (e) { /* ignore */ } }
 
   function noise(dur) {
     const n = Math.floor(ctx.sampleRate * dur);
@@ -228,5 +303,6 @@ PB.Audio = (function () {
   function setMuted(v) { muted = v; try { if (master) master.gain.value = v ? 0 : 0.7; } catch (e) { /* ignore */ } }
   function isMuted() { return muted; }
 
-  return { init, play, call, setMuted, isMuted, resume, unlock, state, hasApplause, hasCall };
+  return { init, play, call, setMuted, isMuted, resume, unlock, state, hasApplause, hasCall,
+           music: playMusic, stopMusic, musicPlaying, suspend };
 })();

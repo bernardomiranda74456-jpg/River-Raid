@@ -5,6 +5,29 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v42
+
+Força igual com o celular deitado, som que volta sozinho, e música.
+
+- **Força na horizontal.** O deslize era medido como fração da altura da tela;
+  deitado a altura cai de 844 para 390 px, e o mesmo gesto saía 2,17× mais
+  forte (150 px: meio da quadra em pé, vermelho deitado). Agora a régua é o lado
+  comprido do aparelho, igual nas duas posições, limitada a 1,75 alturas de tela
+  para toda a régua de cores caber na tela deitada. Em pé nada mudou; deitado o
+  mesmo gesto sai 1,24× em vez de 2,17×.
+- **Som que volta.** Depois do primeiro toque o jogo nunca mais tentava religar
+  o áudio, e só tentava quando o estado era "suspended". No iPhone uma
+  interrupção deixa o áudio "interrupted", e ele só volta dentro de um toque
+  (click ou fim de toque, não o começo). Agora todo toque confere e religa, e a
+  rotação tenta retomar. Com as regras do iOS emuladas: v41 ficava mudo para
+  sempre depois de uma interrupção; agora o próximo toque traz o som de volta.
+- **Música.** Três faixas geradas para o jogo (vidIQ): um tema animado que toca
+  inteiro e em loop nas telas de menu, tutorial e configuração, desde o primeiro
+  toque; uma vinheta alegre de 9 s na vitória e uma triste de 9,5 s na derrota.
+  A partida em si fica sem música, com o som da bola e da torcida. O botão de
+  som desliga a música junto, e ela para quando o app vai para segundo plano.
+  Mono, 22 kHz, 40 kbps: 244 KB as três.
+
 ## v41
 
 Gesto novo para a bola curta: **deslizar para baixo**, como um slice.

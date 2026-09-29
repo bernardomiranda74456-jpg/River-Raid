@@ -37,7 +37,13 @@
 
   // ── screens ──────────────────────────────────────────────────────────────
   const screens = ['scr-splash', 'scr-title', 'scr-setup', 'scr-tutorial', 'scr-pause', 'scr-over'];
+  // The menu screens share one loop; the match itself has none, so the
+  // rally sounds and the crowd carry it. The end-of-match cue is started by
+  // gameOver, and the pause screen keeps the match's silence.
+  const MENU_SCREENS = ['scr-splash', 'scr-title', 'scr-setup', 'scr-tutorial'];
   function show(id) {
+    if (MENU_SCREENS.indexOf(id) >= 0) PB.Audio.music('menu');
+    else if (id === null) PB.Audio.stopMusic(0.6);
     for (const s of screens) $(s).classList.toggle('on', s === id);
     $('pauseBtn').classList.toggle('on', id === null);
     input.enabled = id === null;
@@ -90,8 +96,18 @@
   // ── buttons ──────────────────────────────────────────────────────────────
   // Every tap is a chance to unlock audio on iOS, and to wake it after the
   // page was backgrounded. Cheap, and it makes the first sound reliable.
-  document.addEventListener('pointerdown', () => PB.Audio.unlock(), { passive: true });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) PB.Audio.resume(); });
+  // Every kind of tap gets the chance to bring sound back: iOS does not count a
+  // bare pointerdown as a gesture that may start audio, but it does count the
+  // end of a touch and a click.
+  // The first of them also creates the audio context, since the menu music can
+  // only start from inside a gesture; after that it only unlocks.
+  for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click']) {
+    document.addEventListener(ev, () => {
+      if (ev === 'pointerdown') PB.Audio.unlock(); else PB.Audio.init();
+    }, { passive: true, capture: true });
+  }
+  window.addEventListener('orientationchange', () => PB.Audio.resume());
+  document.addEventListener('visibilitychange', () => { if (document.hidden) PB.Audio.suspend(); else PB.Audio.resume(); });
   $('btn-play').onclick = () => { PB.Audio.init(); syncOpts(); show('scr-setup'); };
   // ── tutorial ─────────────────────────────────────────────────────────────
   let tutAt = 0;
@@ -186,9 +202,11 @@
 
   function gameOver() {
     const m = match;
-    PB.Audio.play('win');
     const bo3 = m.cfg.sets >= 3;
     const won = m.players[m.humanIdx].team === m.matchWinner;
+    // a happy cue for a win, a sad one for a loss; the old synthesised
+    // fanfare only if the page carries no music
+    if (!PB.Audio.music(won ? 'win' : 'lose')) PB.Audio.play('win');
     $('over-title').textContent = I18n.t(won ? 'ui.over.win' : 'ui.over.lose');
     // best of three: the big number is the sets, the games go underneath
     $('over-score').textContent = bo3 ? `${m.sets[0]} - ${m.sets[1]}` : `${m.score[0]} - ${m.score[1]}`;
@@ -229,6 +247,7 @@
   const splashTimer = setTimeout(leaveSplash, SPLASH_MS);
   $('scr-splash').addEventListener('pointerdown', leaveSplash);
 
+  PB.Audio.setMuted(!sound);
   paintLangs();
   paintSound();
   syncOpts();
