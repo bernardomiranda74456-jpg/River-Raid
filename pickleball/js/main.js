@@ -234,19 +234,29 @@
   window.PBGame = { get match() { return match; }, input, renderer, start, cfg: () => cfg };
 
   // Entry screen: the mark fades up over 1.3 s, holds for three, then the menu
-  // takes over.
-  // A tap cuts the wait short for anyone who has seen it before.
+  // takes over and the music comes in with it. A tap cuts the wait short.
+  //
+  // A phone that will not play sound before a touch (every browser on an
+  // iPhone) would bring the menu up in silence and start the music on some
+  // later tap. There the mark does not leave on its own: when its time is up
+  // it asks for a touch, and that touch both closes it and lets the music in,
+  // at the same instant. The tap is read on `click`, the event iOS accepts for
+  // starting sound; the document listener unlocks the audio before this one
+  // runs, and the click lands on the mark, not on a menu button under it.
   const SPLASH_MS = 4300;
   let splashDone = false;
   function leaveSplash() {
     if (splashDone) return;
     splashDone = true;
     clearTimeout(splashTimer);
-    $('scr-splash').removeEventListener('pointerdown', leaveSplash);
+    $('scr-splash').removeEventListener('click', leaveSplash);
     show('scr-title');
   }
-  const splashTimer = setTimeout(leaveSplash, SPLASH_MS);
-  $('scr-splash').addEventListener('pointerdown', leaveSplash);
+  const splashTimer = setTimeout(() => {
+    if (PB.Audio.state() === 'running' || PB.Audio.state() === 'none') leaveSplash();
+    else $('scr-splash').classList.add('wait');          // shows "tap to enter"
+  }, SPLASH_MS);
+  $('scr-splash').addEventListener('click', leaveSplash);
 
   PB.Audio.setMuted(!sound);
   // The audio is created at boot rather than on the first tap, so the menu

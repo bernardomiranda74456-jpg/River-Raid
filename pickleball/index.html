@@ -47,8 +47,19 @@
     from { opacity: 0; transform: scale(0.94); }
     to   { opacity: 1; transform: scale(1); }
   }
+  /* where sound needs a touch first, the mark asks for one when its time is up */
+  #scr-splash { cursor: pointer; }
+  #scr-splash .splash-hint {
+    position: absolute; left: 0; right: 0; bottom: calc(18% + env(safe-area-inset-bottom));
+    text-align: center; font-size: 12px; font-weight: 700; letter-spacing: 2.4px;
+    text-transform: uppercase; color: #8fa7bb; opacity: 0; pointer-events: none;
+  }
+  #scr-splash.wait .splash-hint { animation: hint-in 0.6s ease-out forwards, hint-pulse 2.2s ease-in-out 0.6s infinite; }
+  @keyframes hint-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 0.9; transform: none; } }
+  @keyframes hint-pulse { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.45; } }
   @media (prefers-reduced-motion: reduce) {
     #scr-splash img { animation: none; opacity: 1; transform: none; }
+    #scr-splash.wait .splash-hint { animation: none; opacity: 0.9; }
   }
 
   h1 { font-size: clamp(30px, 10vw, 52px); letter-spacing: 2px; font-weight: 800; }
@@ -226,6 +237,7 @@
   <!-- entrada -->
   <section id="scr-splash" class="screen on">
     <img src="img/3emp.png" alt="3EMP" width="560" height="203" decoding="async">
+    <p class="splash-hint" data-i18n="ui.tapToEnter">Toque para entrar</p>
   </section>
 
   <!-- título -->

@@ -5,6 +5,20 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v44
+
+A música entra no fim da logo também no iPhone.
+
+Todo navegador no iPhone (Safari, Edge, Chrome) proíbe som antes de um toque na
+tela, e isso não se contorna por código: na v43 a logo fechava sozinha e o menu
+aparecia em silêncio até o primeiro toque. Agora, onde o som está bloqueado, a
+logo fica o mesmo tempo de sempre e, no fim, mostra um discreto "Toque para
+entrar". Esse toque fecha a logo e solta a música no mesmo instante. Onde o som
+é permitido, a logo continua fechando sozinha e a música entra com ela.
+
+O toque é lido no clique, o evento que o iOS aceita para liberar som, e cai na
+própria logo, nunca num botão do menu que estivesse embaixo do dedo.
+
 ## v43
 
 A música do menu entra quando a logo da empresa fecha. A logo fica em silêncio.
