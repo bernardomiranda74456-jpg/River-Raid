@@ -36,6 +36,7 @@ PB.Match = (function () {
   const SMASH_POWER = 0.32;      // a soft stroke up there is still a dink
   const REACH      = 3.05;   // paddle + arm
   const HIT_CD     = 0.22;
+  const CALL_WAIT  = 1.6;    // s a CPU server holds while the umpire calls match or set point
   const SERVE_WAIT   = 3.0;  // s standing at the line before the server starts bouncing the ball
   const BOUNCE_PERIOD = 0.8; // s per bounce, hand to floor and back
   const MARK_FADE  = 2.0;    // seconds a bounce mark takes to fade off the court
@@ -249,6 +250,22 @@ PB.Match = (function () {
       this.stateT = 0;
       this.pred = null;
       this.serveBounceN = -1;
+
+      // the umpire announces it before the serve, every serve it stays true
+      this.serveCall = this.pointCall();
+      if (this.serveCall) this.events.push({ type: 'call', call: this.serveCall });
+    }
+
+    // Is the side about to serve one rally from winning this game? Only the
+    // serving team can score, so it is the only one that can be. The umpire
+    // calls "Match point" when that game would end the match and "Set point"
+    // when it would only end a set, which needs a best of three.
+    pointCall() {
+      const st = this.servingTeam;
+      const s = this.score[st] + 1, o = this.score[1 - st];
+      if (s < this.cfg.targetPoints || s - o < this.cfg.winBy) return null;
+      const need = this.cfg.sets >= 3 ? 2 : 1;
+      return this.sets[st] + 1 >= need ? 'matchpoint' : 'setpoint';
     }
 
     // Where the free hand holds the ball before the serve: a little to the
@@ -365,7 +382,8 @@ PB.Match = (function () {
             this.events.push({ type: 'bounce', x: b.x, z: b.z, impact: 5 });
           }
         }
-        if (server.ctrl === 'cpu' && this.stateT > 0.6) {
+        // a CPU server waits for the umpire to finish the call
+        if (server.ctrl === 'cpu' && this.stateT > (this.serveCall ? CALL_WAIT : 0.6)) {
           PB.AI.serve(this, server);
         }
       } else if (this.state === 'live') {

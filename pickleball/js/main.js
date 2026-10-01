@@ -189,6 +189,7 @@
       if (e.type === 'hit') { PB.Audio.play('hit', (e.power || 30) / 60); buzz(6); }
       else if (e.type === 'bounce') PB.Audio.play('bounce', (e.impact || 8) / 20);
       else if (e.type === 'net') PB.Audio.play('net');
+      else if (e.type === 'call') PB.Audio.call(e.call);     // match point, set point
       else if (e.type === 'point') {
         // The umpire calls it, then the crowd answers — a second serve included,
         // since the rally that just ended was worth watching either way.

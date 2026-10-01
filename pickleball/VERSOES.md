@@ -5,6 +5,17 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v46
+
+A juíza anuncia **Match point** e **Set point**, na mesma voz das outras falas.
+
+Antes de cada saque em que o time que vai sacar está a um ponto de fechar o
+jogo, ela fala. Só quem saca pontua, então só esse time pode estar no match
+point. "Set point" é quando esse ponto fecharia um set sem fechar a partida, e
+por isso só existe na melhor de 3; na melhor de 1, todo fim de jogo é match
+point. Se o ponto não sai e o time continua sacando ali, ela repete. Quando é a
+CPU que saca, ela espera a fala terminar antes de sacar.
+
 ## v45
 
 Placar por sets na melhor de 3, como na TV.

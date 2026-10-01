@@ -663,6 +663,41 @@ test('melhor de 3: dois sets fecham a partida, um a um vai ao terceiro', () => {
   eq(m.history.length, 3, 'três sets no histórico');
 });
 
+test('match point e set point: só para quem saca, e set point só na melhor de 3', () => {
+  const caso = (cfg, saca, placar, sets) => {
+    const m = mk(Object.assign({ format: 'doubles' }, cfg));
+    m.servingTeam = saca; m.score = placar; if (sets) m.sets = sets;
+    return m.pointCall();
+  };
+  eq(caso({ sets: 1 }, 0, [10, 4]), 'matchpoint', 'melhor de 1, 10-4 sacando');
+  eq(caso({ sets: 1 }, 1, [10, 4]), null, 'quem tem 10 está recebendo: não pontua, não é match point');
+  eq(caso({ sets: 1 }, 0, [10, 10]), null, '10-10: o próximo ponto não fecha com dois de vantagem');
+  eq(caso({ sets: 1 }, 0, [11, 10]), 'matchpoint', '11-10 sacando');
+  eq(caso({ sets: 1, targetPoints: 5 }, 0, [4, 2]), 'matchpoint', 'até 5, 4-2');
+  eq(caso({ sets: 3 }, 0, [10, 4], [0, 0]), 'setpoint', 'melhor de 3, primeiro set');
+  eq(caso({ sets: 3 }, 0, [10, 4], [1, 0]), 'matchpoint', 'quem já tem um set');
+  eq(caso({ sets: 3 }, 1, [4, 10], [1, 0]), 'setpoint', 'o outro time, sem set ainda');
+  eq(caso({ sets: 3 }, 1, [4, 10], [1, 1]), 'matchpoint', 'terceiro set');
+  eq(caso({ sets: 3 }, 0, [9, 4], [1, 0]), null, 'a dois pontos não é nada');
+});
+
+test('a juíza fala antes do saque, e a CPU espera a fala acabar para sacar', () => {
+  const m = mk({ format: 'doubles', sets: 1 });
+  const cpuTeam = 1;
+  m.servingTeam = cpuTeam; m.serverNumber = 1;
+  m.serverIdx = m.mates(cpuTeam)[0].id;
+  m.score = [3, 10]; m.events.length = 0;
+  m.prepareServe();
+  const fala = m.events.find(e => e.type === 'call');
+  ok(fala && fala.call === 'matchpoint', 'evento de match point no saque');
+  let t = 0, sacou = null;
+  for (let f = 0; f < 200 && sacou === null; f++) { m.update(1 / 60, null); t += 1 / 60; if (m.state === 'live') sacou = t; }
+  ok(sacou !== null && sacou > 1.4, `a CPU esperou a fala (${sacou && sacou.toFixed(2)} s)`);
+  m.score = [3, 4]; m.events.length = 0;
+  m.servingTeam = cpuTeam; m.prepareServe();
+  ok(!m.events.some(e => e.type === 'call'), 'sem match point, sem fala');
+});
+
 test('a faixa do set sai quando o saque acontece', () => {
   const m = mk({ format: 'doubles', sets: 3 });
   fechaJogo(m, 0);
