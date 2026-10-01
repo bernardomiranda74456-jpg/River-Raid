@@ -73,38 +73,192 @@ function saveHiScore() {
 }
 
 // ─── Sound ───────────────────────────────────────────────────────────────────
+// Everything is synthesized with Web Audio; no sound files needed.
 let actx = null;
-let lastHitSound = 0;
+let master = null;
+let noiseBuf = null;
+let muted = false;
+let rollSnd = null;          // looping rumble while the ball travels
+let hitWindowStart = 0, hitsInWindow = 0;
 
 function initAudio() {
   if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
-  try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { actx = null; }
+  try {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    master = actx.createGain();
+    master.gain.value = muted ? 0 : 0.8;
+    master.connect(actx.destination);
+    noiseBuf = actx.createBuffer(1, actx.sampleRate * 2, actx.sampleRate);
+    const data = noiseBuf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  } catch (e) { actx = null; }
 }
 
-function noise(dur, vol, freq, type) {
-  if (!actx) return;
-  const len = Math.max(1, Math.floor(actx.sampleRate * dur));
-  const buf = actx.createBuffer(1, len, actx.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+function toggleMute() {
+  muted = !muted;
+  if (master) master.gain.setTargetAtTime(muted ? 0 : 0.8, actx.currentTime, 0.02);
+}
+
+function envGain(t, vol, attack, decay) {
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + attack);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
+  g.connect(master);
+  return g;
+}
+
+function noiseHit(t, vol, freq, q, type, decay) {
   const src = actx.createBufferSource();
-  src.buffer = buf;
-  const filt = actx.createBiquadFilter();
-  filt.type = type;
-  filt.frequency.value = freq;
-  const gain = actx.createGain();
-  const t = actx.currentTime;
-  gain.gain.setValueAtTime(vol, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  src.connect(filt).connect(gain).connect(actx.destination);
-  src.start();
+  src.buffer = noiseBuf;
+  const f = actx.createBiquadFilter();
+  f.type = type; f.frequency.value = freq; f.Q.value = q;
+  src.connect(f).connect(envGain(t, vol, 0.002, decay));
+  src.start(t, Math.random() * 1.5, decay + 0.05);
 }
 
-function playHit(intensity) {
-  const now = performance.now();
-  if (now - lastHitSound < 35) return;
-  lastHitSound = now;
-  noise(0.12 + intensity * 0.02, clamp(intensity * 0.12, 0.05, 0.6), 1800, 'bandpass');
+function tone(t, vol, type, f0, f1, decay, attack = 0.003) {
+  const o = actx.createOscillator();
+  o.type = type;
+  o.frequency.setValueAtTime(f0, t);
+  if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + attack + decay);
+  o.connect(envGain(t, vol, attack, decay));
+  o.start(t);
+  o.stop(t + attack + decay + 0.05);
+}
+
+// Too many voices at once turns a strike into mush; keep a few per 30 ms.
+function hitAllowed() {
+  const now = actx.currentTime;
+  if (now - hitWindowStart > 0.03) { hitWindowStart = now; hitsInWindow = 0; }
+  return ++hitsInWindow <= 3;
+}
+
+const sfx = {
+  // Ball smacks pins: heavy thump plus the wooden crack.
+  ballHit(speed) {
+    if (!actx || !hitAllowed()) return;
+    const t = actx.currentTime, v = clamp(speed / 8, 0.25, 1);
+    tone(t, 0.5 * v, 'sine', 140, 60, 0.18);
+    noiseHit(t, 0.6 * v, 2200, 1.2, 'bandpass', 0.09);
+    tone(t, 0.25 * v, 'triangle', rand(650, 900), rand(500, 600), 0.1);
+  },
+  // Pin on pin: hollow wooden "tok" with a random pitch.
+  pinHit(speed) {
+    if (!actx || !hitAllowed()) return;
+    const t = actx.currentTime, v = clamp(speed / 5, 0.15, 0.8);
+    const f = rand(700, 1300);
+    tone(t, 0.3 * v, 'triangle', f, f * 0.8, 0.07);
+    noiseHit(t, 0.4 * v, rand(2500, 4000), 2, 'bandpass', 0.05);
+  },
+  // A toppled pin landing on the deck a moment later.
+  pinFall() {
+    if (!actx) return;
+    const t = actx.currentTime + rand(0.06, 0.2);
+    noiseHit(t, 0.22, 700, 0.8, 'lowpass', 0.14);
+    tone(t, 0.12, 'sine', rand(180, 260), 120, 0.12);
+  },
+  // Ball dropping off the lane into the gutter: metallic clunk.
+  gutterDrop() {
+    if (!actx) return;
+    const t = actx.currentTime;
+    tone(t, 0.5, 'sine', 160, 55, 0.25);
+    tone(t, 0.18, 'square', 420, 380, 0.3);
+    tone(t, 0.12, 'triangle', 1270, 1240, 0.45);
+    noiseHit(t, 0.35, 900, 3, 'bandpass', 0.15);
+  },
+  // Ball falling into the pit behind the pins.
+  pit() {
+    if (!actx) return;
+    const t = actx.currentTime;
+    tone(t, 0.45, 'sine', 90, 40, 0.35);
+    noiseHit(t, 0.25, 300, 1, 'lowpass', 0.25);
+  },
+  // "Womp womp" after a gutter ball.
+  sadTrombone() {
+    if (!actx) return;
+    const t = actx.currentTime;
+    [[392, 0, 0.32], [370, 0.36, 0.32], [349, 0.72, 0.32], [330, 1.08, 0.9]].forEach(([f, d, len]) => {
+      const o = actx.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(f, t + d);
+      if (len > 0.5) {
+        const lfo = actx.createOscillator(), lg = actx.createGain();
+        lfo.frequency.value = 6; lg.gain.value = 8;
+        lfo.connect(lg).connect(o.frequency);
+        lfo.start(t + d); lfo.stop(t + d + len);
+      }
+      const lp = actx.createBiquadFilter();
+      lp.type = 'lowpass'; lp.frequency.value = 1100;
+      const g = actx.createGain();
+      g.gain.setValueAtTime(0.0001, t + d);
+      g.gain.exponentialRampToValueAtTime(0.18, t + d + 0.04);
+      g.gain.setValueAtTime(0.18, t + d + len - 0.08);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + d + len);
+      o.connect(lp).connect(g).connect(master);
+      o.start(t + d); o.stop(t + d + len + 0.05);
+    });
+  },
+  strike() {
+    if (!actx) return;
+    const t = actx.currentTime;
+    [523, 659, 784, 1047].forEach((f, i) => tone(t + i * 0.09, 0.16, 'square', f, f, 0.18));
+    noiseHit(t + 0.36, 0.12, 6000, 0.7, 'highpass', 0.4);
+  },
+  spare() {
+    if (!actx) return;
+    const t = actx.currentTime;
+    [659, 988].forEach((f, i) => tone(t + i * 0.1, 0.15, 'square', f, f, 0.2));
+  },
+};
+
+// Continuous rolling rumble. Wobble rate follows the ball's rotation; in the
+// gutter it turns into a hollow, rattly metal sound.
+function startRollSound() {
+  if (!actx || rollSnd) return;
+  const src = actx.createBufferSource();
+  src.buffer = noiseBuf; src.loop = true;
+  const filt = actx.createBiquadFilter();
+  filt.type = 'lowpass'; filt.frequency.value = 260; filt.Q.value = 1;
+  const filt2 = actx.createBiquadFilter();
+  filt2.type = 'peaking'; filt2.frequency.value = 90; filt2.gain.value = 12;
+  const gain = actx.createGain();
+  gain.gain.value = 0.0001;
+  const lfo = actx.createOscillator(), lfoGain = actx.createGain();
+  lfo.frequency.value = 6; lfoGain.gain.value = 0;
+  lfo.connect(lfoGain).connect(gain.gain);
+  src.connect(filt).connect(filt2).connect(gain).connect(master);
+  src.start(); lfo.start();
+  rollSnd = { src, filt, filt2, gain, lfo, lfoGain, gutter: false };
+}
+
+function updateRollSound(b) {
+  if (!rollSnd) return;
+  const t = actx.currentTime;
+  const speed = Math.hypot(b.vx, b.vy);
+  // Gets a little quieter as the ball travels away down the lane.
+  const dist = clamp((START_Y - b.y) / (START_Y - HEAD_Y), 0, 1);
+  if (b.gutter && !rollSnd.gutter) {
+    rollSnd.gutter = true;
+    rollSnd.filt.type = 'bandpass';
+    rollSnd.filt.frequency.setTargetAtTime(1150, t, 0.02);
+    rollSnd.filt.Q.value = 7;
+    rollSnd.filt2.frequency.value = 2300; rollSnd.filt2.gain.value = 10;
+  }
+  const vol = rollSnd.gutter ? 0.5 : (0.28 + speed * 0.04) * (1 - dist * 0.4);
+  rollSnd.gain.gain.setTargetAtTime(vol, t, 0.05);
+  rollSnd.lfo.frequency.setTargetAtTime(rollSnd.gutter ? 14 + speed : speed * 1.4, t, 0.05);
+  rollSnd.lfoGain.gain.setTargetAtTime(vol * (rollSnd.gutter ? 0.6 : 0.35), t, 0.05);
+}
+
+function stopRollSound() {
+  if (!rollSnd) return;
+  const { src, lfo, gain } = rollSnd;
+  const t = actx.currentTime;
+  gain.gain.cancelScheduledValues(t);
+  gain.gain.setTargetAtTime(0.0001, t, 0.06);
+  src.stop(t + 0.4); lfo.stop(t + 0.4);
+  rollSnd = null;
 }
 
 // ─── Game setup ──────────────────────────────────────────────────────────────
@@ -173,7 +327,7 @@ function launch() {
   standingBefore = pins.length;
   rollTimer = 0;
   state = 'rolling';
-  noise((START_Y - HEAD_Y) / speed / 60 + 0.3, 0.25, 180, 'lowpass');
+  startRollSound();
 }
 
 // ─── Physics ─────────────────────────────────────────────────────────────────
@@ -204,7 +358,7 @@ function topple(p, speed) {
   p.vy = Math.sin(a) * s;
   p.angle = a;
   p.spinRate = rand(-0.25, 0.25);
-  playHit(speed);
+  sfx.pinFall();
 }
 
 // Elastic-ish impulse between two discs; returns the impact speed.
@@ -240,8 +394,11 @@ function stepPhysics(dt) {
     // Kickback walls on the pin deck.
     if (p.y < DECK_Y) {
       const lo = LANE_L - GUTTER + PIN_R, hi = LANE_R + GUTTER - PIN_R;
-      if (p.x < lo) { p.x = lo; p.vx = Math.abs(p.vx) * 0.5; }
-      if (p.x > hi) { p.x = hi; p.vx = -Math.abs(p.vx) * 0.5; }
+      if (p.x < lo || p.x > hi) {
+        if (Math.abs(p.vx) > 0.5) sfx.pinHit(Math.abs(p.vx));
+        p.x = clamp(p.x, lo, hi);
+        p.vx = (p.x === lo ? 1 : -1) * Math.abs(p.vx) * 0.5;
+      }
     }
     if (p.y < PIT_Y) { p.gone = true; p.down = true; }
   }
@@ -250,6 +407,7 @@ function stepPhysics(dt) {
     for (const p of pins) {
       if (p.gone) continue;
       const s = collide(ball, p, BALL_R, PIN_R, BALL_M, PIN_M, 0.8);
+      if (s > 0.2) sfx.ballHit(s);
       if (s > KNOCK_SPEED) topple(p, s);
     }
   }
@@ -261,6 +419,7 @@ function stepPhysics(dt) {
       const b = pins[j];
       if (b.gone) continue;
       const s = collide(a, b, a.down ? DOWN_R : PIN_R, b.down ? DOWN_R : PIN_R, PIN_M, PIN_M, 0.8);
+      if (s > 0.3) sfx.pinHit(s);
       if (s > KNOCK_SPEED) { topple(a, s); topple(b, s); }
     }
   }
@@ -337,9 +496,10 @@ function recordRoll() {
     fresh = last === 'X' || last === '/';
   }
 
-  if (last === 'X') showMessage('STRIKE!');
-  else if (last === '/') showMessage('SPARE!');
-  else if (knocked === 0) showMessage(ball.gutter ? 'CANALETA!' : 'ZERO');
+  if (last === 'X') { showMessage('STRIKE!'); sfx.strike(); }
+  else if (last === '/') { showMessage('SPARE!'); sfx.spare(); }
+  else if (knocked === 0 && ball.gutter) { showMessage('CANALETA!'); sfx.sadTrombone(); }
+  else if (knocked === 0) showMessage('ZERO');
   else showMessage(knocked === 1 ? '1 PINO' : `${knocked} PINOS`);
 
   if (players.every(p => p.done)) {
@@ -394,6 +554,7 @@ document.addEventListener('keydown', e => {
   keys[e.code] = true;
   if (['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.code)) e.preventDefault();
   if ((e.code === 'Space' || e.code === 'Enter') && !e.repeat) onAction();
+  if (e.code === 'KeyM' && !e.repeat) toggleMute();
   if ((state === 'title' || state === 'gameover') && (e.code === 'Digit1' || e.code === 'Numpad1')) { initAudio(); startGame(1); }
   if ((state === 'title' || state === 'gameover') && (e.code === 'Digit2' || e.code === 'Numpad2')) { initAudio(); startGame(2); }
 });
@@ -408,9 +569,20 @@ function placeBall(x) {
   ball.x = clamp(x, LANE_L + BALL_R, LANE_R - BALL_R);
 }
 
+// Sound toggle in the bottom-left corner.
+const SOUND_BTN = { x: 6, y: 596, w: 46, h: 36 };
+
+function inSoundButton(pos) {
+  return pos.x >= SOUND_BTN.x && pos.x <= SOUND_BTN.x + SOUND_BTN.w &&
+    pos.y >= SOUND_BTN.y && pos.y <= SOUND_BTN.y + SOUND_BTN.h;
+}
+
 canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
-  if (state === 'position') {
+  if (inSoundButton(pointerPos(e))) {
+    initAudio();
+    toggleMute();
+  } else if (state === 'position') {
     initAudio();
     dragging = true;
     canvas.setPointerCapture(e.pointerId);
@@ -449,9 +621,14 @@ function update() {
       break;
     case 'rolling': {
       rollTimer++;
+      const wasGutter = ball.gutter, wasPit = ball.inPit;
       for (let s = 0; s < SUBSTEPS; s++) stepPhysics(1 / SUBSTEPS);
+      if (ball.gutter && !wasGutter) sfx.gutterDrop();
+      if (ball.inPit && !wasPit) { stopRollSound(); sfx.pit(); }
+      else updateRollSound(ball);
       const moving = pins.some(p => !p.gone && Math.hypot(p.vx, p.vy) > 0.15);
       if ((ball.inPit && !moving) || rollTimer > ROLL_LIMIT) {
+        stopRollSound();
         state = 'settle';
         settleTimer = 45;
       }
@@ -728,6 +905,38 @@ function drawScorecard() {
   ctx.fillText(`RECORDE ${hiScore}`, W - 8, CARD_H - 6);
 }
 
+function drawSoundButton() {
+  const { x, y, w, h } = SOUND_BTN;
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = '#8fa3b8';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  // Speaker icon
+  const cx = x + 14, cy = y + 13;
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.moveTo(cx - 6, cy - 3); ctx.lineTo(cx - 2, cy - 3); ctx.lineTo(cx + 3, cy - 8);
+  ctx.lineTo(cx + 3, cy + 8); ctx.lineTo(cx - 2, cy + 3); ctx.lineTo(cx - 6, cy + 3);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = muted ? '#e74c3c' : '#fff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  if (muted) {
+    ctx.moveTo(cx + 7, cy - 4); ctx.lineTo(cx + 15, cy + 4);
+    ctx.moveTo(cx + 15, cy - 4); ctx.lineTo(cx + 7, cy + 4);
+  } else {
+    ctx.arc(cx + 4, cy, 6, -0.8, 0.8);
+    ctx.moveTo(cx + 4 + 10 * Math.cos(-0.8), cy + 10 * Math.sin(-0.8));
+    ctx.arc(cx + 4, cy, 10, -0.8, 0.8);
+  }
+  ctx.stroke();
+  ctx.fillStyle = '#8fa3b8';
+  ctx.font = 'bold 8px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(muted ? 'MUDO' : 'SOM (M)', x + w / 2, y + h - 3);
+}
+
 function drawSidebar() {
   if (state === 'title' || state === 'gameover') return;
   const pl = player();
@@ -833,6 +1042,7 @@ function draw() {
         [...players.map((p, i) => `${p.name}: ${totals[i]}`), record]);
     }
   }
+  drawSoundButton();
 }
 
 // ─── Main loop ───────────────────────────────────────────────────────────────
