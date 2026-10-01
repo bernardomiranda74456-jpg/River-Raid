@@ -1614,12 +1614,17 @@ PB.Renderer = (function () {
     drawScoreboard(ctx, m, rect) {
       const k = hudScale(rect);
       const pad = 10 * k;
-      const w = Math.min(rect.w - pad * 2, 330 * k);
+      // finished sets stay on the board, one narrow column each, and the set
+      // in play opens to their right in the coloured box
+      const done = m.cfg.sets >= 3 ? m.history : [];
+      const col = 27 * k;
+      const box = 40 * k;
+      const w = Math.min(rect.w - pad * 2, 330 * k + done.length * col);
       const head = 20 * k, row = 30 * k, foot = 15 * k;
       const x = rect.x + pad;
       const y = rect.y + pad;
       const h = head + row * 2 + foot;
-      const box = 40 * k;
+      const colX = i => x + w - box - (done.length - i) * col;   // left edge of set i
 
       ctx.save();
       ctx.textBaseline = 'middle';
@@ -1630,9 +1635,19 @@ PB.Renderer = (function () {
       ctx.fillStyle = 'rgba(255,255,255,0.82)';
       ctx.font = `700 ${10.5 * k}px system-ui, sans-serif`;
       ctx.textAlign = 'left';
-      let title = T('hud.title', { n: m.cfg.targetPoints });
-      if (m.cfg.sets >= 3) title += '  ·  ' + T('hud.set', { g: m.game, a: m.sets[0], b: m.sets[1] });
+      const title = T('hud.title', { n: m.cfg.targetPoints });
       ctx.fillText(spaced(title), x + 8 * k, y + head / 2);
+      // set numbers over the columns; the one in play lit
+      if (m.cfg.sets >= 3) {
+        ctx.font = `800 ${9 * k}px system-ui, sans-serif`;
+        ctx.textAlign = 'center';
+        for (let i = 0; i <= done.length; i++) {
+          const cx = i < done.length ? colX(i) + col / 2 : x + w - box / 2;
+          ctx.fillStyle = i < done.length ? 'rgba(255,255,255,0.5)' : COL.ball;
+          ctx.fillText('S' + (i + 1), cx, y + head / 2);
+        }
+        ctx.textAlign = 'left';
+      }
 
       // one row per team
       for (let t = 0; t < 2; t++) {
@@ -1667,7 +1682,7 @@ PB.Renderer = (function () {
         if (m.servingTeam === t) {
           const n = m.isDoubles() ? m.serverNumber : 1;
           const r = 7 * k, gap = 5.5 * k;
-          const right = x + w - box - 11 * k;
+          const right = x + w - box - done.length * col - 11 * k;
           const cy = ry + row / 2;
           for (let i = 0; i < n; i++) {
             const cx = right - r - i * (r * 2 + gap);
@@ -1683,6 +1698,17 @@ PB.Renderer = (function () {
             ctx.stroke();
           }
         }
+
+        // finished sets: the winner's number bright, the loser's dimmed
+        done.forEach((g, i) => {
+          ctx.fillStyle = i % 2 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.09)';
+          ctx.fillRect(colX(i), ry + 1, col, row - 2);
+          const won = g[t] > g[1 - t];
+          ctx.fillStyle = won ? '#ffffff' : 'rgba(255,255,255,0.42)';
+          ctx.font = `${won ? 800 : 600} ${15 * k}px system-ui, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.fillText(String(g[t]), colX(i) + col / 2, ry + row / 2);
+        });
 
         // score box
         ctx.fillStyle = t === 0 ? '#1b3552' : '#b4303f';

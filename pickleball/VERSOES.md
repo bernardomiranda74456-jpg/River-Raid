@@ -5,6 +5,17 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v45
+
+Placar por sets na melhor de 3, como na TV.
+
+O set em andamento continua no quadrado colorido da ponta direita. Cada set
+terminado vira uma coluna estreita à esquerda dele e fica até o fim da partida,
+com o número de quem venceu em branco forte e o de quem perdeu apagado. Na faixa
+de cima, os rótulos S1, S2 e S3 ficam sobre as colunas, com o set em jogo em
+amarelo; o "SET 2 · 1-0" do título saiu, porque as colunas já dizem isso. Na
+partida de um set só o placar é o mesmo de antes, pixel por pixel.
+
 ## v44
 
 A música entra no fim da logo também no iPhone.

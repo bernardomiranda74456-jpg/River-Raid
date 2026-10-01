@@ -60,7 +60,6 @@ PB.I18n = (function () {
 
     'name.you': 'VOCÊ',
     'hud.title': 'DUPLAS: ATÉ {n} PONTOS',
-    'hud.set': 'SET {g} · {a}-{b}',
     'hud.call': 'CHAMADA',
     'prompt.serve': 'DESLIZE PARA SACAR',
     'prompt.serve.sub': 'comprimento = força  •  lado = direção',
@@ -186,7 +185,6 @@ PB.I18n = (function () {
 
     'name.you': 'YOU',
     'hud.title': 'DOUBLES: TO {n} POINTS',
-    'hud.set': 'SET {g} · {a}-{b}',
     'hud.call': 'CALL',
     'prompt.serve': 'SWIPE TO SERVE',
     'prompt.serve.sub': 'length = power  •  tilt = direction',
@@ -312,7 +310,6 @@ PB.I18n = (function () {
 
     'name.you': 'TÚ',
     'hud.title': 'DOBLES: A {n} PUNTOS',
-    'hud.set': 'SET {g} · {a}-{b}',
     'hud.call': 'CANTO',
     'prompt.serve': 'DESLIZA PARA SACAR',
     'prompt.serve.sub': 'largo = fuerza  •  inclinación = dirección',
