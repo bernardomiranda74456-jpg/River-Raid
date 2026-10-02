@@ -5,6 +5,19 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
+## v47
+
+Os patrocínios viram a marca da 3EMP, em branco, e em menor número.
+
+- **Fundo:** uma na faixa da grade, no centro, e duas na parede de patrocínio.
+- **Quadra:** uma em cada cozinha, nos mesmos lugares deslocados de antes, e uma
+  atrás da linha de fundo de quem está perto da câmera.
+- Os quatro logos de teste (Varig, Telerj, Oi, Bank) saíram do jogo.
+
+A marca em branco puro fundiria as letras que se sobrepõem; por isso o vermelho
+cheio vira branco e as sombras entre as letras viram um cinza claro, e o 3, o
+E, o M e o P continuam separados sobre a quadra azul, a cozinha e a parede.
+
 ## v46
 
 A juíza anuncia **Match point** e **Set point**, na mesma voz das outras falas.

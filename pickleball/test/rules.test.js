@@ -934,17 +934,16 @@ test('as três falas estão embutidas e são curtas', () => {
   }
 });
 
-test('os logos dos patrocinadores estão embutidos e são leves', () => {
+test('a logo da 3EMP está embutida, é leve, e todo logo que o desenho usa existe', () => {
   const L = PB.LOGOS_PNG;
-  const nomes = Object.keys(L);
-  ok(nomes.length >= 4, 'pelo menos quatro logos: ' + nomes.join(', '));
-  let total = 0;
-  for (const n of nomes) {
-    ok(typeof L[n] === 'string' && L[n].length > 1000, n + ' tem arte');
-    ok(L[n].slice(0, 8) === 'iVBORw0K', n + ' é PNG, que é o formato com transparência');
-    total += L[n].length;
-  }
-  ok(total < 80000, 'os quatro somam ' + Math.round(total / 1024) + ' KB em base64');
+  ok(L['3emp'], 'logo da 3EMP');
+  ok(L['3emp'].slice(0, 8) === 'iVBORw0K', 'é PNG, que é o formato com transparência');
+  ok(L['3emp'].length < 20000, 'leve: ' + Math.round(L['3emp'].length / 1024) + ' KB em base64');
+  const usados = new Set();
+  const src = fs.readFileSync(path.join(dir, 'render.js'), 'utf8');
+  for (const m of src.matchAll(/(?:groundLogo\(ctx, cam, |name: )'([a-z0-9]+)'/g)) usados.add(m[1]);
+  ok(usados.size > 0, 'o desenho usa algum logo');
+  for (const n of usados) ok(L[n], `o desenho usa '${n}', que está embutido`);
 });
 
 // ── physics sanity ────────────────────────────────────────────────────────

@@ -783,19 +783,16 @@ PB.Renderer = (function () {
   // The hoarding behind the far baseline: one dark board with the sponsors on
   // it, standing in front of the fence exactly as it does at a real venue.
   // The fence banner, which runs the full width behind the wall.
+  // A few marks, not a wall of them: one in the middle of the fence banner and
+  // a pair on the hoarding below it.
   const BANNER_BOARDS = [
-    { name: 'varig', x: -16.8, h: 0.44 },
-    { name: 'telerj', x: -5.6, h: 0.70 },
-    { name: 'oi', x: 4.6, h: 0.68 },
-    { name: 'bank', x: 15.2, h: 0.68 },
+    { name: '3emp', x: 0, h: 0.62 },
   ];
 
   const WALL_Z = FENCE_Z - 2.2, WALL_H = 5.6;
   const WALL_BOARDS = [
-    { name: 'telerj', x: -16.0, h: 4.0 },
-    { name: 'oi', x: -5.6, h: 3.4 },
-    { name: 'varig', x: 5.6, h: 2.2 },
-    { name: 'bank', x: 16.0, h: 3.4 },
+    { name: '3emp', x: -11.0, h: 2.6 },
+    { name: '3emp', x: 11.0, h: 2.6 },
   ];
 
   // ── the umpire ───────────────────────────────────────────────────────────
@@ -1400,19 +1397,13 @@ PB.Renderer = (function () {
         // lands. The pair is offset the same way on both halves as seen from
         // the camera, the far one toward the left, the near one toward the
         // right (F keeps that true whichever side the camera is on).
-        groundLogo(ctx, cam, 'varig', -4.0 * F, 3.5 * F, 9.0, 0.58);
-        groundLogo(ctx, cam, 'varig', 4.0 * F, -3.5 * F, 9.0, 0.58);
+        groundLogo(ctx, cam, '3emp', -4.0 * F, 3.5 * F, 8.0, 0.62);
+        groundLogo(ctx, cam, '3emp', 4.0 * F, -3.5 * F, 8.0, 0.62);
         return;
       }
-      // out in the surround, where nothing is at stake, they run at full
-      // strength. They sit down-court of the net so the umpire and the net
-      // posts do not crowd them.
-      // Placed against the measured frame: in portrait the ground is 16.6 ft
-      // wide either side at this depth, so these stay inside 16.
-      groundLogo(ctx, cam, 'bank', -12.8 * F, -7 * F, 5.0, 0.85);
-      groundLogo(ctx, cam, 'varig', 13.0 * F, -7 * F, 5.6, 0.9);
-      groundLogo(ctx, cam, 'varig', 0, -24 * F, 7.0, 0.85);
-      groundLogo(ctx, cam, 'telerj', 0, 26.2 * F, 3.2, 0.7);
+      // Out in the surround, where nothing is at stake, one mark at full
+      // strength behind the near baseline, the spot the camera always shows.
+      groundLogo(ctx, cam, '3emp', 0, -24.6 * F, 7.0, 0.85);
     }
 
     // Beside the net post: one figure, drawn small, that makes the court feel
