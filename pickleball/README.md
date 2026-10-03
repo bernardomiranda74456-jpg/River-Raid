@@ -14,7 +14,8 @@ CSS e JS num arquivo só, ~91 KB). É o jeito mais fácil de mandar para um
 celular ou iPad: AirDrop, e-mail ou qualquer serviço de arquivos, e abrir no
 navegador. Regenere com `node build-single.js` dentro de `pickleball/`.
 
-**iPad/iPhone (nativo):** abra `Pickleball.swiftpm` no Swift Playgrounds ou no Xcode.
+**iPhone (app nativo):** `../PickleballForever.swiftpm` embala a mesma página num app
+de verdade. Como compilar e publicar: `../COMO-PUBLICAR-NO-IPHONE.md`.
 
 ## Modos
 
@@ -140,19 +141,15 @@ Bola de plástico de 2,9 pol e 0,8 oz: gravidade, arrasto quadrático (a bola
 numericamente contra o arrasto, então cada tacada realmente chega ao alvo
 escolhido — drives saem a ~38 mph, dinks a ~15 mph.
 
-## Versão nativa (Pickleball.swiftpm)
+## App para iPhone (PickleballForever.swiftpm)
 
-`Pickleball.swiftpm/` é a mesma simulação portada para Swift, com a quadra, a
-física, as regras e a IA idênticas às da versão web. A tela é desenhada com
-SpriteKit (câmera fixa, cenário construído uma vez e só os atores atualizados
-por quadro), os menus são SwiftUI e o toque é multitoque nativo — dois dedos
-funcionam ao mesmo tempo, e no modo "um contra o outro" cada metade da tela é
-uma cena com a perspectiva do seu jogador.
-
-Diferenças em relação à web: sem áudio sintetizado (usa vibração/haptics), sem
-rastro da bola e os jogadores ainda usam o desenho simples anterior — o boneco
-articulado descrito abaixo existe só na versão web por enquanto. Abra a pasta no Swift Playgrounds (iPad) ou no Xcode e rode em
-um dispositivo/simulador iOS 15.2+.
+`../PickleballForever.swiftpm/` é um envelope nativo em Swift em volta do jogo
+web: uma `WKWebView` em tela cheia carrega `Sources/Resources/index.html`, que é
+a mesma página de `pickleball-v<N>.html`, gravada ali por `build-single.js` a
+cada build. Não há segunda implementação do jogo: o que roda no app é o que foi
+testado no navegador. O envelope libera o som sem toque, desliga rolagem, zoom e
+barra de status, e mantém a tela acesa. Passo a passo de compilação e envio para
+a App Store em `../COMO-PUBLICAR-NO-IPHONE.md`.
 
 ## Testes
 
@@ -194,10 +191,10 @@ pickleball/
   build-single.js   empacota tudo num arquivo só
   test/rules.test.js  testes do regulamento
 
-Pickleball.swiftpm/
-  Sources/Court.swift, Physics.swift, Shots.swift, Match.swift, AI.swift
-                    porte direto do núcleo de simulação
-  Sources/GameScene.swift   render SpriteKit + toque multitoque
-  Sources/GameModel.swift   estado, laço e haptics
-  Sources/ContentView.swift menus SwiftUI
+../PickleballForever.swiftpm/
+  Package.swift               o app (nome, ícone, orientações, versão)
+  Sources/App.swift           entrada SwiftUI, tela cheia
+  Sources/GameView.swift      a WKWebView que carrega o jogo
+  Sources/Resources/index.html  a página do jogo, gravada pelo build
+  Assets.xcassets/AppIcon     ícone 1024 × 1024
 ```

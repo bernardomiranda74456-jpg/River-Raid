@@ -48,4 +48,11 @@ if (fragIdx >= 0) {
   const out = path.join(dir, `pickleball-v${VERSION}.html`);
   fs.writeFileSync(out, inlined);
   console.log('arquivo único escrito em', out, (inlined.length / 1024).toFixed(0) + ' KB');
+  // The iPhone app carries the same page: it is the one resource of the
+  // Swift package next door, so the app is always the build that was tested.
+  const app = path.join(dir, '..', 'PickleballForever.swiftpm', 'Sources', 'Resources', 'index.html');
+  if (fs.existsSync(path.dirname(app))) {
+    fs.writeFileSync(app, inlined);
+    console.log('cópia para o app iPhone em', path.relative(path.join(dir, '..'), app));
+  }
 }
