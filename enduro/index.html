@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>River Raid</title>
+  <title>Enduro</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -15,11 +15,14 @@
       min-height: 100vh;
       font-family: monospace;
       color: #fff;
+      touch-action: none;
     }
     canvas {
       display: block;
       border: 2px solid #333;
       image-rendering: pixelated;
+      max-width: 100vw;
+      max-height: 85vh;
     }
     #controls {
       margin-top: 8px;
@@ -31,7 +34,7 @@
 </head>
 <body>
   <canvas id="c"></canvas>
-  <div id="controls">SETAS: Mover &nbsp;|&nbsp; ESPAÇO: Atirar &nbsp;|&nbsp; WASD também funciona &nbsp;|&nbsp; <a href="enduro/index.html" style="color:#4fc3f7">Jogar Enduro</a></div>
+  <div id="controls">← →: Virar &nbsp;|&nbsp; ↑ ou ESPAÇO: Acelerar &nbsp;|&nbsp; ↓: Frear &nbsp;|&nbsp; WASD também funciona &nbsp;|&nbsp; Toque: lados viram, centro acelera</div>
   <script src="game.js"></script>
 </body>
 </html>

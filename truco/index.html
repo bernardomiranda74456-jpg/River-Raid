@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Truco Paulista</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: mesa de feltro ao centro (grade 3x3 com os 4 assentos), placar no topo, sua mão e os botões embaixo, conversa da mesa no rodapé. */
+:root{
+  --felt:#23603c; --felt-deep:#153f27; --wood:#5a3417; --wood-hi:#9a6430;
+  --cream:#f7f0dc; --cream-dim:#e4dbc2; --ink:#221b12; --red:#b5222c; --back:#1d3f86; --back-hi:#2d58ab;
+  --gold:#e8b94c; --text:#f1e9d6; --muted:#b7c7b6; --nos:#ffd36a; --eles:#8fd0ff; --tie:#9aa59a;
+  --display:'Alfa Slab One','Rockwell','Roboto Slab',serif; --body:'Source Sans 3','Segoe UI',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--felt-deep);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.35}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,.card:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.app{height:100%;max-width:960px;margin:0 auto;padding-inline:16px;padding-block:10px;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;gap:10px}
+
+/* placar */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-size:1.25rem;letter-spacing:.02em;color:var(--gold);text-wrap:balance}
+.score{display:flex;align-items:center;gap:10px;font-family:var(--display);font-variant-numeric:tabular-nums}
+.score .t{font-family:var(--body);font-weight:700;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}
+.score .t.nos{color:var(--nos)} .score .t.eles{color:var(--eles)}
+.score b{font-size:2rem;line-height:1;min-width:1.2em;text-align:center}
+.score i{font-style:normal;color:var(--muted)}
+.valor{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:3px 10px;font-weight:600;font-size:.85rem;background:rgba(0,0,0,.2)}
+.pill.hot{border-color:var(--gold);color:var(--gold)}
+.ghost{background:transparent;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:5px 10px;font-size:.85rem}
+.ghost:hover{background:rgba(255,255,255,.08)}
+
+/* mesa */
+.table{position:relative;display:grid;grid-template-columns:minmax(72px,auto) minmax(0,1fr) minmax(72px,auto);grid-template-rows:auto minmax(0,1fr) auto;gap:6px;padding:10px;border-radius:30px;min-height:300px;
+  background:radial-gradient(ellipse at 50% 45%,var(--felt) 0%,var(--felt-deep) 85%);
+  border:8px solid var(--wood);box-shadow:inset 0 0 0 2px var(--wood-hi),inset 0 0 60px rgba(0,0,0,.45),0 8px 24px rgba(0,0,0,.4)}
+.seat{display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;min-width:0}
+.seat.north{grid-column:2;grid-row:1}
+.seat.west{grid-column:1;grid-row:2;justify-content:center}
+.seat.east{grid-column:3;grid-row:2;justify-content:center}
+.seat.south{grid-column:2;grid-row:3}
+.center{grid-column:2;grid-row:2;display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:1fr auto 1fr;place-items:center;gap:4px;min-height:0;min-width:0}
+.slot{width:var(--cw,54px);aspect-ratio:5/7;border-radius:6px;border:1.5px dashed rgba(255,255,255,.18)}
+.slot.n{grid-column:2;grid-row:1} .slot.w{grid-column:1;grid-row:2} .slot.e{grid-column:3;grid-row:2} .slot.s{grid-column:2;grid-row:3}
+.mid{grid-column:2;grid-row:2;display:flex;flex-direction:column;align-items:center;gap:3px;--cw:46px}
+.mid .lab{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.mid .man{font-size:.8rem;font-weight:700;white-space:nowrap}
+.name{display:flex;align-items:center;gap:6px;font-weight:700;font-size:.9rem;white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--eles);flex:none}
+.dot.nos{background:var(--nos)}
+.tag{font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;color:var(--felt-deep);background:var(--cream-dim);border-radius:4px;padding:1px 5px;font-weight:700}
+.tag:empty{display:none}
+.backs{display:flex;--cw:30px;height:calc(var(--cw)*1.4)}
+.backs .card{margin-left:-14px;box-shadow:0 1px 2px rgba(0,0,0,.5)}
+.backs .card:first-child{margin-left:0}
+.seat.active .name{color:var(--gold)}
+.seat.active::after{content:"";position:absolute;inset:-6px;border-radius:14px;border:2px solid var(--gold);opacity:.6;pointer-events:none}
+.bub{position:absolute;z-index:3;background:var(--cream);color:var(--ink);font-weight:700;padding:5px 10px;border-radius:12px;font-size:.9rem;box-shadow:0 3px 10px rgba(0,0,0,.4);opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s;pointer-events:none;max-width:160px;text-align:center}
+.bub.on{opacity:1;transform:none}
+.seat.north .bub{top:100%;margin-top:6px} .seat.south .bub{bottom:100%;margin-bottom:6px}
+.seat.west .bub{left:100%;margin-left:6px} .seat.east .bub{right:100%;margin-right:6px}
+.rounds{position:absolute;top:10px;left:14px;display:flex;gap:5px}
+.rounds i{width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.35);display:block}
+.rounds i.nos{background:var(--nos);border-color:var(--nos)} .rounds i.eles{background:var(--eles);border-color:var(--eles)} .rounds i.tie{background:var(--tie);border-color:var(--tie)}
+
+/* cartas */
+.card{width:var(--cw,54px);aspect-ratio:5/7;background:var(--cream);border-radius:6px;color:var(--ink);position:relative;box-shadow:0 2px 5px rgba(0,0,0,.45);font-family:var(--display);display:flex;flex-direction:column;justify-content:space-between;padding:3px 5px;border:1px solid rgba(0,0,0,.15);flex:none;max-width:100%}
+.card .r{font-size:calc(var(--cw,54px)*.3);line-height:1}
+.card .s{font-size:calc(var(--cw,54px)*.5);line-height:1;text-align:center}
+.card .b{align-self:flex-end;transform:rotate(180deg)}
+.card.red{color:var(--red)}
+.card.back{background:repeating-linear-gradient(45deg,var(--back) 0 4px,var(--back-hi) 4px 8px);border:3px solid var(--cream)}
+.card.man::before{content:"";position:absolute;inset:-3px;border:2px solid var(--gold);border-radius:8px;pointer-events:none}
+.card.in{animation:deal .25s ease-out}
+@keyframes deal{from{opacity:0;transform:translateY(8px)}}
+@media(prefers-reduced-motion:reduce){.card.in{animation:none}.bub{transition:none}}
+
+/* sua mão e ações */
+.me{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center}
+.hand{display:flex;gap:8px;--cw:72px}
+button.card{padding:3px 6px;transition:transform .12s}
+button.card:not(:disabled):hover{transform:translateY(-6px)}
+button.card:disabled{cursor:default;filter:saturate(.8) brightness(.92)}
+.actions{display:flex;flex-direction:column;gap:8px;min-width:0}
+.status{font-weight:600}
+.status small{display:block;color:var(--muted);font-weight:400}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:0;border-radius:10px;padding:9px 16px;font-weight:700;font-size:.95rem;background:var(--cream);color:var(--ink);box-shadow:0 2px 0 rgba(0,0,0,.35)}
+.btn:hover{background:#fff}
+.btn.truco{background:var(--red);color:#fff;font-family:var(--display);letter-spacing:.03em;font-size:1.05rem}
+.btn.truco:hover{background:#d12a35}
+.btn.run{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,.35);box-shadow:none}
+.chk{display:flex;align-items:center;gap:6px;font-size:.9rem;color:var(--muted)}
+
+/* conversa */
+.log{background:rgba(0,0,0,.28);border-radius:10px;padding:8px 12px;font-size:.85rem;color:var(--muted);max-height:76px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.log div:last-child{color:var(--text)}
+details{font-size:.82rem;color:var(--muted)}
+details summary{cursor:pointer;font-weight:600}
+details p{margin:.4em 0}
+
+/* sobreposição (mão de onze, fim de jogo) */
+.overlay{position:fixed;inset:0;background:rgba(10,25,16,.78);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.panel{background:var(--felt);border:6px solid var(--wood);box-shadow:inset 0 0 0 2px var(--wood-hi),0 12px 40px rgba(0,0,0,.6);border-radius:22px;padding:22px;max-width:460px;width:100%;display:flex;flex-direction:column;gap:14px;text-align:center}
+.panel h2{font-family:var(--display);font-weight:400;margin:0;color:var(--gold);font-size:1.6rem;text-wrap:balance}
+.panel .hands{display:flex;justify-content:center;gap:20px;flex-wrap:wrap}
+.panel .hands > div{display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:700}
+.panel .cards{display:flex;gap:6px;--cw:52px}
+
+@media (max-width:560px){
+  .app{padding-block:6px;gap:8px}
+  .score b{font-size:1.6rem}
+  .brand{display:none}
+  .me{grid-template-columns:1fr;gap:8px}
+  .hand{--cw:64px;justify-content:center}
+  .table{min-height:260px;padding:8px;border-width:6px;border-radius:22px}
+  .slot,.center .card{--cw:46px}
+  .mid{--cw:38px}
+  .backs{--cw:24px}
+  .bub{max-width:120px;font-size:.8rem}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <div class="brand">Truco Paulista</div>
+    <div class="score" aria-live="polite">
+      <span class="t nos">Nós</span><b id="s0">0</b><i>×</i><b id="s1">0</b><span class="t eles">Eles</span>
+    </div>
+    <div class="valor">
+      <span class="pill" id="valor">Vale 1</span>
+      <span class="pill hot" id="especial" hidden></span>
+      <button class="ghost" id="novo" type="button">Novo jogo</button>
+    </div>
+  </header>
+
+  <main class="table" aria-label="Mesa">
+    <div class="rounds" id="rounds" title="Rodadas desta mão"><i></i><i></i><i></i></div>
+
+    <div class="seat north" id="seat2">
+      <div class="name"><span class="dot nos"></span><span>Parceira</span><span class="tag" id="tag2"></span></div>
+      <div class="backs" id="cnt2"></div>
+      <div class="bub" id="bub2"></div>
+    </div>
+    <div class="seat west" id="seat1">
+      <div class="name"><span class="dot"></span><span>Zé</span><span class="tag" id="tag1"></span></div>
+      <div class="backs" id="cnt1"></div>
+      <div class="bub" id="bub1"></div>
+    </div>
+
+    <div class="center">
+      <div class="slot n" id="slot2"></div>
+      <div class="slot w" id="slot1"></div>
+      <div class="mid">
+        <span class="lab">Vira</span>
+        <div id="vira"></div>
+        <span class="man" id="manilha"></span>
+      </div>
+      <div class="slot e" id="slot3"></div>
+      <div class="slot s" id="slot0"></div>
+    </div>
+
+    <div class="seat east" id="seat3">
+      <div class="name"><span class="dot"></span><span>Nina</span><span class="tag" id="tag3"></span></div>
+      <div class="backs" id="cnt3"></div>
+      <div class="bub" id="bub3"></div>
+    </div>
+    <div class="seat south" id="seat0">
+      <div class="name"><span class="dot nos"></span><span>Você</span><span class="tag" id="tag0"></span></div>
+      <div class="bub" id="bub0"></div>
+    </div>
+  </main>
+
+  <section class="me">
+    <div class="hand" id="hand" aria-label="Suas cartas"></div>
+    <div class="actions" id="actions"></div>
+  </section>
+
+  <div>
+    <div class="log" id="log" aria-live="polite"></div>
+    <details>
+      <summary>Regras desta mesa</summary>
+      <p>Baralho de 40 cartas (sem 8, 9 e 10). Força: 4 &lt; 5 &lt; 6 &lt; 7 &lt; Q &lt; J &lt; K &lt; A &lt; 2 &lt; 3. A <b>vira</b> é virada a cada mão e a manilha é a carta seguinte a ela (vira 3, manilha 4). Entre manilhas: ♣ paus (zap) &gt; ♥ copas &gt; ♠ espadas &gt; ♦ ouros (pica-fumo).</p>
+      <p>Mão em melhor de três rodadas, vale 1 tento. Truco sobe para 3, depois 6, 9 e 12. Quem pediu por último não pode pedir de novo até a outra dupla aumentar. Correr entrega o valor atual. Empate na primeira: quem ganhar a segunda leva; empate depois de uma vitória: vence quem ganhou a primeira. Da segunda rodada em diante pode-se jogar carta virada, que vale menos que tudo. Jogo até 12 tentos.</p>
+      <p><b>Mão de onze:</b> a dupla com 11 vê as cartas do parceiro e decide jogar (vale 3) ou correr (a outra dupla faz 1). <b>Mão de ferro:</b> 11 a 11, todos jogam às cegas e vale 1.</p>
+    </details>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" hidden><div class="panel" id="panel"></div></div>
+
+<script>
+'use strict';
+const SUITS=['♦','♠','♥','♣'], SUIT_NAMES=['ouros','espadas','copas','paus'];
+const RANKS=['4','5','6','7','Q','J','K','A','2','3'];
+const NAMES=['Você','Zé','Parceira','Nina'];
+const TEAM=['Nós','Eles'];
+const LEVEL={3:'Truco!',6:'Seis!',9:'Nove!',12:'Doze!'};
+const teamOf=p=>p%2;
+const $=id=>document.getElementById(id);
+let G=null, timer=null;
+const bubT={};
+
+function makeDeck(){const d=[];for(let r=0;r<10;r++)for(let s=0;s<4;s++)d.push({r,s});return d;}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function str(c){return c.r===G.hand.manilha?10+c.s:c.r;}
+function cardName(c){return RANKS[c.r]+SUITS[c.s];}
+function nextLevel(v){return v===1?3:Math.min(12,v+3);}
+function schedule(fn,ms){clearTimeout(timer);timer=setTimeout(fn,ms);}
+function think(){return 700+Math.random()*700;}
+
+function log(t){G.log.push(t);if(G.log.length>60)G.log.shift();}
+function say(p,t){
+  log(`${NAMES[p]}: ${t}`);
+  const b=$('bub'+p); b.textContent=t; b.classList.add('on');
+  clearTimeout(bubT[p]); bubT[p]=setTimeout(()=>b.classList.remove('on'),2600);
+}
+
+/* ---------- fluxo da partida ---------- */
+function newGame(){
+  clearTimeout(timer);
+  G={score:[0,0],dealer:3,hand:null,phase:'idle',log:['Nova partida. Primeiro a 12 tentos.'],winner:null};
+  nextHand();
+}
+function nextHand(){
+  G.dealer=(G.dealer+1)%4;
+  const deck=shuffle(makeDeck());
+  const cards=[0,1,2,3].map(i=>deck.slice(i*3,i*3+3));
+  const vira=deck[12];
+  const first=(G.dealer+1)%4;
+  G.hand={vira,manilha:(vira.r+1)%10,cards,played:[null,null,null,null],rounds:[],round:0,leader:first,turn:first,
+    value:1,pending:null,lastRaiser:null,onze:false,onzeTeam:null,ferro:false,done:false};
+  const h=G.hand,[a,b]=G.score;
+  log(`— Nova mão. Vira ${cardName(vira)}, manilha é ${RANKS[h.manilha]}. ${NAMES[first]} é mão.`);
+  if(a>=11&&b>=11){h.ferro=true;log('Mão de ferro! Todos jogam às cegas, vale 1.');G.phase='playing';}
+  else if(a>=11||b>=11){h.onze=true;h.onzeTeam=a>=11?0:1;G.phase='onze';log(`Mão de onze para ${TEAM[h.onzeTeam].toLowerCase()}.`);}
+  else G.phase='playing';
+  render(); proceed();
+}
+function proceed(){
+  const h=G.hand; if(!h) return;
+  if(G.phase==='playing'){ if(h.turn!==0) schedule(()=>botTurn(h.turn),think()); }
+  else if(G.phase==='truco'){ if(1-h.pending.by===1) schedule(botRespond,think()+300); }
+  else if(G.phase==='onze'){ if(h.onzeTeam===1) schedule(botOnze,1100); }
+  else if(G.phase==='roundEnd'){ schedule(resolveRound,1500); }
+  else if(G.phase==='handEnd'){ schedule(nextHand,2400); }
+}
+function canCall(team){
+  const h=G.hand;
+  return G.phase==='playing'&&!h.onze&&!h.ferro&&h.value<12&&h.lastRaiser!==team&&teamOf(h.turn)===team;
+}
+function callTruco(p){
+  const h=G.hand; if(!canCall(teamOf(p))) return;
+  h.pending={by:teamOf(p),caller:p,level:nextLevel(h.value)};
+  G.phase='truco'; say(p,LEVEL[h.pending.level]); render(); proceed();
+}
+function respond(team,action,p){
+  const h=G.hand, pd=h.pending; if(!pd||1-pd.by!==team) return;
+  if(action==='run'){ say(p,'Corro.'); endHand(pd.by,h.value,`${TEAM[team]} correu`); return; }
+  if(action==='accept'){ h.value=pd.level; h.lastRaiser=pd.by; h.pending=null; G.phase='playing'; say(p,'Aceito!'); render(); proceed(); return; }
+  if(action==='raise'){ h.value=pd.level; h.lastRaiser=pd.by; const lvl=nextLevel(pd.level); h.pending={by:team,caller:p,level:lvl}; say(p,LEVEL[lvl]); render(); proceed(); }
+}
+function onzeDecide(team,play,p){
+  const h=G.hand; if(G.phase!=='onze') return;
+  if(play){ h.value=3; G.phase='playing'; say(p,'Vamos jogar!'); render(); proceed(); }
+  else { say(p,'Corremos.'); endHand(1-team,1,`${TEAM[team]} correu da mão de onze`); }
+}
+function playCard(p,i,hidden){
+  const h=G.hand; if(G.phase!=='playing'||h.turn!==p) return;
+  const card=h.cards[p].splice(i,1)[0];
+  h.played[p]={card,hidden:!!hidden&&h.round>0&&!h.ferro};
+  if(h.played.every(Boolean)){ G.phase='roundEnd'; }
+  else h.turn=(p+1)%4;
+  render(); proceed();
+}
+function roundState(){
+  const h=G.hand; let best=-2,bestP=-1,tie=false;
+  for(let i=0;i<4;i++){
+    const p=(h.leader+i)%4, pl=h.played[p]; if(!pl) continue;
+    const s=pl.hidden?-1:str(pl.card);
+    if(s>best){best=s;bestP=p;tie=false;}
+    else if(s===best&&teamOf(p)!==teamOf(bestP)) tie=true;
+  }
+  return {best,bestP,tie};
+}
+function handOutcome(r){
+  const n=r.length;
+  if(n>=2){
+    if(r[0]===-1&&r[1]!==-1) return r[1];
+    if(r[0]!==-1&&r[1]===-1) return r[0];
+    if(r[0]!==-1&&r[0]===r[1]) return r[0];
+  }
+  if(n===3){
+    if(r[2]!==-1) return r[2];
+    if(r[0]!==-1) return r[0];
+    return null;
+  }
+  return undefined;
+}
+function resolveRound(){
+  const h=G.hand; const {bestP,tie}=roundState();
+  if(tie){ h.rounds.push(-1); log(`Rodada ${h.round+1}: empatou (cangou).`); }
+  else { const t=teamOf(bestP); h.rounds.push(t); h.leader=bestP; log(`Rodada ${h.round+1}: ${NAMES[bestP]} fez (${TEAM[t]}).`); }
+  const out=handOutcome(h.rounds);
+  if(out!==undefined){ endHand(out,h.value, out===null?'três empates, ninguém marca':null); return; }
+  h.round++; h.played=[null,null,null,null]; h.turn=h.leader; G.phase='playing'; render(); proceed();
+}
+function endHand(team,points,why){
+  const h=G.hand; h.done=true; h.pending=null;
+  if(team!==null){ G.score[team]=Math.min(12,G.score[team]+points); log(`${TEAM[team]} ${team===0?'fizemos':'fizeram'} ${points} tento${points>1?'s':''}${why?' ('+why+')':''}. Placar ${G.score[0]} × ${G.score[1]}.`); }
+  else log(`Mão sem tentos (${why}).`);
+  if(G.score[0]>=12||G.score[1]>=12){ G.winner=G.score[0]>=12?0:1; G.phase='gameOver'; log(G.winner===0?'Ganhamos a partida!':'Eles levaram a partida.'); }
+  else G.phase='handEnd';
+  render(); proceed();
+}
+
+/* ---------- robôs ---------- */
+function liveCards(p){const h=G.hand;const pl=h.played[p];return h.cards[p].concat(pl&&!pl.hidden?[pl.card]:[]);}
+function evalHand(cards){const s=cards.map(str).sort((a,b)=>b-a);return {max:s[0]??0,avg:s.length?s.reduce((a,b)=>a+b,0)/s.length:0,s};}
+function teamEval(team){const ps=team===0?[0,2]:[1,3];return ps.map(p=>evalHand(liveCards(p))).reduce((a,b)=>a.max>=b.max?a:b);}
+function botWantsTruco(p){
+  const h=G.hand,t=teamOf(p),e=evalHand(h.cards[p]);
+  let sc=e.max>=12?0.5:e.max>=10?0.3:e.max>=8?0.12:0;
+  sc+=Math.max(0,e.avg-5.5)*0.08;
+  if(h.rounds[0]===t) sc+=0.3; if(h.rounds[0]===1-t) sc-=0.2;
+  if(h.rounds.length===1&&h.rounds[0]===-1) sc+=e.max>=10?0.35:-0.1;
+  if(h.cards[p].length===1) sc=e.max>=11?0.7:e.max>=8?0.25:0.05;
+  if(G.score[1-t]+nextLevel(h.value)>=12&&G.score[1-t]+h.value<12) sc-=0.15;
+  sc+=(Math.random()-0.5)*0.16; if(Math.random()<0.06) sc+=0.5;
+  return sc>0.47;
+}
+function botTurn(p){
+  if(G.phase!=='playing'||G.hand.turn!==p) return;
+  if(canCall(teamOf(p))&&botWantsTruco(p)){ callTruco(p); return; }
+  const c=botChoose(p); playCard(p,c.i,c.hidden);
+}
+function botChoose(p){
+  const h=G.hand,cards=h.cards[p],t=teamOf(p);
+  if(h.ferro) return {i:Math.floor(Math.random()*cards.length)};
+  const idx=cards.map((c,i)=>i).sort((a,b)=>str(cards[a])-str(cards[b]));
+  const lo=idx[0],hi=idx[idx.length-1],S=i=>str(cards[i]);
+  const nPlayed=h.played.filter(Boolean).length, canHide=h.round>0;
+  if(nPlayed===0){
+    if(h.round===0&&idx.length===3&&S(hi)>=10&&S(idx[1])>=5) return {i:idx[1]};
+    return {i:hi};
+  }
+  const {best,bestP,tie}=roundState();
+  const partnerWinning=bestP!==-1&&teamOf(bestP)===t&&!tie;
+  const last=nPlayed===3;
+  const beat=idx.find(i=>S(i)>best);
+  if(partnerWinning){
+    if(best>=8||last) return {i:lo,hidden:canHide&&Math.random()<0.7};
+    if(beat!==undefined&&S(beat)<10) return {i:beat};
+    return {i:lo,hidden:canHide&&Math.random()<0.5};
+  }
+  if(beat!==undefined) return {i:beat};
+  const tieI=idx.find(i=>S(i)===best&&best>=0);
+  if(tieI!==undefined&&(h.rounds[0]===t||(h.round===0&&S(hi)>=10))) return {i:tieI};
+  return {i:lo,hidden:canHide&&Math.random()<0.6};
+}
+function botRespond(){
+  const h=G.hand; if(G.phase!=='truco'||1-h.pending.by!==1) return;
+  const team=1,lvl=h.pending.level,e1=evalHand(liveCards(1)),e3=evalHand(liveCards(3));
+  const best=e1.max>=e3.max?e1:e3, speaker=e1.max>=e3.max?1:3;
+  let sc=best.max>=12?0.6:best.max>=10?0.42:best.max>=8?0.2:0.05;
+  sc+=Math.max(0,best.avg-5)*0.06;
+  if(h.rounds[0]===team) sc+=0.3; if(h.rounds[0]===1-team) sc-=0.25;
+  if(h.rounds.length===1&&h.rounds[0]===-1) sc+=best.max>=10?0.3:-0.1;
+  sc+=(Math.random()-0.5)*0.2;
+  const mustAccept=G.score[0]+h.value>=12;
+  if(lvl<12&&sc>0.9) respond(team,'raise',speaker);
+  else if(sc>0.3||mustAccept) respond(team,'accept',speaker);
+  else respond(team,'run',speaker);
+}
+function botOnze(){
+  if(G.phase!=='onze') return;
+  const e=teamEval(1), play=e.max>=10||e.avg>=6||(G.score[0]>=10)||Math.random()<0.15;
+  onzeDecide(1,play,e===evalHand(liveCards(1))?1:3);
+}
+
+/* ---------- interface ---------- */
+function cardHTML(c,extra=''){
+  const red=c.s===0||c.s===2, man=G.hand&&c.r===G.hand.manilha;
+  return `<div class="card in ${red?'red':''} ${man?'man':''} ${extra}" title="${cardName(c)}${man?' (manilha)':''}"><span class="r">${RANKS[c.r]}</span><span class="s">${SUITS[c.s]}</span><span class="r b">${RANKS[c.r]}</span></div>`;
+}
+const backHTML=(cls='')=>`<div class="card back in ${cls}"></div>`;
+function render(){
+  const h=G.hand;
+  $('s0').textContent=G.score[0]; $('s1').textContent=G.score[1];
+  let v=h?`Vale ${h.value}`:'—'; if(h&&h.pending) v=`Vale ${h.value} · pedido ${h.pending.level}`;
+  $('valor').textContent=v;
+  const esp=$('especial'); esp.hidden=!(h&&(h.onze||h.ferro)); esp.textContent=h&&h.ferro?'Mão de ferro':'Mão de onze';
+  $('vira').innerHTML=h?cardHTML(h.vira):''; 
+  $('manilha').innerHTML=h?`Manilha <b>${RANKS[h.manilha]}</b> · ♣&gt;♥&gt;♠&gt;♦`:'';
+  const first=(G.dealer+1)%4;
+  for(let p=0;p<4;p++){
+    const seat=$('seat'+p);
+    seat.classList.toggle('active',!!h&&!h.done&&G.phase==='playing'&&h.turn===p);
+    $('tag'+p).textContent=h?(p===first?'mão':p===G.dealer?'pé':''):'';
+    if(p>0){ $('cnt'+p).innerHTML=h?h.cards[p].map(()=>backHTML()).join(''):''; }
+    const pl=h&&h.played[p];
+    $('slot'+p).innerHTML=pl?(pl.hidden?backHTML():cardHTML(pl.card)):'';
+  }
+  const dots=$('rounds').children;
+  for(let i=0;i<3;i++){ const r=h?h.rounds[i]:undefined; dots[i].className=r===undefined?'':r===-1?'tie':r===0?'nos':'eles'; }
+  const myTurn=!!h&&G.phase==='playing'&&h.turn===0;
+  $('hand').innerHTML=h?h.cards[0].map((c,i)=>h.ferro
+      ?`<button type="button" class="card back in" data-i="${i}" ${myTurn?'':'disabled'} aria-label="Carta ${i+1} virada"></button>`
+      :cardHTML(c,'').replace('<div class="card',`<button type="button" data-i="${i}" ${myTurn?'':'disabled'} class="card`).replace(/<\/div>$/,'</button>')
+    ).join(''):'';
+  renderActions(); renderOverlay();
+  const lg=$('log'); lg.innerHTML=G.log.slice(-8).map(t=>`<div>${t}</div>`).join(''); lg.scrollTop=lg.scrollHeight;
+}
+function renderActions(){
+  const h=G.hand, a=$('actions'); if(!h){a.innerHTML='';return;}
+  let html='';
+  if(G.phase==='playing'&&h.turn===0){
+    html+=`<div class="status">Sua vez.<small>${h.ferro?'Escolha uma carta às cegas.':'Toque numa carta para jogar.'}</small></div><div class="row">`;
+    if(canCall(0)) html+=`<button type="button" class="btn truco" data-act="truco">${LEVEL[nextLevel(h.value)]}</button>`;
+    if(h.round>0&&!h.ferro) html+=`<label class="chk"><input type="checkbox" id="hide"> Jogar virada</label>`;
+    html+='</div>';
+  } else if(G.phase==='truco'&&1-h.pending.by===0){
+    const pd=h.pending;
+    html+=`<div class="status">${NAMES[pd.caller]} pediu <b>${LEVEL[pd.level]}</b><small>Aceitar faz a mão valer ${pd.level}. Correr entrega ${h.value}.</small></div><div class="row">
+      <button type="button" class="btn" data-act="accept">Aceitar</button>
+      ${pd.level<12?`<button type="button" class="btn truco" data-act="raise">Pedir ${nextLevel(pd.level)}!</button>`:''}
+      <button type="button" class="btn run" data-act="run">Correr</button></div>`;
+  } else if(G.phase==='truco'){
+    html+=`<div class="status">${NAMES[h.pending.caller]} pediu ${LEVEL[h.pending.level]}…<small>Eles estão decidindo.</small></div>`;
+  } else if(G.phase==='playing'){
+    html+=`<div class="status">Vez de ${NAMES[h.turn]}.</div>`;
+  } else if(G.phase==='roundEnd'){
+    html+=`<div class="status">Comparando as cartas…</div>`;
+  } else if(G.phase==='handEnd'){
+    html+=`<div class="status">Fim da mão.<small>Embaralhando a próxima.</small></div>`;
+  } else if(G.phase==='onze'){
+    html+=`<div class="status">Mão de onze.<small>${h.onzeTeam===0?'Decida com sua parceira.':'Eles estão decidindo.'}</small></div>`;
+  }
+  a.innerHTML=html;
+}
+function renderOverlay(){
+  const h=G.hand, ov=$('overlay'), pn=$('panel');
+  if(G.phase==='onze'&&h.onzeTeam===0){
+    ov.hidden=false;
+    pn.innerHTML=`<h2>Mão de onze</h2><p>Vocês têm 11. Jogar vale 3 tentos; correr dá 1 tento para eles.</p>
+      <div class="hands"><div>Você<div class="cards">${h.cards[0].map(c=>cardHTML(c)).join('')}</div></div>
+      <div>Parceira<div class="cards">${h.cards[2].map(c=>cardHTML(c)).join('')}</div></div></div>
+      <div class="row" style="justify-content:center"><button type="button" class="btn truco" data-act="onze-play">Jogar</button><button type="button" class="btn run" data-act="onze-run">Correr</button></div>`;
+  } else if(G.phase==='gameOver'){
+    ov.hidden=false;
+    pn.innerHTML=`<h2>${G.winner===0?'Ganhamos!':'Eles levaram.'}</h2><p style="font-family:var(--display);font-size:2.2rem;margin:0;font-variant-numeric:tabular-nums">${G.score[0]} × ${G.score[1]}</p>
+      <div class="row" style="justify-content:center"><button type="button" class="btn truco" data-act="new">Jogar de novo</button></div>`;
+  } else ov.hidden=true;
+}
+
+document.addEventListener('click',e=>{
+  const card=e.target.closest('#hand button.card');
+  if(card&&!card.disabled){ const hide=$('hide'); playCard(0,+card.dataset.i,hide&&hide.checked); return; }
+  const b=e.target.closest('[data-act]'); if(!b) return;
+  const act=b.dataset.act;
+  if(act==='truco') callTruco(0);
+  else if(act==='accept'||act==='run'||act==='raise') respond(0,act,0);
+  else if(act==='onze-play') onzeDecide(0,true,0);
+  else if(act==='onze-run') onzeDecide(0,false,0);
+  else if(act==='new') newGame();
+});
+$('novo').addEventListener('click',newGame);
+
+try{ window.claude?.hot?.snapshot?.(()=>({G})); }catch(_){}
+function boot(data){
+  try{ if(data&&data.G&&data.G.hand){ G=data.G; render(); proceed(); return; } }catch(_){}
+  newGame();
+}
+try{ window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {}); }catch(_){ newGame(); }
+</script>
+</body>
+</html>
