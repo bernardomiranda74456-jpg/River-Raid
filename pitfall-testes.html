@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pitfall! — Testes</title>
+  <style>
+    body { background: #111; color: #ddd; font: 14px/1.5 monospace; padding: 16px; max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 20px; margin-bottom: 8px; }
+    #summary { font-size: 16px; margin: 8px 0 16px; font-weight: bold; }
+    .ok { color: #6c6; } .fail { color: #f66; }
+    li { list-style: none; padding: 2px 0; }
+    .err { color: #f99; margin-left: 24px; font-size: 12px; }
+    a { color: #8ab; }
+  </style>
+</head>
+<body>
+  <h1>Pitfall! — Testes</h1>
+  <div id="summary">Rodando…</div>
+  <ul id="list"></ul>
+  <p><a href="pitfall.html">← Voltar ao jogo</a></p>
+  <script>
+// Pitfall! (Activision, 1982) — game logic, no DOM dependencies.
+// The jungle is not stored: like the original 4 KB cartridge, every screen is
+// decoded from one byte of an 8-bit LFSR (seed $C4, period 255).
+(function (root) {
+  'use strict';
+
+  // ─── Geometry (logical 160×192 Atari-style screen) ─────────────────────────
+  const W = 160, H = 192;
+  const LEFT_EDGE = 8, RIGHT_EDGE = 152;
+  const GROUND_Y = 112;          // Harry's feet when above ground
+  const TUNNEL_TOP = 146;
+  const UNDER_Y = 172;           // Harry's feet in the tunnel
+  const HARRY_H = 21;
+
+  const WALK = 1;
+  const JUMP_LEN = 32, JUMP_H = 16;
+  const DEATH_FRAMES = 120, SINK_FRAMES = 64;
+
+  const START_SEED = 0xC4;
+  const START_SCORE = 2000;
+  const START_LIVES = 3;
+  const TIME_FRAMES = 20 * 60 * 60;   // 20:00 at 60 fps
+  const HOLE_PENALTY = 100;
+  const TREASURE_VALUES = [2000, 3000, 4000, 5000]; // bag, silver, gold, ring
+  const TREASURE_NAMES = ['money', 'silver', 'gold', 'ring'];
+  const TOTAL_TREASURES = 32;
+
+  const LADDER_X = 80, LADDER_HALF = 4;
+  const SIDE_HOLES = [[44, 56], [104, 116]];
+  const PIT_X0 = 40, PIT_X1 = 120, PIT_CX = 80, PIT_HALF = 40;
+  const SHIFT_PERIOD = 256;
+  const CROC_XS = [52, 80, 108], CROC_HALF = 6, CROC_PERIOD = 64;
+  const VINE_PX = 80, VINE_PY = 26, VINE_LEN = 60, VINE_AMP = 0.8, VINE_PERIOD = 176;
+  const HANG_OFF = 20;
+  const OBJ_X = 124;
+  const WALL_W = 8;
+
+  const SCENES = [
+    'one hole', 'three holes', 'tar pit + vine', 'swamp + vine',
+    'crocodiles', 'shifting tar pit + treasure', 'shifting tar pit + vine',
+    'shifting quicksand',
+  ];
+  const OBJECTS = [
+    'rolling log', 'two rolling logs (close)', 'two rolling logs (far)',
+    'three rolling logs', 'log', 'three logs', 'fire', 'cobra',
+  ];
+
+  // ─── Random-number generator (8-bit LFSR, taps 7/5/4/3) ────────────────────
+  function lfsrNext(r) {
+    const b = ((r >> 3) ^ (r >> 4) ^ (r >> 5) ^ (r >> 7)) & 1;
+    return ((r << 1) | b) & 0xFF;
+  }
+  function lfsrPrev(r) {
+    const b7 = (r ^ (r >> 4) ^ (r >> 5) ^ (r >> 6)) & 1;
+    return (r >> 1) | (b7 << 7);
+  }
+  function advance(seed, n) {
+    for (let i = 0; i < Math.abs(n); i++) seed = n > 0 ? lfsrNext(seed) : lfsrPrev(seed);
+    return seed;
+  }
+
+  // ─── Screen decoding ──────────────────────────────────────────────────────
+  // bits 7-6 tree pattern, bit 7 wall side, bits 5-3 scene, bits 2-0 object
+  function decodeRoom(seed) {
+    const scene = (seed >> 3) & 7;
+    const objType = seed & 7;
+    const room = {
+      seed, scene, objType,
+      trees: (seed >> 6) & 3,
+      ladder: scene <= 1,
+      sideHoles: scene === 1,
+      pit: null, shifting: false, vine: false, crocs: false,
+      treasure: null, objects: [], scorpion: false, wallX: null,
+    };
+    switch (scene) {
+      case 2: room.pit = 'tar'; room.vine = true; break;
+      case 3: room.pit = 'swamp'; room.vine = true; break;
+      case 4: room.pit = 'swamp'; room.crocs = true; room.vine = !!(seed & 2); break;
+      case 5: room.pit = 'tar'; room.shifting = true; room.treasure = seed & 3; break;
+      case 6: room.pit = 'tar'; room.shifting = true; room.vine = true; break;
+      case 7: room.pit = 'swamp'; room.shifting = true; break;
+    }
+    if (scene !== 4 && scene !== 5) room.objects = objectLayout(objType);
+    if (room.ladder) room.wallX = (seed & 0x80) ? RIGHT_EDGE - 12 : LEFT_EDGE + 4;
+    else room.scorpion = true;
+    return room;
+  }
+
+  function objectLayout(t) {
+    const log = (x, rolling) => ({ kind: 'log', x, rolling });
+    switch (t) {
+      case 0: return [log(OBJ_X, true)];
+      case 1: return [log(OBJ_X, true), log(OBJ_X + 16, true)];
+      case 2: return [log(OBJ_X - 32, true), log(OBJ_X, true)];
+      case 3: return [log(OBJ_X - 64, true), log(OBJ_X - 32, true), log(OBJ_X, true)];
+      case 4: return [log(OBJ_X, false)];
+      case 5: return [log(OBJ_X - 64, false), log(OBJ_X - 32, false), log(OBJ_X, false)];
+      case 6: return [{ kind: 'fire', x: OBJ_X }];
+      case 7: return [{ kind: 'cobra', x: OBJ_X }];
+    }
+    return [];
+  }
+
+  function allRooms() {
+    const out = [];
+    let s = START_SEED;
+    for (let i = 0; i < 255; i++) { out.push(decodeRoom(s)); s = lfsrNext(s); }
+    return out;
+  }
+
+  // ─── Game state ───────────────────────────────────────────────────────────
+  function newGame() {
+    const g = {
+      frame: 0, score: START_SCORE, lives: START_LIVES, timer: TIME_FRAMES,
+      over: false, won: false, collected: {}, treasuresTaken: 0,
+      events: [], room: null, objs: [], scorpionX: 0,
+      prevJump: false, logContact: false, harry: null,
+    };
+    enterRoom(g, START_SEED);
+    placeHarry(g, 16, GROUND_Y, 'ground');
+    return g;
+  }
+
+  function placeHarry(g, x, y, mode) {
+    g.harry = {
+      x, y, mode, level: y > (GROUND_Y + TUNNEL_TOP) / 2 ? 'under' : 'top',
+      dir: 1, vx: 0, vy: 0, baseY: y, jumpT: 0, deadT: 0, grabCD: 0,
+      walkT: 0, moving: false, hit: false, cause: null,
+    };
+  }
+
+  function enterRoom(g, seed) {
+    g.room = decodeRoom(seed);
+    g.objs = g.room.objects.map(o => Object.assign({}, o));
+    if (g.room.treasure !== null && !g.collected[seed]) {
+      g.objs.push({ kind: 'treasure', x: OBJ_X, type: g.room.treasure });
+    }
+    g.scorpionX = OBJ_X + 12;
+  }
+
+  // ─── Terrain queries ──────────────────────────────────────────────────────
+  function pitSpan(g) {
+    const r = g.room;
+    if (!r.pit) return null;
+    if (!r.shifting) return [PIT_X0, PIT_X1];
+    const t = (g.frame % SHIFT_PERIOD) / SHIFT_PERIOD;
+    const hw = Math.round(PIT_HALF * (0.5 - 0.5 * Math.cos(2 * Math.PI * t)));
+    return [PIT_CX - hw, PIT_CX + hw];
+  }
+
+  function crocsOpen(g) { return ((g.frame / CROC_PERIOD) | 0) % 2 === 1; }
+
+  function surfaceAt(g, x) {
+    const r = g.room;
+    if (r.ladder) {
+      if (Math.abs(x - LADDER_X) < LADDER_HALF) return 'hole';
+      if (r.sideHoles) for (const [a, b] of SIDE_HOLES) if (x >= a && x < b) return 'hole';
+    }
+    const span = pitSpan(g);
+    if (span && x >= span[0] && x < span[1]) {
+      if (r.crocs) {
+        for (const cx of CROC_XS) {
+          if (Math.abs(x - cx) <= CROC_HALF) return crocsOpen(g) ? 'jaws' : 'croc';
+        }
+      }
+      return 'pit';
+    }
+    return 'ground';
+  }
+
+  function vineEnd(g, frame) {
+    const f = frame === undefined ? g.frame : frame;
+    const a = VINE_AMP * Math.sin(2 * Math.PI * f / VINE_PERIOD);
+    return { x: VINE_PX + VINE_LEN * Math.sin(a), y: VINE_PY + VINE_LEN * Math.cos(a) };
+  }
+
+  function wallBlocks(g, x) {
+    const wx = g.room.wallX;
+    return g.harry.level === 'under' && wx !== null && x + 3 > wx && x - 3 < wx + WALL_W;
+  }
+
+  // ─── Harry helpers ────────────────────────────────────────────────────────
+  function addScore(g, n) { g.score = Math.max(0, g.score + n); }
+
+  function changeRoom(g, dir) {
+    const h = g.harry;
+    const steps = h.level === 'under' ? 3 : 1;
+    enterRoom(g, advance(g.room.seed, dir * steps));
+    h.x = dir > 0 ? LEFT_EDGE + 1 : RIGHT_EDGE - 1;
+    g.events.push('room');
+  }
+
+  function moveX(g, dx) {
+    const h = g.harry;
+    const nx = h.x + dx;
+    if (wallBlocks(g, nx)) return false;
+    h.x = nx;
+    if (h.x > RIGHT_EDGE) changeRoom(g, 1);
+    else if (h.x < LEFT_EDGE) changeRoom(g, -1);
+    return true;
+  }
+
+  function kill(g, cause) {
+    const h = g.harry;
+    h.mode = cause === 'sink' ? 'sink' : 'dead';
+    h.cause = cause;
+    h.deadT = 0;
+    g.events.push('death');
+  }
+
+  function checkFooting(g) {
+    const h = g.harry;
+    if (h.level !== 'top' || h.mode !== 'ground') return;
+    const s = surfaceAt(g, h.x);
+    if (s === 'hole') {
+      h.mode = 'fall';
+      addScore(g, -HOLE_PENALTY);
+      g.events.push('hole');
+    } else if (s === 'pit') {
+      kill(g, 'sink');
+    } else if (s === 'jaws') {
+      kill(g, 'croc');
+    }
+  }
+
+  function respawn(g) {
+    placeHarry(g, 16, 40, 'drop');
+  }
+
+  // ─── Per-frame update ─────────────────────────────────────────────────────
+  function step(g, input) {
+    input = input || {};
+    g.events = [];
+    if (g.over) return g;
+    g.frame++;
+    if (g.timer > 0 && --g.timer === 0) {
+      g.over = true;
+      g.events.push('gameover');
+      return g;
+    }
+    updateObjects(g);
+    updateHarry(g, input);
+    if (!g.over) collide(g);
+    g.prevJump = !!input.jump;
+    return g;
+  }
+
+  function updateObjects(g) {
+    for (const o of g.objs) {
+      if (o.kind === 'log' && o.rolling) {
+        o.x -= 1;
+        if (o.x < LEFT_EDGE - 4) o.x = RIGHT_EDGE + 4;
+      }
+    }
+    if (g.room.scorpion && g.frame % 2 === 0) {
+      const tx = g.harry.x;
+      if (g.scorpionX < tx) g.scorpionX++;
+      else if (g.scorpionX > tx) g.scorpionX--;
+      g.scorpionX = Math.max(LEFT_EDGE + 8, Math.min(RIGHT_EDGE - 8, g.scorpionX));
+    }
+  }
+
+  function updateHarry(g, input) {
+    const h = g.harry;
+    const dx = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+    const jumpPressed = !!input.jump && !g.prevJump;
+    if (h.grabCD > 0) h.grabCD--;
+    h.moving = false;
+
+    switch (h.mode) {
+      case 'ground': {
+        if (dx) h.dir = dx;
+        if (g.room.ladder && h.level === 'top' && input.down && Math.abs(h.x - LADDER_X) <= 8) {
+          h.mode = 'ladder'; h.x = LADDER_X; h.y = GROUND_Y;
+          break;
+        }
+        if (g.room.ladder && h.level === 'under' && input.up && Math.abs(h.x - LADDER_X) <= LADDER_HALF) {
+          h.mode = 'ladder'; h.x = LADDER_X;
+          break;
+        }
+        if (jumpPressed) {
+          h.mode = 'jump'; h.jumpT = 0; h.vx = dx * WALK; h.baseY = h.y;
+          g.events.push('jump');
+          break;
+        }
+        if (dx) { h.moving = moveX(g, dx * WALK); if (h.moving) h.walkT++; }
+        checkFooting(g);
+        break;
+      }
+      case 'jump': {
+        h.jumpT++;
+        if (h.vx) moveX(g, h.vx);
+        const t = h.jumpT / JUMP_LEN;
+        h.y = h.baseY - Math.round(JUMP_H * 4 * t * (1 - t));
+        if (tryGrabVine(g)) break;
+        if (h.jumpT >= JUMP_LEN) {
+          h.y = h.baseY; h.mode = 'ground';
+          checkFooting(g);
+        }
+        break;
+      }
+      case 'drop': {
+        h.vy = Math.min(3, h.vy + 0.25);
+        h.y += h.vy;
+        if (h.vx) moveX(g, h.vx);
+        if (h.y >= GROUND_Y) {
+          h.y = GROUND_Y; h.mode = 'ground'; h.vx = 0; h.vy = 0;
+          checkFooting(g);
+        }
+        break;
+      }
+      case 'vine': {
+        const e = vineEnd(g);
+        h.x = e.x; h.y = e.y + HANG_OFF;
+        if (input.down) {
+          // Harry lets go and drops straight down
+          h.mode = 'drop'; h.vy = 0; h.vx = 0; h.grabCD = 30;
+          h.x = Math.round(h.x);
+        }
+        break;
+      }
+      case 'fall': {
+        h.y += 2;
+        if (h.y > TUNNEL_TOP) h.level = 'under';
+        if (h.y >= UNDER_Y) { h.y = UNDER_Y; h.mode = 'ground'; }
+        break;
+      }
+      case 'ladder': {
+        if (input.up) h.y--;
+        else if (input.down) h.y++;
+        h.y = Math.max(GROUND_Y, Math.min(UNDER_Y, h.y));
+        if (input.up || input.down) h.walkT++;
+        h.level = h.y < (GROUND_Y + UNDER_Y) / 2 ? 'top' : 'under';
+        if (h.y === GROUND_Y && dx) {
+          h.x = LADDER_X + dx * 10; h.dir = dx; h.mode = 'ground'; h.level = 'top';
+          checkFooting(g);
+        } else if (h.y === UNDER_Y && dx) {
+          h.mode = 'ground'; h.level = 'under'; h.dir = dx;
+          moveX(g, dx * WALK);
+        }
+        break;
+      }
+      case 'sink': {
+        h.deadT++;
+        if (h.deadT <= SINK_FRAMES) h.y += 0.35;
+        if (h.deadT >= DEATH_FRAMES) loseLife(g);
+        break;
+      }
+      case 'dead': {
+        h.deadT++;
+        if (h.deadT >= DEATH_FRAMES) loseLife(g);
+        break;
+      }
+    }
+  }
+
+  function tryGrabVine(g) {
+    const h = g.harry;
+    if (!g.room.vine || h.level !== 'top' || h.grabCD > 0) return false;
+    const e = vineEnd(g);
+    const top = h.y - HARRY_H;
+    if (Math.abs(e.x - h.x) <= 5 && e.y >= top - 8 && e.y <= top + 10) {
+      h.mode = 'vine'; h.x = e.x; h.y = e.y + HANG_OFF;
+      g.events.push('vine');
+      return true;
+    }
+    return false;
+  }
+
+  function loseLife(g) {
+    g.lives--;
+    if (g.lives <= 0) {
+      g.over = true;
+      g.events.push('gameover');
+    } else {
+      respawn(g);
+    }
+  }
+
+  function collide(g) {
+    const h = g.harry;
+    const alive = h.mode === 'ground' || h.mode === 'jump' || h.mode === 'drop';
+    h.hit = false;
+    let touching = false;
+    if (alive && h.level === 'top') {
+      for (let i = 0; i < g.objs.length; i++) {
+        const o = g.objs[i];
+        const d = Math.abs(h.x - o.x);
+        if (o.kind === 'log' && d < 6 && h.y > GROUND_Y - 8) {
+          touching = true;
+          addScore(g, -1);
+        } else if ((o.kind === 'fire' || o.kind === 'cobra') && d < 5 && h.y > GROUND_Y - 10) {
+          kill(g, o.kind);
+          break;
+        } else if (o.kind === 'treasure' && d < 7 && h.y > GROUND_Y - 14) {
+          addScore(g, TREASURE_VALUES[o.type]);
+          g.collected[g.room.seed] = true;
+          g.treasuresTaken++;
+          g.objs.splice(i, 1);
+          g.events.push('treasure');
+          if (g.treasuresTaken >= TOTAL_TREASURES) {
+            g.over = true; g.won = true; g.events.push('win');
+          }
+          break;
+        }
+      }
+    }
+    if (alive && h.level === 'under' && g.room.scorpion &&
+        Math.abs(h.x - g.scorpionX) < 6 && h.y > UNDER_Y - 10) {
+      kill(g, 'scorpion');
+    }
+    h.hit = touching;
+    if (touching && !g.logContact) g.events.push('log');
+    g.logContact = touching;
+  }
+
+  function formatTime(frames) {
+    const s = Math.ceil(frames / 60);
+    const m = Math.floor(s / 60);
+    return m + ':' + String(s % 60).padStart(2, '0');
+  }
+
+  const api = {
+    W, H, LEFT_EDGE, RIGHT_EDGE, GROUND_Y, TUNNEL_TOP, UNDER_Y, HARRY_H,
+    WALK, JUMP_LEN, JUMP_H, DEATH_FRAMES, START_SEED, START_SCORE, START_LIVES,
+    TIME_FRAMES, HOLE_PENALTY, TREASURE_VALUES, TREASURE_NAMES, TOTAL_TREASURES,
+    LADDER_X, LADDER_HALF, SIDE_HOLES, PIT_X0, PIT_X1, CROC_XS, CROC_HALF, CROC_PERIOD,
+    SHIFT_PERIOD, VINE_PX, VINE_PY, VINE_LEN, VINE_PERIOD, HANG_OFF, OBJ_X, WALL_W,
+    SCENES, OBJECTS,
+    lfsrNext, lfsrPrev, advance, decodeRoom, allRooms,
+    newGame, enterRoom, placeHarry, step, pitSpan, crocsOpen, surfaceAt, vineEnd, formatTime,
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.Pitfall = api;
+})(this);
+
+</script>
+  <script>
+// Pitfall! renderer: draws a game state onto a 160×192 canvas context.
+(function (root) {
+  'use strict';
+  const P = root.Pitfall || (typeof require !== 'undefined' && require('./engine.js'));
+
+  // Approximate NTSC Atari 2600 palette entries used by the cartridge.
+  const C = {
+    canopy: '#1a5410', leaf: '#346c18', jungle: '#4c8c2c', trunk: '#6c4010',
+    vine: '#5c4410', ground: '#bcac44', earth: '#a08c2c', tunnel: '#000000',
+    deep: '#887420', tar: '#000000', swamp: '#2c50b0', swampHi: '#4c70d0',
+    brick: '#b03c28', mortar: '#d0c8b0', ladder: '#d0c050',
+    hair: '#4c2c00', skin: '#e4a870', shirt: '#5cbc3c', pants: '#e0d8a0', boots: '#3c2400',
+    log: '#8c5018', logDark: '#542c08', croc: '#2c7c1c', crocEye: '#e8e840',
+    fire1: '#e84c1c', fire2: '#f8a03c', fire3: '#f8f070', cobra: '#c8c8c8', cobraEye: '#e83c3c',
+    scorpion: '#ececec', silver: '#c8c8d0', gold: '#e8c030', bag: '#a8a8a8', ring: '#e8c030',
+    diamond: '#f0f0ff', hud: '#ececec',
+  };
+
+  // Sprites: one string per row; '.' = transparent, other chars index a colour map.
+  const HARRY_UP = [
+    '...hhh..', '..hhhhh.', '..hfff..', '...fff..', '...ff...',
+    '..ssss..', '.ssssss.', '.s.ss.s.', '.s.ss.s.', '.f.ss.f.', '...ss...',
+  ];
+  const HARRY_RUN_ARMS = [
+    '...hhh..', '..hhhhh.', '..hfff..', '...fff..', '...ff...',
+    '..ssss..', '.sssssss', 's.sss..f', 's.sss...', 'f.ss....', '...ss...',
+  ];
+  const LEGS = {
+    stand: ['..pppp..', '..pppp..', '..p..p..', '..p..p..', '..p..p..', '..p..p..', '..p..p..', '..p..p..', '..b..b..', '.bb..bb.'],
+    run1: ['..pppp..', '.pp..pp.', '.p....p.', 'pp....pp', 'p......p', 'p......p', 'p......p', 'p......p', 'b......b', 'bb....bb'],
+    run2: ['..pppp..', '..pppp..', '..p.pp..', '..p..p..', '.pp..p..', '.p...p..', '.p...pp.', '.p....p.', '.b....b.', 'bb....bb'],
+    run3: ['..pppp..', '..pppp..', '...pp...', '...pp...', '...pp...', '...pp.p.', '...ppp..', '...pp...', '...bb...', '...bbb..'],
+    jump: ['..pppp..', '.pppppp.', 'pp....pp', 'p......p', 'b......b', 'bb....bb', '........', '........', '........', '........'],
+  };
+  const HARRY_HANG = [
+    'f......f', 's......s', 's.hhh..s', 's.hhhh.s', '.shfffs.', '.s.ff.s.', '..ssss..',
+    '..ssss..', '..ssss..', '..ssss..', '...ss...',
+    '..pppp..', '..pppp..', '..p..p..', '..p..p..', '..p..p..', '..p..p..', '..p..p..', '..p..p..', '..b..b..', '..b..b..',
+  ];
+  const HARRY_CLIMB = [
+    '...hhh..', '..hhhhh.', 'f.hhhh..', 's.hhh..f', 's.hh...s', 'ssssssss', '.ssssss.',
+    '..ssss..', '..ssss..', '..ssss..', '...ss...',
+    '..pppp..', '..pppp..', '..p..p..', '..p..p..', '..p..pp.', '..p...p.', '.pp...p.', '.p....b.', '.b....bb', 'bb......',
+  ];
+  const HARRY_KNEEL = [
+    '........', '........', '........', '........',
+    '...hhh..', '..hhhhh.', '..hfff..', '...fff..', '...ff...',
+    '..ssss..', '.ssssss.', '.s.ss.s.', '.f.ss.f.', '...ss...',
+    '..pppp..', '..ppppp.', '..p..pp.', '..p...p.', '..pp..p.', '..b...bb', '.bb.....',
+  ];
+  const HARRY_COLORS = { h: C.hair, f: C.skin, s: C.shirt, p: C.pants, b: C.boots };
+
+  const LOG = [
+    ['..LLLL..', '.LLLLLL.', 'LLdLLLLL', 'LLLLLdLL', 'LLLLLLLL', 'LdLLLLLL', '.LLLdLL.', '..LLLL..'],
+    ['..LLLL..', '.LLLLLL.', 'LLLLdLLL', 'LdLLLLLL', 'LLLLLLdL', 'LLLLLLLL', '.LdLLLL.', '..LLLL..'],
+  ];
+  const FIRE = [
+    ['...r....', '..rr.r..', '..ror.r.', '.rooorr.', '.roooor.', 'rooyyoor', 'royyyyor', 'royyyyor', '.LLLLLL.', 'LLLLLLLL'],
+    ['....r...', '.r.rr...', '.r.ror..', '.rroooe.', '.roooor.', 'roooyoor', 'royyyyor', 'royyyyor', '.LLLLLL.', 'LLLLLLLL'],
+  ];
+  const COBRA = ['..ccc...', '.ccecc..', '.cc.cc..', '....cc..', '...cc...', '..cc....', '.cc.....', '.cccccc.', 'cc....cc', '.cccccc.'];
+  const SCORPION = [
+    ['.....s..', '....s.s.', '.....ss.', '..ss.s..', '.sssss..', 'ssssss..', 's.s.s.s.', '.s.s.s.s'],
+    ['......s.', '....ss..', '.....ss.', '..ss.s..', '.sssss..', 'ssssss..', '.s.s.s.s', 's.s.s.s.'],
+  ];
+  const CROC_CLOSED = ['..cccccccccc....', 'cccccccccccccccc', 'cyccccccccccccc.'];
+  const CROC_OPEN = ['cc..............', 'cyc.............', 'ccccc...........', 'cccccccccccccccc', '.ccccccccccccccc'];
+  const TREASURE = [
+    ['...gg...', '..g..g..', '...gg...', '..gggg..', '.gggggg.', 'gg.gg.gg', 'gggg.ggg', 'gg.gg.gg', '.gggggg.', '..gggg..'],
+    ['........', '........', '........', '..aaaaaa', '.aaaaaaa', 'aaaaaaa.', 'aaaaaa..', '........'],
+    ['........', '........', '........', '..aaaaaa', '.aaaaaaa', 'aaaaaaa.', 'aaaaaa..', '........'],
+    ['...dd...', '..dddd..', '...dd...', '..y..y..', '.y....y.', '.y....y.', '..y..y..', '...yy...'],
+  ];
+
+  // Tree trunk x positions for the four tree patterns.
+  const TREES = [[20, 52, 104, 136], [12, 60, 96, 144], [28, 44, 112, 128], [16, 68, 88, 140]];
+
+  const FONT = {
+    '0': ['111', '101', '101', '101', '101', '101', '111'],
+    '1': ['010', '110', '010', '010', '010', '010', '111'],
+    '2': ['111', '001', '001', '111', '100', '100', '111'],
+    '3': ['111', '001', '001', '111', '001', '001', '111'],
+    '4': ['101', '101', '101', '111', '001', '001', '001'],
+    '5': ['111', '100', '100', '111', '001', '001', '111'],
+    '6': ['111', '100', '100', '111', '101', '101', '111'],
+    '7': ['111', '001', '001', '010', '010', '010', '010'],
+    '8': ['111', '101', '101', '111', '101', '101', '111'],
+    '9': ['111', '101', '101', '111', '001', '001', '111'],
+    ':': ['000', '010', '010', '000', '010', '010', '000'],
+  };
+
+  function sprite(ctx, rows, colors, x, y, flip, maxY) {
+    for (let r = 0; r < rows.length; r++) {
+      const py = y + r;
+      if (maxY !== undefined && py >= maxY) break;
+      const row = rows[r];
+      for (let c = 0; c < row.length; c++) {
+        const ch = row[flip ? row.length - 1 - c : c];
+        if (ch === '.') continue;
+        ctx.fillStyle = colors[ch];
+        ctx.fillRect(x + c, py, 1, 1);
+      }
+    }
+  }
+
+  function text(ctx, str, x, y, color) {
+    ctx.fillStyle = color || C.hud;
+    for (const ch of str) {
+      const g = FONT[ch];
+      if (g) for (let r = 0; r < 7; r++) for (let c = 0; c < 3; c++) {
+        if (g[r][c] === '1') ctx.fillRect(x + c * 2, y + r, 2, 1);
+      }
+      x += 8;
+    }
+  }
+
+  function harryRows(g) {
+    const h = g.harry;
+    if (h.mode === 'vine') return HARRY_HANG;
+    if (h.mode === 'ladder') return (h.walkT >> 3) % 2 ? HARRY_CLIMB : HARRY_CLIMB.map(r => r.split('').reverse().join(''));
+    if (h.hit) return HARRY_KNEEL;
+    if (h.mode === 'jump' || h.mode === 'drop') return HARRY_UP.concat(LEGS.jump);
+    if (h.mode === 'fall') return HARRY_UP.concat(LEGS.jump);
+    if (h.moving) {
+      const f = (h.walkT >> 2) % 4;
+      const legs = [LEGS.run1, LEGS.run2, LEGS.run3, LEGS.run2][f];
+      return (f % 2 ? HARRY_UP : HARRY_RUN_ARMS).concat(legs);
+    }
+    return HARRY_UP.concat(LEGS.stand);
+  }
+
+  function drawPitShape(ctx, x0, x1, y, color) {
+    // rounded-ended pool: rows get narrower further down
+    const insets = [0, 1, 2, 4, 6];
+    for (let i = 0; i < insets.length; i++) {
+      const a = x0 + insets[i], b = x1 - insets[i];
+      if (b > a) { ctx.fillStyle = color; ctx.fillRect(a, y + i * 2, b - a, 2); }
+    }
+  }
+
+  function draw(ctx, g) {
+    const r = g.room, h = g.harry;
+    const GY = P.GROUND_Y, TT = P.TUNNEL_TOP, UY = P.UNDER_Y;
+
+    // Jungle background and canopy
+    ctx.fillStyle = C.jungle; ctx.fillRect(0, 0, P.W, GY);
+    ctx.fillStyle = C.canopy; ctx.fillRect(0, 0, P.W, 52);
+    // leaf texture + jagged lower edge of the canopy
+    ctx.fillStyle = C.leaf;
+    for (let x = 0; x < P.W; x += 8) {
+      const k = ((x >> 3) * 7 + r.trees * 3) % 5;
+      ctx.fillRect(x, 30 + k, 6, 3);
+      ctx.fillRect(x + 2, 40 + ((k + 2) % 5), 5, 3);
+    }
+    ctx.fillStyle = C.canopy;
+    for (let x = 0; x < P.W; x += 4) {
+      const depth = [2, 5, 7, 4, 1, 6, 3, 8][((x >> 2) + r.trees) % 8];
+      ctx.fillRect(x, 52, 4, depth);
+    }
+
+    // Trunks with branches
+    ctx.fillStyle = C.trunk;
+    for (const tx of TREES[r.trees]) {
+      ctx.fillRect(tx, 52, 4, GY - 52);
+      ctx.fillRect(tx - 4, 54, 4, 2); ctx.fillRect(tx + 4, 56, 4, 2);
+      ctx.fillRect(tx - 1, GY - 3, 6, 3);
+    }
+
+    // Vine
+    if (r.vine) {
+      const e = P.vineEnd(g);
+      ctx.fillStyle = C.vine;
+      const n = 60;
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        ctx.fillRect(Math.round(P.VINE_PX + (e.x - P.VINE_PX) * t), Math.round(P.VINE_PY + (e.y - P.VINE_PY) * t), 1, 1);
+      }
+    }
+
+    // Ground, earth and tunnel
+    ctx.fillStyle = C.ground; ctx.fillRect(0, GY, P.W, 6);
+    ctx.fillStyle = C.earth; ctx.fillRect(0, GY + 6, P.W, TT - GY - 6);
+    ctx.fillStyle = C.tunnel; ctx.fillRect(0, TT, P.W, UY - TT);
+    ctx.fillStyle = C.earth; ctx.fillRect(0, UY, P.W, 8);
+    ctx.fillStyle = C.deep; ctx.fillRect(0, UY + 8, P.W, P.H - UY - 8);
+
+    // Holes and ladder
+    if (r.ladder) {
+      const holes = [[P.LADDER_X - P.LADDER_HALF, P.LADDER_X + P.LADDER_HALF]];
+      if (r.sideHoles) holes.push(...P.SIDE_HOLES);
+      ctx.fillStyle = C.tunnel;
+      for (const [a, b] of holes) ctx.fillRect(a, GY, b - a, TT - GY);
+      ctx.fillStyle = C.ladder;
+      const lx = P.LADDER_X - P.LADDER_HALF;
+      ctx.fillRect(lx, GY, 1, UY - GY); ctx.fillRect(lx + 7, GY, 1, UY - GY);
+      for (let y = GY + 2; y < UY; y += 4) ctx.fillRect(lx, y, 8, 1);
+    }
+
+    // Pits
+    const span = P.pitSpan(g);
+    if (span && span[1] - span[0] > 0) {
+      drawPitShape(ctx, span[0], span[1], GY, r.pit === 'tar' ? C.tar : C.swamp);
+      if (r.pit === 'swamp') {
+        ctx.fillStyle = C.swampHi;
+        for (let x = span[0] + 4; x < span[1] - 4; x += 10) ctx.fillRect(x + ((g.frame >> 4) % 3), GY + 1, 3, 1);
+      }
+    }
+    if (r.crocs) {
+      const open = P.crocsOpen(g);
+      for (const cx of P.CROC_XS) {
+        const rows = open ? CROC_OPEN : CROC_CLOSED;
+        sprite(ctx, rows, { c: C.croc, y: C.crocEye }, cx - 8, GY - rows.length + 2);
+      }
+    }
+
+    // Underground wall / scorpion
+    if (r.wallX !== null) {
+      for (let y = TT; y < UY; y += 4) {
+        ctx.fillStyle = C.mortar; ctx.fillRect(r.wallX, y, P.WALL_W, 4);
+        ctx.fillStyle = C.brick;
+        const off = ((y - TT) >> 2) % 2 ? 0 : 4;
+        ctx.fillRect(r.wallX, y, P.WALL_W, 3);
+        ctx.fillStyle = C.mortar; ctx.fillRect(r.wallX + off, y, 1, 3);
+      }
+    }
+    if (r.scorpion) {
+      sprite(ctx, SCORPION[(g.frame >> 3) % 2], { s: C.scorpion }, g.scorpionX - 4, UY - 8, h.x < g.scorpionX);
+    }
+
+    // Ground objects
+    for (const o of g.objs) {
+      if (o.kind === 'log') {
+        const f = o.rolling ? (g.frame >> 2) % 2 : 0;
+        sprite(ctx, LOG[f], { L: C.log, d: C.logDark }, Math.round(o.x) - 4, GY - 8);
+      } else if (o.kind === 'fire') {
+        sprite(ctx, FIRE[(g.frame >> 2) % 2], { r: C.fire1, o: C.fire2, y: C.fire3, e: C.fire1, L: C.log }, o.x - 4, GY - 10);
+      } else if (o.kind === 'cobra') {
+        sprite(ctx, COBRA, { c: C.cobra, e: C.cobraEye }, o.x - 4, GY - 10, h.x < o.x);
+      } else if (o.kind === 'treasure') {
+        const rows = TREASURE[o.type];
+        const col = { g: C.bag, a: o.type === 1 ? C.silver : C.gold, d: C.diamond, y: C.ring };
+        sprite(ctx, rows, col, o.x - 4, GY - rows.length);
+      }
+    }
+
+    // Harry
+    const rows = harryRows(g);
+    const hx = Math.round(h.x) - 4;
+    const hy = Math.round(h.y) - rows.length;
+    const flip = h.dir < 0 && h.mode !== 'vine' && h.mode !== 'ladder';
+    const blink = h.mode === 'dead' && (h.deadT >> 3) % 2;
+    if (!blink) sprite(ctx, rows, HARRY_COLORS, hx, hy, flip, h.mode === 'sink' ? GY + 1 : undefined);
+
+    // HUD: score, lives tally, timer
+    const sc = String(g.score);
+    text(ctx, sc, 64 - sc.length * 8, 4);
+    ctx.fillStyle = C.hud;
+    for (let i = 0; i < g.lives - 1; i++) ctx.fillRect(18 + i * 4, 14, 1, 7);
+    text(ctx, P.formatTime(g.timer), 32, 14);
+  }
+
+  const api = { draw, sprite, text, COLORS: C, TREES, FONT };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.PitfallRender = api;
+})(this);
+
+</script>
+  <script>
+// Pitfall! sound effects, synthesized with Web Audio in the style of the
+// Atari 2600 TIA chip: square-wave tones and LFSR-like noise, no samples.
+(function (root) {
+  'use strict';
+
+  // TIA pure-tone pitch: 31400 Hz / 2 / (AUDF + 1) for AUDC = 4.
+  function tia(audf) { return 31400 / 2 / (audf + 1); }
+
+  function createAudio(ContextCtor) {
+    let ctx = null, master = null, noiseBuf = null, logNode = null;
+    let muted = false;
+
+    function ensure() {
+      if (ctx) return ctx;
+      const Ctor = ContextCtor ||
+        (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext));
+      if (!Ctor) return null;
+      ctx = new Ctor();
+      master = ctx.createGain();
+      master.gain.value = muted ? 0 : 0.18;
+      master.connect(ctx.destination);
+      // 2600-style noise: a 4-bit polynomial counter stepped at audio rate
+      const len = ctx.sampleRate;
+      noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      let poly = 0xF, hold = 0, v = 1;
+      for (let i = 0; i < len; i++) {
+        if (++hold >= 12) {
+          hold = 0;
+          const bit = ((poly >> 3) ^ (poly >> 2)) & 1;
+          poly = ((poly << 1) | bit) & 0xF;
+          v = (poly & 1) ? 1 : -1;
+        }
+        d[i] = v;
+      }
+      return ctx;
+    }
+
+    // Schedules a sequence of [audf, frames] square-wave notes (frames at 60 Hz).
+    function tones(seq, type) {
+      const c = ensure();
+      if (!c) return 0;
+      let t = c.currentTime + 0.01;
+      const osc = c.createOscillator();
+      const gain = c.createGain();
+      osc.type = type || 'square';
+      gain.gain.setValueAtTime(0, t);
+      for (const [audf, frames] of seq) {
+        const dur = frames / 60;
+        if (audf === null) {
+          gain.gain.setValueAtTime(0, t);
+        } else {
+          osc.frequency.setValueAtTime(tia(audf), t);
+          gain.gain.setValueAtTime(1, t);
+        }
+        t += dur;
+      }
+      gain.gain.setValueAtTime(0, t);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(c.currentTime);
+      osc.stop(t + 0.02);
+      return seq.length;
+    }
+
+    function noise(seconds, rate, vol) {
+      const c = ensure();
+      if (!c) return null;
+      const src = c.createBufferSource();
+      src.buffer = noiseBuf;
+      src.loop = true;
+      src.playbackRate.value = rate;
+      const gain = c.createGain();
+      gain.gain.value = vol;
+      src.connect(gain);
+      gain.connect(master);
+      src.start();
+      if (seconds) src.stop(c.currentTime + seconds);
+      return src;
+    }
+
+    const sfx = {
+      // Tarzan yell when Harry catches the vine: a warbling "aah-ee-aah-ee-aah".
+      vine() {
+        const seq = [];
+        const hi = [9, 8, 9, 8, 9, 8, 9, 8], lo = [13, 14, 13, 14];
+        seq.push([17, 6], [15, 4]);
+        for (let i = 0; i < 4; i++) { seq.push([hi[i * 2], 3], [lo[i], 3], [hi[i * 2 + 1], 3]); }
+        seq.push([11, 6], [14, 8], [18, 12]);
+        return tones(seq);
+      },
+      // Treasure pickup: rising chime.
+      treasure() {
+        return tones([[23, 3], [19, 3], [15, 3], [11, 3], [9, 3], [7, 6], [null, 2], [7, 10]], 'square');
+      },
+      // Falling down a hole into the tunnel: descending whistle.
+      hole() {
+        const seq = [];
+        for (let f = 4; f <= 30; f += 2) seq.push([f, 2]);
+        return tones(seq);
+      },
+      // Death: tumbling, slowly descending tones.
+      death() {
+        const seq = [];
+        for (let i = 0; i < 12; i++) seq.push([8 + i * 2, 4], [12 + i * 2, 4]);
+        seq.push([31, 16]);
+        return tones(seq, 'square');
+      },
+      // Jumping is silent on the cartridge.
+      jump() { return 0; },
+      gameOver() { return tones([[20, 15], [24, 15], [28, 15], [31, 30]]); },
+      win() { return tones([[15, 8], [12, 8], [9, 8], [7, 8], [9, 8], [7, 24]]); },
+      // Continuous rumble while a log is rolling over Harry.
+      log(on) {
+        if (on && !logNode) logNode = noise(0, 0.35, 0.8);
+        else if (!on && logNode) { try { logNode.stop(); } catch (e) { /* already stopped */ } logNode = null; }
+        return !!logNode;
+      },
+    };
+
+    return Object.assign(sfx, {
+      unlock() {
+        const c = ensure();
+        if (c && c.state === 'suspended' && c.resume) c.resume();
+        return !!c;
+      },
+      setMuted(m) {
+        muted = m;
+        if (master) master.gain.value = m ? 0 : 0.18;
+      },
+      isMuted() { return muted; },
+      // Plays the sounds for one frame's engine events.
+      handle(events, logContact) {
+        for (const e of events) {
+          if (e === 'vine') sfx.vine();
+          else if (e === 'treasure') sfx.treasure();
+          else if (e === 'hole') sfx.hole();
+          else if (e === 'death') sfx.death();
+          else if (e === 'gameover') sfx.gameOver();
+          else if (e === 'win') sfx.win();
+        }
+        sfx.log(!!logContact);
+      },
+      tia,
+    });
+  }
+
+  const api = { createAudio, tia };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.PitfallAudio = api;
+})(this);
+
+</script>
+  <script>
+// Pitfall! test suite — runs in test.html (browser) and exposes window.__testResults.
+(function () {
+  'use strict';
+  const P = window.Pitfall, R = window.PitfallRender, A = window.PitfallAudio;
+  const results = [];
+
+  function test(name, fn) {
+    try { fn(); results.push({ name, ok: true }); }
+    catch (e) { results.push({ name, ok: false, error: e && e.message ? e.message : String(e) }); }
+  }
+  function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion failed'); }
+  function eq(a, b, msg) {
+    if (a !== b) throw new Error((msg ? msg + ': ' : '') + 'expected ' + JSON.stringify(b) + ', got ' + JSON.stringify(a));
+  }
+
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+  function findSeed(pred) {
+    const r = P.allRooms().find(pred);
+    if (!r) throw new Error('no room matches');
+    return r.seed;
+  }
+  function setup(seed, x, level, frame) {
+    const g = P.newGame();
+    g.frame = frame || 0;
+    P.enterRoom(g, seed);
+    P.placeHarry(g, x, level === 'under' ? P.UNDER_Y : P.GROUND_Y, 'ground');
+    return g;
+  }
+  function run(g, n, input) {
+    const events = [];
+    for (let i = 0; i < n; i++) { P.step(g, input || {}); events.push(...g.events); }
+    return events;
+  }
+  function runUntil(g, pred, max, input) {
+    for (let i = 0; i < (max || 2000); i++) {
+      if (pred(g)) return true;
+      P.step(g, typeof input === 'function' ? input(g, i) : (input || {}));
+    }
+    return pred(g);
+  }
+
+  // ─── World generation ─────────────────────────────────────────────────────
+  test('LFSR a partir de $C4 tem período 255 (255 telas)', () => {
+    let s = P.START_SEED;
+    const seen = new Set();
+    while (!seen.has(s)) { seen.add(s); s = P.lfsrNext(s); }
+    eq(seen.size, 255);
+    eq(s, P.START_SEED, 'volta à tela inicial');
+  });
+
+  test('lfsrPrev é o inverso exato de lfsrNext', () => {
+    for (let s = 1; s < 256; s++) {
+      eq(P.lfsrPrev(P.lfsrNext(s)), s, 'seed ' + s);
+      eq(P.lfsrNext(P.lfsrPrev(s)), s, 'seed ' + s);
+    }
+  });
+
+  test('existem exatamente 32 tesouros, 8 de cada tipo', () => {
+    const rooms = P.allRooms().filter(r => r.treasure !== null);
+    eq(rooms.length, 32);
+    for (let t = 0; t < 4; t++) eq(rooms.filter(r => r.treasure === t).length, 8, 'tipo ' + t);
+  });
+
+  test('pontuação máxima possível é 114.000', () => {
+    const total = P.allRooms().reduce((s, r) => s + (r.treasure !== null ? P.TREASURE_VALUES[r.treasure] : 0), P.START_SCORE);
+    eq(total, 114000);
+  });
+
+  test('tela inicial ($C4): buraco com escada e um tronco parado', () => {
+    const r = P.decodeRoom(0xC4);
+    eq(r.scene, 0); eq(r.ladder, true); eq(r.sideHoles, false);
+    eq(r.objects.length, 1); eq(r.objects[0].kind, 'log'); eq(r.objects[0].rolling, false);
+    assert(!r.scorpion, 'telas com escada têm parede, não escorpião');
+    assert(r.wallX !== null);
+  });
+
+  test('cada tipo de cena decodifica obstáculos coerentes', () => {
+    for (const r of P.allRooms()) {
+      if (r.scene <= 1) { assert(r.ladder && !r.pit && r.wallX !== null, 'escada ' + r.seed); }
+      else { assert(r.pit && r.scorpion && r.wallX === null, 'poço ' + r.seed); }
+      if (r.scene === 4) assert(r.crocs && r.objects.length === 0);
+      if (r.scene === 5) assert(r.shifting && r.treasure !== null && r.objects.length === 0);
+      if ([2, 3, 6].includes(r.scene)) assert(r.vine, 'cipó ' + r.seed);
+    }
+    const crocVines = P.allRooms().filter(r => r.scene === 4 && r.vine).length;
+    eq(crocVines, 16, 'metade das telas de jacaré tem cipó');
+  });
+
+  // ─── Game rules ───────────────────────────────────────────────────────────
+  test('jogo começa com 2000 pontos, 3 vidas e 20:00', () => {
+    const g = P.newGame();
+    eq(g.score, 2000); eq(g.lives, 3); eq(P.formatTime(g.timer), '20:00');
+    eq(g.room.seed, 0xC4); eq(g.harry.mode, 'ground'); eq(g.harry.level, 'top');
+  });
+
+  test('relógio conta para trás e termina o jogo em 0:00', () => {
+    const g = P.newGame();
+    run(g, 60);
+    eq(P.formatTime(g.timer), '19:59');
+    g.timer = 1;
+    const ev = run(g, 1);
+    assert(g.over && ev.includes('gameover'));
+  });
+
+  test('sair pela direita avança 1 tela; pela esquerda volta 1', () => {
+    const g = P.newGame();
+    g.harry.x = P.RIGHT_EDGE;
+    run(g, 1, { right: true });
+    eq(g.room.seed, P.lfsrNext(0xC4));
+    eq(g.harry.x, P.LEFT_EDGE + 1);
+    run(g, 2, { left: true });
+    eq(g.room.seed, 0xC4);
+  });
+
+  test('no subterrâneo cada tela equivale a 3 telas', () => {
+    const seed = findSeed(r => r.scorpion);
+    const g = setup(seed, P.RIGHT_EDGE - 1, 'under');
+    run(g, 2, { right: true });
+    eq(g.room.seed, P.advance(seed, 3));
+    g.harry.x = P.LEFT_EDGE;
+    run(g, 1, { left: true });
+    eq(g.room.seed, seed);
+  });
+
+  test('cair num buraco custa 100 pontos e leva ao túnel', () => {
+    const seed = findSeed(r => r.sideHoles && !r.objects.some(o => o.x < 60));
+    const g = setup(seed, 40, 'top');
+    const ev = run(g, 6, { right: true });
+    assert(ev.includes('hole'));
+    eq(g.score, 1900);
+    runUntil(g, g => g.harry.mode === 'ground', 100);
+    eq(g.harry.level, 'under'); eq(g.harry.y, P.UNDER_Y);
+  });
+
+  test('escada: desce e sobe sem penalidade', () => {
+    const g = setup(0xC4, 72, 'top');
+    run(g, 1, { down: true });
+    eq(g.harry.mode, 'ladder');
+    run(g, 70, { down: true });
+    eq(g.harry.y, P.UNDER_Y);
+    run(g, 1, { right: true });
+    eq(g.harry.mode, 'ground'); eq(g.harry.level, 'under');
+    g.harry.x = P.LADDER_X;
+    run(g, 1, { up: true });
+    eq(g.harry.mode, 'ladder');
+    run(g, 70, { up: true });
+    eq(g.harry.y, P.GROUND_Y);
+    run(g, 1, { left: true });
+    eq(g.harry.mode, 'ground'); eq(g.harry.level, 'top'); eq(g.harry.x, P.LADDER_X - 10);
+    eq(g.score, 2000);
+  });
+
+  test('parede de tijolos bloqueia o túnel', () => {
+    const seed = findSeed(r => r.ladder && r.wallX < 80);
+    const wx = P.decodeRoom(seed).wallX;
+    const g = setup(seed, wx + P.WALL_W + 6, 'under');
+    run(g, 30, { left: true });
+    assert(g.harry.x >= wx + P.WALL_W + 3, 'Harry atravessou a parede: x=' + g.harry.x);
+  });
+
+  test('pular sobre tronco parado não perde pontos', () => {
+    const g = setup(0xC4, 106, 'top');
+    run(g, 1, { right: true, jump: true });
+    run(g, 40, { right: true });
+    assert(g.harry.x > P.OBJ_X + 6, 'Harry passou do tronco');
+    eq(g.score, 2000);
+  });
+
+  test('encostar em tronco tira pontos (sem matar)', () => {
+    const g = setup(0xC4, 110, 'top');
+    const ev = run(g, 20, { right: true });
+    assert(ev.includes('log'));
+    assert(g.score < 2000, 'score ' + g.score);
+    eq(g.harry.mode, 'ground'); eq(g.lives, 3);
+  });
+
+  test('tronco rolando vem pela direita e atinge Harry parado', () => {
+    const seed = findSeed(r => r.scene === 0 && r.objType === 0);
+    const g = setup(seed, 100, 'top');
+    const ev = run(g, 40);
+    assert(ev.includes('log'));
+    assert(g.score < 2000);
+  });
+
+  test('cair no piche mata e Harry renasce caindo da esquerda', () => {
+    const seed = findSeed(r => r.scene === 2);
+    const g = setup(seed, 36, 'top');
+    const ev = run(g, 6, { right: true });
+    assert(ev.includes('death'));
+    eq(g.harry.mode, 'sink');
+    run(g, P.DEATH_FRAMES);
+    eq(g.lives, 2);
+    eq(g.harry.mode, 'drop'); eq(g.harry.x, 16);
+    runUntil(g, g => g.harry.mode === 'ground', 200);
+    eq(g.harry.y, P.GROUND_Y);
+  });
+
+  test('perder as 3 vidas termina o jogo', () => {
+    const seed = findSeed(r => r.scene === 2);
+    const g = setup(seed, 36, 'top');
+    let deaths = 0;
+    for (let i = 0; i < 3; i++) {
+      g.harry.x = 39; g.harry.y = P.GROUND_Y; g.harry.mode = 'ground';
+      run(g, 3, { right: true });
+      eq(g.harry.mode, 'sink');
+      deaths++;
+      run(g, P.DEATH_FRAMES);
+    }
+    eq(deaths, 3);
+    assert(g.over, 'game over');
+    eq(g.lives, 0);
+  });
+
+  test('jacaré: boca fechada é seguro, aberta mata', () => {
+    const seed = findSeed(r => r.crocs);
+    let g = setup(seed, P.CROC_XS[0], 'top', 0);
+    run(g, 1);
+    eq(g.harry.mode, 'ground');
+    g = setup(seed, P.CROC_XS[0], 'top', P.CROC_PERIOD - 1);
+    const ev = run(g, 1);
+    assert(ev.includes('death')); eq(g.harry.cause, 'croc');
+  });
+
+  test('pulando de cabeça em cabeça atravessa o lago dos jacarés', () => {
+    const seed = findSeed(r => r.crocs);
+    const g = setup(seed, 20, 'top', 0);
+    for (const target of [P.CROC_XS[0], P.CROC_XS[1], P.CROC_XS[2], P.CROC_XS[2] + 32]) {
+      g.frame = 0;
+      g.harry.x = target - P.JUMP_LEN;
+      run(g, 1, { right: true, jump: true });
+      run(g, P.JUMP_LEN, { right: true });
+      eq(g.harry.mode, 'ground', 'aterrissou vivo em ' + target);
+      eq(g.harry.x, target);
+    }
+  });
+
+  test('fogo e cobra matam ao toque', () => {
+    for (const kind of [6, 7]) {
+      const seed = findSeed(r => r.scene === 0 && r.objType === kind);
+      const g = setup(seed, 110, 'top');
+      const ev = run(g, 20, { right: true });
+      assert(ev.includes('death'), 'objeto ' + kind);
+      eq(g.harry.cause, kind === 6 ? 'fire' : 'cobra');
+    }
+  });
+
+  test('escorpião persegue e mata no túnel', () => {
+    const seed = findSeed(r => r.scorpion);
+    const g = setup(seed, 60, 'under');
+    assert(runUntil(g, g => g.events.includes('death'), 400), 'morreu');
+    eq(g.harry.cause, 'scorpion');
+  });
+
+  test('pegar tesouro soma o valor uma única vez', () => {
+    for (let t = 0; t < 4; t++) {
+      const seed = findSeed(r => r.treasure === t);
+      const g = setup(seed, 112, 'top', 0);
+      const ev = run(g, 10, { right: true });
+      assert(ev.includes('treasure'), 'tipo ' + t);
+      eq(g.score, 2000 + P.TREASURE_VALUES[t]);
+      eq(g.treasuresTaken, 1);
+      P.enterRoom(g, seed);
+      assert(!g.objs.some(o => o.kind === 'treasure'), 'tesouro não volta');
+    }
+  });
+
+  test('poço que se move abre e fecha', () => {
+    const seed = findSeed(r => r.shifting);
+    const g = setup(seed, 16, 'top', 0);
+    const w0 = P.pitSpan(g); g.frame = P.SHIFT_PERIOD / 2;
+    const w1 = P.pitSpan(g);
+    eq(w0[1] - w0[0], 0, 'fechado');
+    eq(w1[1] - w1[0], P.PIT_X1 - P.PIT_X0, 'aberto');
+  });
+
+  test('cipó: Harry agarra, balança e solta do outro lado em segurança', () => {
+    const seed = findSeed(r => r.scene === 2 && !r.objects.some(o => o.kind !== 'log'));
+    let grabbed = null;
+    for (let f = 0; f < P.VINE_PERIOD && !grabbed; f++) {
+      const g = setup(seed, 36, 'top', f);
+      const ev = run(g, 1, { right: true, jump: true });
+      ev.push(...run(g, P.JUMP_LEN, { right: true }));
+      if (ev.includes('vine')) grabbed = g;
+    }
+    assert(grabbed, 'agarrou o cipó em alguma fase do balanço');
+    const g = grabbed;
+    eq(g.harry.mode, 'vine');
+    assert(runUntil(g, g => P.vineEnd(g).x > P.PIT_X1 + 1, 400), 'cipó chegou à direita');
+    run(g, 1, { down: true });
+    eq(g.harry.mode, 'drop');
+    runUntil(g, g => g.harry.mode !== 'drop', 100);
+    eq(g.harry.mode, 'ground');
+    assert(g.harry.x >= P.PIT_X1, 'pousou além do piche: x=' + g.harry.x);
+  });
+
+  test('soltar o cipó sobre o piche mata', () => {
+    const seed = findSeed(r => r.scene === 2);
+    const g = setup(seed, 80, 'top', 0);
+    g.harry.mode = 'vine';
+    run(g, 1);
+    run(g, 1, { down: true });
+    runUntil(g, g => g.harry.mode !== 'drop', 100);
+    eq(g.harry.mode, 'sink');
+  });
+
+  test('as 255 telas são atravessáveis por cima ou pelo túnel', () => {
+    // Every room must have at least one safe surface tile at both edges.
+    for (const r of P.allRooms()) {
+      const g = setup(r.seed, 16, 'top');
+      eq(P.surfaceAt(g, P.LEFT_EDGE + 1), 'ground');
+      eq(P.surfaceAt(g, P.RIGHT_EDGE - 1), 'ground');
+    }
+  });
+
+  // ─── Sound ────────────────────────────────────────────────────────────────
+  function mockAudio() {
+    const log = { osc: [], src: [], freqs: [], stopped: 0 };
+    const param = () => ({ value: 0, setValueAtTime(v) { if (this.track) log.freqs.push(v); this.value = v; } });
+    class Ctx {
+      constructor() { this.currentTime = 0; this.sampleRate = 8000; this.state = 'running'; this.destination = {}; }
+      createGain() { return { gain: param(), connect() {} }; }
+      createOscillator() {
+        const f = param(); f.track = true;
+        const o = { type: '', frequency: f, connect() {}, start() { o.started = true; }, stop() {} };
+        log.osc.push(o); return o;
+      }
+      createBuffer(ch, len) { const d = new Float32Array(len); return { getChannelData: () => d, data: d }; }
+      createBufferSource() {
+        const s = { playbackRate: param(), connect() {}, start() { s.started = true; }, stop() { log.stopped++; } };
+        log.src.push(s); return s;
+      }
+      resume() {}
+    }
+    return { audio: A.createAudio(Ctx), log };
+  }
+
+  test('frequência TIA: AUDF 0 = 15,7 kHz', () => {
+    eq(A.tia(0), 15700); eq(A.tia(31), 490.625);
+  });
+
+  test('cada evento do jogo dispara o seu som', () => {
+    for (const ev of ['vine', 'treasure', 'hole', 'death', 'gameover', 'win']) {
+      const { audio, log } = mockAudio();
+      audio.handle([ev], false);
+      eq(log.osc.length, 1, ev);
+      assert(log.osc[0].started, ev + ' tocou');
+      assert(log.freqs.length >= 3, ev + ' tem várias notas');
+    }
+  });
+
+  test('grito do Tarzan oscila entre agudo e grave', () => {
+    const { audio, log } = mockAudio();
+    audio.vine();
+    const f = log.freqs;
+    let changes = 0;
+    for (let i = 2; i < f.length; i++) if (Math.sign(f[i] - f[i - 1]) !== Math.sign(f[i - 1] - f[i - 2])) changes++;
+    assert(changes >= 6, 'vibrato: ' + changes);
+  });
+
+  test('som do tesouro sobe e da queda desce', () => {
+    let m = mockAudio(); m.audio.treasure();
+    assert(m.log.freqs[m.log.freqs.length - 1] > m.log.freqs[0], 'tesouro sobe');
+    m = mockAudio(); m.audio.hole();
+    assert(m.log.freqs[m.log.freqs.length - 1] < m.log.freqs[0], 'queda desce');
+  });
+
+  test('ruído do tronco liga e desliga com o contato', () => {
+    const { audio, log } = mockAudio();
+    audio.handle([], true); audio.handle([], true);
+    eq(log.src.length, 1, 'um único ruído contínuo');
+    audio.handle([], false);
+    eq(log.stopped, 1);
+  });
+
+  test('pulo é silencioso, como no cartucho', () => {
+    const { audio, log } = mockAudio();
+    audio.handle(['jump'], false);
+    eq(log.osc.length, 0);
+  });
+
+  test('mudo zera o volume', () => {
+    const { audio } = mockAudio();
+    audio.unlock(); audio.setMuted(true);
+    assert(audio.isMuted());
+  });
+
+  // ─── Rendering ────────────────────────────────────────────────────────────
+  function canvas() {
+    const c = document.createElement('canvas');
+    c.width = P.W; c.height = P.H;
+    return c.getContext('2d', { willReadFrequently: true });
+  }
+  function pixel(ctx, x, y) {
+    const d = ctx.getImageData(x, y, 1, 1).data;
+    return '#' + [d[0], d[1], d[2]].map(v => v.toString(16).padStart(2, '0')).join('');
+  }
+
+  test('desenha chão, túnel, escada e Harry na tela inicial', () => {
+    const ctx = canvas();
+    const g = P.newGame();
+    R.draw(ctx, g);
+    eq(pixel(ctx, 4, P.GROUND_Y + 1), R.COLORS.ground, 'chão');
+    eq(pixel(ctx, 40, P.TUNNEL_TOP + 4), R.COLORS.tunnel, 'túnel');
+    eq(pixel(ctx, P.LADDER_X - P.LADDER_HALF, P.GROUND_Y + 10), R.COLORS.ladder, 'escada');
+    let harry = 0;
+    for (let y = P.GROUND_Y - 21; y < P.GROUND_Y; y++) for (let x = 12; x < 20; x++) {
+      const p = pixel(ctx, x, y);
+      if (p === R.COLORS.shirt || p === R.COLORS.skin) harry++;
+    }
+    assert(harry > 10, 'Harry visível');
+  });
+
+  test('placar mostra 2000 e relógio 20:00', () => {
+    const ctx = canvas();
+    R.draw(ctx, P.newGame());
+    let white = 0;
+    for (let y = 4; y < 11; y++) for (let x = 30; x < 64; x++) if (pixel(ctx, x, y) === R.COLORS.hud) white++;
+    assert(white > 40, 'dígitos do placar');
+    let tw = 0;
+    for (let y = 14; y < 21; y++) for (let x = 32; x < 72; x++) if (pixel(ctx, x, y) === R.COLORS.hud) tw++;
+    assert(tw > 30, 'dígitos do relógio');
+  });
+
+  test('piche é preto e pântano é azul', () => {
+    const ctx = canvas();
+    const tar = setup(findSeed(r => r.scene === 2), 16, 'top');
+    R.draw(ctx, tar);
+    eq(pixel(ctx, 80, P.GROUND_Y + 1), R.COLORS.tar);
+    const sw = setup(findSeed(r => r.scene === 3), 16, 'top');
+    R.draw(ctx, sw);
+    const p = pixel(ctx, 60, P.GROUND_Y + 3);
+    assert(p === R.COLORS.swamp || p === R.COLORS.swampHi, 'pântano ' + p);
+  });
+
+  test('todas as 255 telas renderizam sem erro', () => {
+    const ctx = canvas();
+    for (const r of P.allRooms()) {
+      const g = setup(r.seed, 16, 'top', 37);
+      R.draw(ctx, g);
+    }
+  });
+
+  test('simulação longa com entrada aleatória não quebra', () => {
+    const ctx = canvas();
+    const g = P.newGame();
+    let seed = 1;
+    const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+    let inp = {};
+    for (let i = 0; i < 20000 && !g.over; i++) {
+      if (i % 20 === 0) inp = { left: rnd() < 0.2, right: rnd() < 0.6, up: rnd() < 0.2, down: rnd() < 0.2, jump: rnd() < 0.3 };
+      P.step(g, inp);
+      if (i % 500 === 0) R.draw(ctx, g);
+      assert(Number.isFinite(g.harry.x) && Number.isFinite(g.harry.y), 'posição válida');
+      assert(g.score >= 0, 'pontos não negativos');
+    }
+  });
+
+  window.__testResults = results;
+})();
+
+</script>
+  <script>
+    const res = window.__testResults;
+    const list = document.getElementById('list');
+    for (const r of res) {
+      const li = document.createElement('li');
+      li.innerHTML = '<span class="' + (r.ok ? 'ok">✔' : 'fail">✘') + '</span> ';
+      li.appendChild(document.createTextNode(r.name));
+      if (!r.ok) {
+        const e = document.createElement('div');
+        e.className = 'err'; e.textContent = r.error; li.appendChild(e);
+      }
+      list.appendChild(li);
+    }
+    const failed = res.filter(r => !r.ok).length;
+    const s = document.getElementById('summary');
+    s.className = failed ? 'fail' : 'ok';
+    s.textContent = failed ? failed + ' de ' + res.length + ' testes falharam' : 'Todos os ' + res.length + ' testes passaram';
+  </script>
+</body>
+</html>
