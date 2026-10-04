@@ -158,7 +158,7 @@
     box-shadow: 0 0 0 9px rgba(217,255,61,.14), 0 0 16px rgba(217,255,61,.5);
   }
   .hand.drag { top: 66%; animation: h-drag 2.8s ease-in-out infinite; }
-  @keyframes h-drag { 0%,100% { left: 26% } 50% { left: 74% } }
+  @keyframes h-drag { 0%,100% { left: 40% } 50% { left: 82% } }
   .hand.flick { left: 50%; animation: h-flick 1.9s cubic-bezier(.3,0,.2,1) infinite; }
   @keyframes h-flick {
     0%, 18% { top: 78%; opacity: 1 }
@@ -256,7 +256,7 @@
       <button class="lang" data-lang="es" data-i18n-aria="lang.name.es"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" rx="3" fill="#c60b1e"/><rect width="30" height="10" y="5" fill="#ffc400"/></svg></button>
     </div>
     </div>
-    <div class="foot">v47 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
+    <div class="foot">v48 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
   </section>
 
   <!-- configuração -->
@@ -393,6 +393,7 @@ PB.I18n = (function () {
 
     'name.you': 'VOCÊ',
     'hud.title': 'DUPLAS: ATÉ {n} PONTOS',
+    'hud.strike': 'GOLPE',
     'hud.call': 'CHAMADA',
     'prompt.serve': 'DESLIZE PARA SACAR',
     'prompt.serve.sub': 'comprimento = força  •  lado = direção',
@@ -426,12 +427,10 @@ PB.I18n = (function () {
     'hint.servebehind': 'Fique atrás da linha de fundo para sacar',
     'hint.partnerhit': 'Seu parceiro já bateu: a bola tem que cruzar a rede!',
 
-    'tut.thumbs.title': 'Dois dedos',
-    'tut.thumbs.body': '<p>A tela se divide em duas. O <b>dedo direito corre</b> e o <b>dedo esquerdo golpeia</b>.</p><p>Nada é lido como as duas coisas, então o golpe nunca empurra o jogador e correr nunca dispara um golpe.</p>',
-    'tut.lbl.left': 'ESQUERDO',
-    'tut.lbl.strike': 'golpe',
-    'tut.lbl.right': 'DIREITO',
-    'tut.lbl.move': 'mover',
+    'tut.thumbs.title': 'A zona de golpe',
+    'tut.thumbs.body': '<p>O retângulo translúcido à esquerda é a <b>zona de golpe</b>. Deslize que <b>começa dentro dela é golpe</b>; em <b>qualquer outro ponto da tela, é movimento</b>, e o jogador segue o dedo.</p><p>A zona é a régua da força: puxar até a borda de cima é força máxima, e até a borda do lado também. Como ela é mais alta que larga, um deslize lateral ganha força mais depressa que um para cima.</p>',
+    'tut.lbl.strike': 'GOLPE',
+    'tut.lbl.move': 'MOVER: TODO O RESTO',
 
     'tut.power.title': 'A força é o tamanho do deslize',
     'tut.power.body': '<p>O <b>traçado do seu dedo aparece na tela</b> e muda de cor conforme cresce. A cor é a força que a bola vai levar.</p><p>Laranja é uma bola bem funda. Rosa pinta a linha de fundo. <b>No vermelho você passou do ponto</b> e a bola sai.</p>',
@@ -466,7 +465,7 @@ PB.I18n = (function () {
     'tut.lbl.kitchen': 'COZINHA',
 
     'tut.score.title': 'Placar e saque',
-    'tut.score.body': '<p>O saque usa o mesmo deslize do dedo esquerdo, com força e direção. Um toque simples também saca, fraco e no meio.</p><p><b>Só quem saca pontua.</b> Perdeu o ponto sacando, o saque passa, mas o placar não muda.</p><p>As bolinhas dizem quem saca: <b>uma bola é o primeiro sacador</b> da dupla, <b>duas bolas é o segundo</b>. O nome aceso é quem está com a bola. Os dois parceiros sacam antes de o saque passar, e por isso o jogo começa em <b>0-0-2</b>.</p>',
+    'tut.score.body': '<p>O saque usa o mesmo deslize na zona de golpe, com força e direção. Um toque simples também saca, fraco e no meio.</p><p><b>Só quem saca pontua.</b> Perdeu o ponto sacando, o saque passa, mas o placar não muda.</p><p>As bolinhas dizem quem saca: <b>uma bola é o primeiro sacador</b> da dupla, <b>duas bolas é o segundo</b>. O nome aceso é quem está com a bola. Os dois parceiros sacam antes de o saque passar, e por isso o jogo começa em <b>0-0-2</b>.</p>',
   };
 
   const EN = {
@@ -518,6 +517,7 @@ PB.I18n = (function () {
 
     'name.you': 'YOU',
     'hud.title': 'DOUBLES: TO {n} POINTS',
+    'hud.strike': 'STRIKE',
     'hud.call': 'CALL',
     'prompt.serve': 'SWIPE TO SERVE',
     'prompt.serve.sub': 'length = power  •  tilt = direction',
@@ -551,12 +551,10 @@ PB.I18n = (function () {
     'hint.servebehind': 'Stay behind the baseline to serve',
     'hint.partnerhit': 'Your partner already hit it: the ball must cross the net!',
 
-    'tut.thumbs.title': 'Two thumbs',
-    'tut.thumbs.body': '<p>The screen splits in two. The <b>right thumb runs</b> and the <b>left thumb strikes</b>.</p><p>Nothing is read as both, so a stroke never shoves the player and running never fires a shot.</p>',
-    'tut.lbl.left': 'LEFT',
-    'tut.lbl.strike': 'strike',
-    'tut.lbl.right': 'RIGHT',
-    'tut.lbl.move': 'move',
+    'tut.thumbs.title': 'The strike zone',
+    'tut.thumbs.body': '<p>The translucent box on the left is the <b>strike zone</b>. A swipe that <b>starts inside it is a stroke</b>; <b>anywhere else on the screen it is movement</b>, and the player follows your finger.</p><p>The zone is the power ruler: a pull to its top edge is full power, and so is a pull to its side edge. It is taller than it is wide, so a sideways swipe gains power faster than an upward one.</p>',
+    'tut.lbl.strike': 'STRIKE',
+    'tut.lbl.move': 'MOVE: EVERYWHERE ELSE',
 
     'tut.power.title': 'Power is how far you swipe',
     'tut.power.body': '<p>The <b>path of your thumb shows on screen</b> and changes colour as it grows. The colour is the power the ball will carry.</p><p>Orange is a deep ball. Pink paints the baseline. <b>On red you have overdone it</b> and the ball goes out.</p>',
@@ -591,7 +589,7 @@ PB.I18n = (function () {
     'tut.lbl.kitchen': 'KITCHEN',
 
     'tut.score.title': 'Score and serve',
-    'tut.score.body': '<p>The serve uses the same left-thumb swipe, with power and direction. A plain tap serves too, softly and down the middle.</p><p><b>Only the serving side scores.</b> Lose the rally while serving and the serve passes on, but the score does not change.</p><p>The balls say who is serving: <b>one ball is the first server</b> of the pair, <b>two balls is the second</b>. The lit name is the one holding the ball. Both partners serve before the serve passes over, which is why the game starts at <b>0-0-2</b>.</p>',
+    'tut.score.body': '<p>The serve uses the same swipe in the strike zone, with power and direction. A plain tap serves too, softly and down the middle.</p><p><b>Only the serving side scores.</b> Lose the rally while serving and the serve passes on, but the score does not change.</p><p>The balls say who is serving: <b>one ball is the first server</b> of the pair, <b>two balls is the second</b>. The lit name is the one holding the ball. Both partners serve before the serve passes over, which is why the game starts at <b>0-0-2</b>.</p>',
   };
 
   const ES = {
@@ -643,6 +641,7 @@ PB.I18n = (function () {
 
     'name.you': 'TÚ',
     'hud.title': 'DOBLES: A {n} PUNTOS',
+    'hud.strike': 'GOLPE',
     'hud.call': 'CANTO',
     'prompt.serve': 'DESLIZA PARA SACAR',
     'prompt.serve.sub': 'largo = fuerza  •  inclinación = dirección',
@@ -676,12 +675,10 @@ PB.I18n = (function () {
     'hint.servebehind': 'Quédate detrás de la línea de fondo para sacar',
     'hint.partnerhit': 'Tu compañero ya golpeó: ¡la bola tiene que cruzar la red!',
 
-    'tut.thumbs.title': 'Dos dedos',
-    'tut.thumbs.body': '<p>La pantalla se divide en dos. El <b>dedo derecho corre</b> y el <b>dedo izquierdo golpea</b>.</p><p>Nada se lee como las dos cosas, así que el golpe nunca empuja al jugador y correr nunca lanza un golpe.</p>',
-    'tut.lbl.left': 'IZQUIERDO',
-    'tut.lbl.strike': 'golpe',
-    'tut.lbl.right': 'DERECHO',
-    'tut.lbl.move': 'mover',
+    'tut.thumbs.title': 'La zona de golpe',
+    'tut.thumbs.body': '<p>El rectángulo translúcido a la izquierda es la <b>zona de golpe</b>. Un deslizamiento que <b>empieza dentro de ella es golpe</b>; en <b>cualquier otro punto de la pantalla, es movimiento</b>, y el jugador sigue al dedo.</p><p>La zona es la regla de la fuerza: tirar hasta el borde de arriba es fuerza máxima, y hasta el borde del lado también. Como es más alta que ancha, un deslizamiento lateral gana fuerza más rápido que uno hacia arriba.</p>',
+    'tut.lbl.strike': 'GOLPE',
+    'tut.lbl.move': 'MOVER: TODO LO DEMÁS',
 
     'tut.power.title': 'La fuerza es el largo del deslizamiento',
     'tut.power.body': '<p>El <b>trazo de tu dedo aparece en pantalla</b> y cambia de color según crece. El color es la fuerza que llevará la bola.</p><p>Naranja es una bola muy profunda. Rosa pinta la línea de fondo. <b>En rojo te pasaste</b> y la bola sale.</p>',
@@ -716,7 +713,7 @@ PB.I18n = (function () {
     'tut.lbl.kitchen': 'COCINA',
 
     'tut.score.title': 'Marcador y saque',
-    'tut.score.body': '<p>El saque usa el mismo deslizamiento del dedo izquierdo, con fuerza y dirección. Un toque simple también saca, flojo y al medio.</p><p><b>Solo puntúa quien saca.</b> Si pierdes el punto sacando, el saque pasa, pero el marcador no cambia.</p><p>Las bolitas dicen quién saca: <b>una bola es el primer sacador</b> de la pareja, <b>dos bolas es el segundo</b>. El nombre encendido es quien tiene la bola. Los dos compañeros sacan antes de que el saque pase, y por eso el juego empieza en <b>0-0-2</b>.</p>',
+    'tut.score.body': '<p>El saque usa el mismo deslizamiento en la zona de golpe, con fuerza y dirección. Un toque simple también saca, flojo y al medio.</p><p><b>Solo puntúa quien saca.</b> Si pierdes el punto sacando, el saque pasa, pero el marcador no cambia.</p><p>Las bolitas dicen quién saca: <b>una bola es el primer sacador</b> de la pareja, <b>dos bolas es el segundo</b>. El nombre encendido es quien tiene la bola. Los dos compañeros sacan antes de que el saque pase, y por eso el juego empieza en <b>0-0-2</b>.</p>',
   };
 
   const DICT = { pt: PT, en: EN, es: ES };
@@ -1455,9 +1452,12 @@ PB.Stroke = (function () {
   const SLICE_COLOR = 'rgb(158,240,26)';   // the soft end of the ramp
 
   // ── reading the path ──────────────────────────────────────────────────────
-  // A gesture is measured against the screen height so it feels the same on any
-  // device. `pts` are raw screen points, oldest first.
-  const FULL = 0.52;        // fraction of the screen height that means full power
+  // A gesture is measured against a ruler, one per axis: `{ w, h }` in pixels,
+  // the pull that means full power sideways and up. In the game that is the
+  // strike zone's own size. A plain number is the older form, a screen height,
+  // and reads as the same ruler on both axes. `pts` are raw screen points,
+  // oldest first.
+  const FULL = 0.52;        // fraction of a screen-height ruler that means full power
   const SIDE = 0.30;        // (kept for older callers) sideways travel of a full pull
   // The side of a shot is the TILT of the stroke, not how far it travelled
   // sideways: straight up is straight ahead, and a stroke leaning SIDE_DEG
@@ -1478,12 +1478,22 @@ PB.Stroke = (function () {
     return Math.abs(off) < 1 ? 0 : Math.sign(off);
   }
 
-  function measure(pts, H) {
+  function rulerOf(r) {
+    if (typeof r === 'number') { const f = r * FULL; return { w: f, h: f }; }
+    return { w: Math.max(1, r.w), h: Math.max(1, r.h) };
+  }
+
+  function measure(pts, ruler) {
     if (!pts || pts.length < 2) return null;
+    const R = rulerOf(ruler);
+    // the size thresholds scale with the vertical ruler, as they did with the screen
+    const H = R.h / FULL;
     const a = pts[0], b = pts[pts.length - 1];
     const dx = b.x - a.x, dy = b.y - a.y;
     const chord = Math.hypot(dx, dy);
     if (chord < H * MIN) return null;
+    // the chord in ruler units: 1 is a pull across the whole zone on that axis
+    const chordN = Math.hypot(dx / R.w, dy / R.h);
 
     // how far the path bows away from the straight line between its ends
     let bow = 0;
@@ -1502,14 +1512,17 @@ PB.Stroke = (function () {
     // down is a slice, the short game: however it bends, it is never a lob.
     const slice = dy > 0;
     const lob = !slice && arc > ARC && travel > H * 0.12;
-    const len = lob ? travel : chord;
+    // A lob's travel is scaled the way its chord was, so a bowed path that
+    // leans sideways gains power at the sideways rate.
+    const lenN = lob ? travel * (chordN / chord) : chordN;
     // A lob's side is the side its arc bulges to: a C (bulging left) sends it
     // left, a reversed C sends it right. Where the stroke ends up still adds on.
+    // The side is the real angle of the finger, whatever the ruler.
     const lateral = lob
       ? Math.max(-1, Math.min(1, LOB_SIDE * bulge(pts, a, b) + tilt(dx, chord)))
       : tilt(dx, chord);
     return {
-      power: Math.max(0, Math.min(1.15, len / (H * FULL))),
+      power: Math.max(0, Math.min(1.15, lenN)),
       lateral,
       arc, lob, slice,
       up: -dy,
@@ -1517,7 +1530,7 @@ PB.Stroke = (function () {
     };
   }
 
-  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, sliceDepth, SLICE_COLOR, measure, tilt, bulge, FULL, SIDE, SIDE_DEG, MIN, ARC, LOB_SIDE };
+  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, sliceDepth, SLICE_COLOR, measure, rulerOf, tilt, bulge, FULL, SIDE, SIDE_DEG, MIN, ARC, LOB_SIDE };
 })();
 
 </script>
@@ -2760,6 +2773,9 @@ PB.Renderer = (function () {
     return { x: sh.x + dx * k, y: sh.y + dy * k };
   }
 
+  const BLINK_DUR = 0.14;          // s the lids take to close and open again
+  const BLINK_GAP = [2.4, 5.5];     // s between blinks, drawn at random each time
+
   const Char = {
     look(p) {
       if (!p._look) {
@@ -2838,9 +2854,24 @@ PB.Renderer = (function () {
       return g;
     },
 
+    // People blink about every three to five seconds, for a bit over a tenth
+    // of a second, and never in step with each other. Each player keeps their
+    // own clock on the figure itself, so a blink that began survives the frame.
+    blink(p) {
+      const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+      let b = p._blink;
+      if (!b) b = p._blink = { at: now + 1 + Math.random() * 3 };
+      if (now >= b.at + BLINK_DUR) b.at = now + BLINK_GAP[0] + Math.random() * (BLINK_GAP[1] - BLINK_GAP[0]);
+      if (now < b.at) return 0;
+      // closed fastest at the middle of the blink, open at both ends
+      const t = (now - b.at) / BLINK_DUR;
+      return Math.sin(t * Math.PI);
+    },
+
     draw(ctx, cam, p, base, s, isMe) {
       const look = this.look(p);
       const kit = COL.team[p.team];
+      const blink = this.blink(p);
       const skin = COL.skin[look.skin];
       const facing = cam.side === p.team ? 1 : -1;
       const hand = facing;
@@ -2993,11 +3024,11 @@ PB.Renderer = (function () {
       this.mii(ctx, P, {
         legs, shL, shR, hipL, hipR, shY, hipY, shPad, shFree,
         elbow, handP, freeElbow, freeHandR, swA,
-      }, kit, skin, look, facing, turn, drawPaddle);
+      }, kit, skin, look, facing, turn, drawPaddle, blink);
     },
 
     // ── Wii-style figure ───────────────────────────────────────────────────
-    mii(ctx, P, parts, kit, skin, look, facing, turn, drawPaddle) {
+    mii(ctx, P, parts, kit, skin, look, facing, turn, drawPaddle, blink) {
       const { legs, shL, shR, hipL, hipR, shY, hipY, shPad, shFree,
               elbow, handP, freeElbow, freeHandR, swA } = parts;
       const X = P.X, Y = P.Y;
@@ -3109,21 +3140,35 @@ PB.Renderer = (function () {
         this.bone(ctx, P, cx - R * 0.1, cy + R * 0.7, cx - R * 0.1 + Math.sin(turn) * 0.2, cy - R * 0.2,
                   [[0, 0.2], [0.5, 0.24], [1, 0.08]], look.hair, { raw: true });
       }
-      if (facing < 0) this.face(ctx, P, cx, cy, R, look);
+      if (facing < 0) this.face(ctx, P, cx, cy, R, look, blink);
       if (!fromBehind) drawPaddle();
     },
 
-    // Two eyes, two brows, one mouth — the Mii formula.
-    face(ctx, P, cx, cy, R, look) {
+    // Two eyes, two brows, one mouth — the Mii formula. `blink` is how far
+    // the lids are down, 0 open to 1 shut: the eyes squash toward a line of
+    // skin-dark lid, and the pupils go with them.
+    face(ctx, P, cx, cy, R, look, blink) {
       const X = P.X, Y = P.Y;
       const eyeDX = R * 0.36, eyeY = cy + R * 0.10;
+      const open = 1 - Math.max(0, Math.min(1, blink || 0));
       for (const s of [-1, 1]) {
+        if (open < 0.18) {
+          // shut: a short lid line where the eye was
+          ctx.strokeStyle = '#4a3328';
+          ctx.lineWidth = Math.max(1, P.s * R * 0.07);
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(X(cx + s * eyeDX - R * 0.13), Y(eyeY));
+          ctx.lineTo(X(cx + s * eyeDX + R * 0.13), Y(eyeY));
+          ctx.stroke();
+          continue;
+        }
         ctx.beginPath();
-        ctx.ellipse(X(cx + s * eyeDX), Y(eyeY), P.s * R * 0.15, P.s * R * 0.19, 0, 0, Math.PI * 2);
+        ctx.ellipse(X(cx + s * eyeDX), Y(eyeY), P.s * R * 0.15, P.s * R * 0.19 * open, 0, 0, Math.PI * 2);
         ctx.fillStyle = '#fdfdfd';
         ctx.fill();
         ctx.beginPath();
-        ctx.ellipse(X(cx + s * eyeDX), Y(eyeY - R * 0.02), P.s * R * 0.085, P.s * R * 0.115, 0, 0, Math.PI * 2);
+        ctx.ellipse(X(cx + s * eyeDX), Y(eyeY - R * 0.02 * open), P.s * R * 0.085, P.s * R * 0.115 * open, 0, 0, Math.PI * 2);
         ctx.fillStyle = '#231a15';
         ctx.fill();
       }
@@ -3410,7 +3455,37 @@ PB.Renderer = (function () {
         this.drawViewHud(ctx, m, v, me);
         ctx.restore();
       }
+      if (input && input.enabled && input.zoneRect) this.drawZone(ctx, input, m);
       if (input) this.drawTouch(ctx, input);
+    }
+
+    // The strike zone: dark glass with a pale edge, a label and a small paddle,
+    // so the eye finds where to strike without the box hiding the court.
+    drawZone(ctx, input, m) {
+      const z = input.zoneRect();
+      ctx.save();
+      this.roundRect(ctx, z.x, z.y, z.w, z.h, 14);
+      ctx.fillStyle = 'rgba(8,16,26,0.28)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(159,228,255,0.55)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(159,228,255,0.85)';
+      ctx.font = '800 10px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      if ('letterSpacing' in ctx) ctx.letterSpacing = '2px';
+      ctx.fillText(T('hud.strike'), z.x + z.w / 2, z.y + 17);
+      if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+      // the paddle glyph
+      ctx.translate(z.x + z.w / 2, z.y + 40);
+      ctx.rotate(-0.5);
+      ctx.fillStyle = 'rgba(159,228,255,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(0, -6, 6, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(-1.5, 2, 3, 10);
+      ctx.restore();
     }
 
     drawWorld(ctx, m, cam, me) {
@@ -4356,9 +4431,11 @@ PB.Renderer = (function () {
 </script>
 <script>
 'use strict';
-// Touch model, v2: the screen is split down the middle. The RIGHT side runs,
-// the LEFT side strikes. Nothing is read as both, so a stroke never shoves the
-// player and a run never fires a shot.
+// Touch model, v3: a translucent STRIKE ZONE sits at the bottom left of the
+// screen, and everything outside it runs the player. A touch is read by where
+// it starts, so a stroke that wanders out of the zone is still a stroke, and
+// nothing is ever read as both: a stroke never shoves the player and a run
+// never fires a shot.
 var PB = (function () {
   var g = typeof window !== 'undefined' ? window : globalThis;
   return g.PB || (g.PB = {});
@@ -4368,7 +4445,13 @@ PB.Input = (function () {
   // thumb speed, as a fraction of the viewport height per second, that means
   // "run flat out"; the small dead zone swallows a resting finger's tremor
   const MOVE_FULL = 0.34, MOVE_DEAD = 0.04, MOVE_SMOOTH = 0.045, MOVE_GAIN = 0.72;
-  const STROKE_FIT = 1.75;   // the stroke ruler never exceeds this many screen heights
+  // The strike zone, as fractions of the canvas. Upright it is a tall box
+  // that starts below the far court and leaves the bottom quarter of the
+  // screen free for the moving thumb; lying down it is nearly square and sits
+  // on the bottom edge.
+  const ZONE_X = 12;                                            // px from the left edge
+  const ZONE_UP = { w: 0.30, top: 0.46, bottom: 0.75 };         // portrait
+  const ZONE_WIDE = { w: 0.26, h: 0.66, bottom: 14 };           // landscape, bottom in px
 
   class Input {
     constructor(canvas) {
@@ -4417,10 +4500,21 @@ PB.Input = (function () {
       return { x: 0, y: 0, w: this.canvas.clientWidth, h: this.canvas.clientHeight };
     }
 
-    // Right half runs, left half strikes.
-    roleFor(x) {
-      const r = this.rectFor();
-      return x < r.x + r.w / 2 ? 'strike' : 'move';
+    // The strike zone, in canvas pixels, for the current orientation.
+    zoneRect() {
+      const W = this.canvas.clientWidth, H = this.canvas.clientHeight;
+      if (H >= W) {
+        const top = Math.round(H * ZONE_UP.top), bottom = Math.round(H * ZONE_UP.bottom);
+        return { x: ZONE_X, y: top, w: Math.round(W * ZONE_UP.w), h: bottom - top };
+      }
+      const h = Math.round(H * ZONE_WIDE.h);
+      return { x: ZONE_X, y: H - ZONE_WIDE.bottom - h, w: Math.round(W * ZONE_WIDE.w), h };
+    }
+
+    // Inside the zone strikes, everywhere else moves.
+    roleFor(x, y) {
+      const z = this.zoneRect();
+      return x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h ? 'strike' : 'move';
     }
 
     slotFor() {
@@ -4437,7 +4531,7 @@ PB.Input = (function () {
       e.preventDefault();
       const p = this.local(e);
       const slot = this.slotFor();
-      const role = this.roleFor(p.x);
+      const role = this.roleFor(p.x, p.y);
       this.pointers[e.pointerId] = {
         id: e.pointerId, slot, role, x: p.x, y: p.y, x0: p.x, y0: p.y,
         dx: 0, dy: 0, mover: role === 'move', active: true,
@@ -4460,22 +4554,21 @@ PB.Input = (function () {
         const last = pt.path[pt.path.length - 1];
         if (Math.hypot(p.x - last.x, p.y - last.y) > 2) pt.path.push({ x: p.x, y: p.y });
         if (pt.path.length > 220) pt.path.shift();
-        const m = PB.Stroke.measure(pt.path, this.strokeH());
+        const m = PB.Stroke.measure(pt.path, this.ruler());
         const st = this.strokes[pt.slot];
         if (st) { st.power = m ? m.power : 0; st.lob = !!(m && m.lob); st.slice = !!(m && m.slice); }
       }
     }
 
-    // The ruler a stroke is measured against. It follows the device, not the
-    // way it is held: the long side of the screen, so the same thumb movement
-    // is the same shot in portrait and in landscape. Lying down the screen is
-    // short, though, and the whole colour ramp still has to fit in it, so the
-    // ruler never exceeds STROKE_FIT screen heights; on a phone that leaves a
-    // landscape stroke about a quarter stronger than the same one upright,
-    // where measuring by height alone made it more than twice as strong.
-    strokeH() {
-      const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
-      return Math.min(Math.max(w, h), STROKE_FIT * h);
+    // The ruler a stroke is measured against is the zone itself, one ruler per
+    // axis: a pull from one edge of the zone to the other is full power whether
+    // it goes up or sideways. Upright the zone is far taller than wide, so a
+    // sideways stroke gains power much faster than a vertical one; lying down
+    // the two are nearly equal. Turning the phone turns the zone, and with it
+    // the ruler, so the same thumb movement inside the box is the same shot.
+    ruler() {
+      const z = this.zoneRect();
+      return { w: z.w, h: z.h };
     }
 
     up(e) {
@@ -4484,7 +4577,7 @@ PB.Input = (function () {
       if (pt.path) {
         // The stroke reads on release: the whole path is the gesture, and only
         // then is its power and its bow settled.
-        const m = PB.Stroke.measure(pt.path, this.strokeH());
+        const m = PB.Stroke.measure(pt.path, this.ruler());
         if (m && (m.up > 0 || m.lob || m.slice)) {
           this.state[pt.slot].swipe = {
             lateral: m.lateral, power: m.power, lob: m.lob, slice: m.slice, arc: m.arc,
@@ -4567,6 +4660,8 @@ PB.Input = (function () {
     return Math.min(1, Math.pow((mag - MOVE_DEAD) / (1 - MOVE_DEAD), MOVE_GAIN));
   };
   Input.MOVE_FULL = MOVE_FULL;
+  Input.ZONE_UP = ZONE_UP;
+  Input.ZONE_WIDE = ZONE_WIDE;
   return Input;
 })();
 
@@ -5003,16 +5098,15 @@ PB.Tutorial = (function () {
     {
       title: T('tut.thumbs.title'),
       stage: court({ extra:
-        `<line x1="150" y1="4" x2="150" y2="164" stroke="#fff" stroke-width="2"
-               stroke-dasharray="7 7" opacity=".5"/>
-         <text x="76" y="22" fill="#d9ff3d" font-size="11" font-weight="800"
-               text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.left'))}</text>
-         <text x="76" y="36" fill="#cfe0ee" font-size="10" font-weight="700"
+        `<rect x="8" y="62" width="62" height="98" rx="8" fill="#08101a" fill-opacity=".34"
+               stroke="#9fe4ff" stroke-opacity=".7" stroke-width="1.5"/>
+         <text x="39" y="78" fill="#9fe4ff" font-size="9" font-weight="800" letter-spacing="1.5"
                text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.strike'))}</text>
-         <text x="224" y="22" fill="#9fe4ff" font-size="11" font-weight="800"
-               text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.right'))}</text>
-         <text x="224" y="36" fill="#cfe0ee" font-size="10" font-weight="700"
-               text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.move'))}</text>` })
+         <line x1="30" y1="150" x2="48" y2="96" stroke="#d9ff3d" stroke-width="4" stroke-linecap="round"
+               opacity=".9"/>
+         <circle cx="48" cy="96" r="5" fill="#ff8800"/>
+         <text x="292" y="162" fill="#cfe0ee" font-size="9" font-weight="800" letter-spacing="1"
+               text-anchor="end" font-family="system-ui" opacity=".8">${esc(T('tut.lbl.move'))}</text>` })
              + `<div class="hand drag" style="top:74%"></div>`,
       body: T('tut.thumbs.body'),
     },

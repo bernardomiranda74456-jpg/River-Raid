@@ -229,6 +229,9 @@ PB.Renderer = (function () {
     return { x: sh.x + dx * k, y: sh.y + dy * k };
   }
 
+  const BLINK_DUR = 0.14;          // s the lids take to close and open again
+  const BLINK_GAP = [2.4, 5.5];     // s between blinks, drawn at random each time
+
   const Char = {
     look(p) {
       if (!p._look) {
@@ -307,9 +310,24 @@ PB.Renderer = (function () {
       return g;
     },
 
+    // People blink about every three to five seconds, for a bit over a tenth
+    // of a second, and never in step with each other. Each player keeps their
+    // own clock on the figure itself, so a blink that began survives the frame.
+    blink(p) {
+      const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+      let b = p._blink;
+      if (!b) b = p._blink = { at: now + 1 + Math.random() * 3 };
+      if (now >= b.at + BLINK_DUR) b.at = now + BLINK_GAP[0] + Math.random() * (BLINK_GAP[1] - BLINK_GAP[0]);
+      if (now < b.at) return 0;
+      // closed fastest at the middle of the blink, open at both ends
+      const t = (now - b.at) / BLINK_DUR;
+      return Math.sin(t * Math.PI);
+    },
+
     draw(ctx, cam, p, base, s, isMe) {
       const look = this.look(p);
       const kit = COL.team[p.team];
+      const blink = this.blink(p);
       const skin = COL.skin[look.skin];
       const facing = cam.side === p.team ? 1 : -1;
       const hand = facing;
@@ -462,11 +480,11 @@ PB.Renderer = (function () {
       this.mii(ctx, P, {
         legs, shL, shR, hipL, hipR, shY, hipY, shPad, shFree,
         elbow, handP, freeElbow, freeHandR, swA,
-      }, kit, skin, look, facing, turn, drawPaddle);
+      }, kit, skin, look, facing, turn, drawPaddle, blink);
     },
 
     // ── Wii-style figure ───────────────────────────────────────────────────
-    mii(ctx, P, parts, kit, skin, look, facing, turn, drawPaddle) {
+    mii(ctx, P, parts, kit, skin, look, facing, turn, drawPaddle, blink) {
       const { legs, shL, shR, hipL, hipR, shY, hipY, shPad, shFree,
               elbow, handP, freeElbow, freeHandR, swA } = parts;
       const X = P.X, Y = P.Y;
@@ -578,21 +596,35 @@ PB.Renderer = (function () {
         this.bone(ctx, P, cx - R * 0.1, cy + R * 0.7, cx - R * 0.1 + Math.sin(turn) * 0.2, cy - R * 0.2,
                   [[0, 0.2], [0.5, 0.24], [1, 0.08]], look.hair, { raw: true });
       }
-      if (facing < 0) this.face(ctx, P, cx, cy, R, look);
+      if (facing < 0) this.face(ctx, P, cx, cy, R, look, blink);
       if (!fromBehind) drawPaddle();
     },
 
-    // Two eyes, two brows, one mouth — the Mii formula.
-    face(ctx, P, cx, cy, R, look) {
+    // Two eyes, two brows, one mouth — the Mii formula. `blink` is how far
+    // the lids are down, 0 open to 1 shut: the eyes squash toward a line of
+    // skin-dark lid, and the pupils go with them.
+    face(ctx, P, cx, cy, R, look, blink) {
       const X = P.X, Y = P.Y;
       const eyeDX = R * 0.36, eyeY = cy + R * 0.10;
+      const open = 1 - Math.max(0, Math.min(1, blink || 0));
       for (const s of [-1, 1]) {
+        if (open < 0.18) {
+          // shut: a short lid line where the eye was
+          ctx.strokeStyle = '#4a3328';
+          ctx.lineWidth = Math.max(1, P.s * R * 0.07);
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(X(cx + s * eyeDX - R * 0.13), Y(eyeY));
+          ctx.lineTo(X(cx + s * eyeDX + R * 0.13), Y(eyeY));
+          ctx.stroke();
+          continue;
+        }
         ctx.beginPath();
-        ctx.ellipse(X(cx + s * eyeDX), Y(eyeY), P.s * R * 0.15, P.s * R * 0.19, 0, 0, Math.PI * 2);
+        ctx.ellipse(X(cx + s * eyeDX), Y(eyeY), P.s * R * 0.15, P.s * R * 0.19 * open, 0, 0, Math.PI * 2);
         ctx.fillStyle = '#fdfdfd';
         ctx.fill();
         ctx.beginPath();
-        ctx.ellipse(X(cx + s * eyeDX), Y(eyeY - R * 0.02), P.s * R * 0.085, P.s * R * 0.115, 0, 0, Math.PI * 2);
+        ctx.ellipse(X(cx + s * eyeDX), Y(eyeY - R * 0.02 * open), P.s * R * 0.085, P.s * R * 0.115 * open, 0, 0, Math.PI * 2);
         ctx.fillStyle = '#231a15';
         ctx.fill();
       }
@@ -879,7 +911,37 @@ PB.Renderer = (function () {
         this.drawViewHud(ctx, m, v, me);
         ctx.restore();
       }
+      if (input && input.enabled && input.zoneRect) this.drawZone(ctx, input, m);
       if (input) this.drawTouch(ctx, input);
+    }
+
+    // The strike zone: dark glass with a pale edge, a label and a small paddle,
+    // so the eye finds where to strike without the box hiding the court.
+    drawZone(ctx, input, m) {
+      const z = input.zoneRect();
+      ctx.save();
+      this.roundRect(ctx, z.x, z.y, z.w, z.h, 14);
+      ctx.fillStyle = 'rgba(8,16,26,0.28)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(159,228,255,0.55)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(159,228,255,0.85)';
+      ctx.font = '800 10px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      if ('letterSpacing' in ctx) ctx.letterSpacing = '2px';
+      ctx.fillText(T('hud.strike'), z.x + z.w / 2, z.y + 17);
+      if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+      // the paddle glyph
+      ctx.translate(z.x + z.w / 2, z.y + 40);
+      ctx.rotate(-0.5);
+      ctx.fillStyle = 'rgba(159,228,255,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(0, -6, 6, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(-1.5, 2, 3, 10);
+      ctx.restore();
     }
 
     drawWorld(ctx, m, cam, me) {

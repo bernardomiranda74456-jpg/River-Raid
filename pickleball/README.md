@@ -35,18 +35,23 @@ pontos, sempre com 2 de vantagem.
 
 ## Controles
 
-- **Mover:** arraste o dedo em qualquer ponto da sua área de toque; o jogador
-  segue o dedo.
-- **Golpear:** um *flick* (deslize rápido) para cima. O comprimento define a
-  profundidade e a velocidade define a potência:
-
-  |  | curto | longo |
-  | --- | --- | --- |
-  | **rápido** | voleio firme | drive no fundo |
-  | **lento** | dink na cozinha | lob por cima |
-
-  A inclinação do flick define a direção lateral. Um segundo dedo pode golpear
-  enquanto o primeiro continua movendo.
+- **Zona de golpe:** um retângulo translúcido à esquerda da tela, marcado
+  "GOLPE". Em pé ele é alto e estreito e deixa a faixa de baixo da tela livre;
+  deitado é quase quadrado e encosta na base. O que decide é onde o toque
+  **começa**: dentro da zona é golpe, em qualquer outro ponto é movimento.
+- **Mover:** arraste o dedo em qualquer ponto fora da zona; o jogador segue o
+  dedo, e um arrasto rápido é uma corrida.
+- **Golpear:** um deslize para cima dentro da zona. O comprimento é a força e
+  a cor do traço é o medidor: verde curto, laranja no fundo, rosa na linha,
+  vermelho fora. A zona é a régua, um eixo por vez: puxar até a borda de cima é
+  força máxima, e até a borda do lado também, então em pé um deslize lateral
+  ganha força bem mais depressa que um para cima.
+- **Direção:** a inclinação do deslize. Reto é em frente, deitado é todo para
+  o lado.
+- **Lob:** deslize em arco para cima. Arco em C joga para a esquerda, C
+  invertido para a direita.
+- **Slice:** deslize para baixo. A bola cai na cozinha do adversário; para
+  baixo e para a esquerda vai para a esquerda, e vice-versa.
 - **Sacar:** deslize para cima. O saque sai por baixo, na diagonal, e precisa
   passar da linha da cozinha.
 - **Teclado (desktop):** setas para mover, `espaço` drive, `W` lob, `Q`/`E`

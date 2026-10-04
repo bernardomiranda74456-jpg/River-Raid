@@ -1,7 +1,9 @@
 'use strict';
-// Touch model, v2: the screen is split down the middle. The RIGHT side runs,
-// the LEFT side strikes. Nothing is read as both, so a stroke never shoves the
-// player and a run never fires a shot.
+// Touch model, v3: a translucent STRIKE ZONE sits at the bottom left of the
+// screen, and everything outside it runs the player. A touch is read by where
+// it starts, so a stroke that wanders out of the zone is still a stroke, and
+// nothing is ever read as both: a stroke never shoves the player and a run
+// never fires a shot.
 var PB = (function () {
   var g = typeof window !== 'undefined' ? window : globalThis;
   return g.PB || (g.PB = {});
@@ -11,7 +13,13 @@ PB.Input = (function () {
   // thumb speed, as a fraction of the viewport height per second, that means
   // "run flat out"; the small dead zone swallows a resting finger's tremor
   const MOVE_FULL = 0.34, MOVE_DEAD = 0.04, MOVE_SMOOTH = 0.045, MOVE_GAIN = 0.72;
-  const STROKE_FIT = 1.75;   // the stroke ruler never exceeds this many screen heights
+  // The strike zone, as fractions of the canvas. Upright it is a tall box
+  // that starts below the far court and leaves the bottom quarter of the
+  // screen free for the moving thumb; lying down it is nearly square and sits
+  // on the bottom edge.
+  const ZONE_X = 12;                                            // px from the left edge
+  const ZONE_UP = { w: 0.30, top: 0.46, bottom: 0.75 };         // portrait
+  const ZONE_WIDE = { w: 0.26, h: 0.66, bottom: 14 };           // landscape, bottom in px
 
   class Input {
     constructor(canvas) {
@@ -60,10 +68,21 @@ PB.Input = (function () {
       return { x: 0, y: 0, w: this.canvas.clientWidth, h: this.canvas.clientHeight };
     }
 
-    // Right half runs, left half strikes.
-    roleFor(x) {
-      const r = this.rectFor();
-      return x < r.x + r.w / 2 ? 'strike' : 'move';
+    // The strike zone, in canvas pixels, for the current orientation.
+    zoneRect() {
+      const W = this.canvas.clientWidth, H = this.canvas.clientHeight;
+      if (H >= W) {
+        const top = Math.round(H * ZONE_UP.top), bottom = Math.round(H * ZONE_UP.bottom);
+        return { x: ZONE_X, y: top, w: Math.round(W * ZONE_UP.w), h: bottom - top };
+      }
+      const h = Math.round(H * ZONE_WIDE.h);
+      return { x: ZONE_X, y: H - ZONE_WIDE.bottom - h, w: Math.round(W * ZONE_WIDE.w), h };
+    }
+
+    // Inside the zone strikes, everywhere else moves.
+    roleFor(x, y) {
+      const z = this.zoneRect();
+      return x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h ? 'strike' : 'move';
     }
 
     slotFor() {
@@ -80,7 +99,7 @@ PB.Input = (function () {
       e.preventDefault();
       const p = this.local(e);
       const slot = this.slotFor();
-      const role = this.roleFor(p.x);
+      const role = this.roleFor(p.x, p.y);
       this.pointers[e.pointerId] = {
         id: e.pointerId, slot, role, x: p.x, y: p.y, x0: p.x, y0: p.y,
         dx: 0, dy: 0, mover: role === 'move', active: true,
@@ -103,22 +122,21 @@ PB.Input = (function () {
         const last = pt.path[pt.path.length - 1];
         if (Math.hypot(p.x - last.x, p.y - last.y) > 2) pt.path.push({ x: p.x, y: p.y });
         if (pt.path.length > 220) pt.path.shift();
-        const m = PB.Stroke.measure(pt.path, this.strokeH());
+        const m = PB.Stroke.measure(pt.path, this.ruler());
         const st = this.strokes[pt.slot];
         if (st) { st.power = m ? m.power : 0; st.lob = !!(m && m.lob); st.slice = !!(m && m.slice); }
       }
     }
 
-    // The ruler a stroke is measured against. It follows the device, not the
-    // way it is held: the long side of the screen, so the same thumb movement
-    // is the same shot in portrait and in landscape. Lying down the screen is
-    // short, though, and the whole colour ramp still has to fit in it, so the
-    // ruler never exceeds STROKE_FIT screen heights; on a phone that leaves a
-    // landscape stroke about a quarter stronger than the same one upright,
-    // where measuring by height alone made it more than twice as strong.
-    strokeH() {
-      const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
-      return Math.min(Math.max(w, h), STROKE_FIT * h);
+    // The ruler a stroke is measured against is the zone itself, one ruler per
+    // axis: a pull from one edge of the zone to the other is full power whether
+    // it goes up or sideways. Upright the zone is far taller than wide, so a
+    // sideways stroke gains power much faster than a vertical one; lying down
+    // the two are nearly equal. Turning the phone turns the zone, and with it
+    // the ruler, so the same thumb movement inside the box is the same shot.
+    ruler() {
+      const z = this.zoneRect();
+      return { w: z.w, h: z.h };
     }
 
     up(e) {
@@ -127,7 +145,7 @@ PB.Input = (function () {
       if (pt.path) {
         // The stroke reads on release: the whole path is the gesture, and only
         // then is its power and its bow settled.
-        const m = PB.Stroke.measure(pt.path, this.strokeH());
+        const m = PB.Stroke.measure(pt.path, this.ruler());
         if (m && (m.up > 0 || m.lob || m.slice)) {
           this.state[pt.slot].swipe = {
             lateral: m.lateral, power: m.power, lob: m.lob, slice: m.slice, arc: m.arc,
@@ -210,5 +228,7 @@ PB.Input = (function () {
     return Math.min(1, Math.pow((mag - MOVE_DEAD) / (1 - MOVE_DEAD), MOVE_GAIN));
   };
   Input.MOVE_FULL = MOVE_FULL;
+  Input.ZONE_UP = ZONE_UP;
+  Input.ZONE_WIDE = ZONE_WIDE;
   return Input;
 })();

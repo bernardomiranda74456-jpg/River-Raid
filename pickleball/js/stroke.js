@@ -71,9 +71,12 @@ PB.Stroke = (function () {
   const SLICE_COLOR = 'rgb(158,240,26)';   // the soft end of the ramp
 
   // ── reading the path ──────────────────────────────────────────────────────
-  // A gesture is measured against the screen height so it feels the same on any
-  // device. `pts` are raw screen points, oldest first.
-  const FULL = 0.52;        // fraction of the screen height that means full power
+  // A gesture is measured against a ruler, one per axis: `{ w, h }` in pixels,
+  // the pull that means full power sideways and up. In the game that is the
+  // strike zone's own size. A plain number is the older form, a screen height,
+  // and reads as the same ruler on both axes. `pts` are raw screen points,
+  // oldest first.
+  const FULL = 0.52;        // fraction of a screen-height ruler that means full power
   const SIDE = 0.30;        // (kept for older callers) sideways travel of a full pull
   // The side of a shot is the TILT of the stroke, not how far it travelled
   // sideways: straight up is straight ahead, and a stroke leaning SIDE_DEG
@@ -94,12 +97,22 @@ PB.Stroke = (function () {
     return Math.abs(off) < 1 ? 0 : Math.sign(off);
   }
 
-  function measure(pts, H) {
+  function rulerOf(r) {
+    if (typeof r === 'number') { const f = r * FULL; return { w: f, h: f }; }
+    return { w: Math.max(1, r.w), h: Math.max(1, r.h) };
+  }
+
+  function measure(pts, ruler) {
     if (!pts || pts.length < 2) return null;
+    const R = rulerOf(ruler);
+    // the size thresholds scale with the vertical ruler, as they did with the screen
+    const H = R.h / FULL;
     const a = pts[0], b = pts[pts.length - 1];
     const dx = b.x - a.x, dy = b.y - a.y;
     const chord = Math.hypot(dx, dy);
     if (chord < H * MIN) return null;
+    // the chord in ruler units: 1 is a pull across the whole zone on that axis
+    const chordN = Math.hypot(dx / R.w, dy / R.h);
 
     // how far the path bows away from the straight line between its ends
     let bow = 0;
@@ -118,14 +131,17 @@ PB.Stroke = (function () {
     // down is a slice, the short game: however it bends, it is never a lob.
     const slice = dy > 0;
     const lob = !slice && arc > ARC && travel > H * 0.12;
-    const len = lob ? travel : chord;
+    // A lob's travel is scaled the way its chord was, so a bowed path that
+    // leans sideways gains power at the sideways rate.
+    const lenN = lob ? travel * (chordN / chord) : chordN;
     // A lob's side is the side its arc bulges to: a C (bulging left) sends it
     // left, a reversed C sends it right. Where the stroke ends up still adds on.
+    // The side is the real angle of the finger, whatever the ruler.
     const lateral = lob
       ? Math.max(-1, Math.min(1, LOB_SIDE * bulge(pts, a, b) + tilt(dx, chord)))
       : tilt(dx, chord);
     return {
-      power: Math.max(0, Math.min(1.15, len / (H * FULL))),
+      power: Math.max(0, Math.min(1.15, lenN)),
       lateral,
       arc, lob, slice,
       up: -dy,
@@ -133,5 +149,5 @@ PB.Stroke = (function () {
     };
   }
 
-  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, sliceDepth, SLICE_COLOR, measure, tilt, bulge, FULL, SIDE, SIDE_DEG, MIN, ARC, LOB_SIDE };
+  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, sliceDepth, SLICE_COLOR, measure, rulerOf, tilt, bulge, FULL, SIDE, SIDE_DEG, MIN, ARC, LOB_SIDE };
 })();

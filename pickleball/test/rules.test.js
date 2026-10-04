@@ -528,13 +528,13 @@ test('trocar de idioma troca as chamadas e o tutorial', () => {
   const antes = PB.I18n.lang;
   PB.I18n.setLang('en');
   eq(PB.Match.reasonText('fora', m).label, 'Ball out');
-  eq(PB.Tutorial.steps()[0].title, 'Two thumbs');
+  eq(PB.Tutorial.steps()[0].title, 'The strike zone');
   PB.I18n.setLang('es');
   eq(PB.Match.reasonText('fora', m).label, 'Bola fuera');
-  eq(PB.Tutorial.steps()[0].title, 'Dos dedos');
+  eq(PB.Tutorial.steps()[0].title, 'La zona de golpe');
   PB.I18n.setLang('pt');
   eq(PB.Match.reasonText('fora', m).label, 'Bola fora');
-  eq(PB.Tutorial.steps()[0].title, 'Dois dedos');
+  eq(PB.Tutorial.steps()[0].title, 'A zona de golpe');
   PB.I18n.setLang(antes);
 });
 
@@ -1182,6 +1182,93 @@ test('deslize mais longo é mais forte', () => {
 
 test('um toque não vira golpe', () => {
   eq(S.measure([{ x: 300, y: 600 }, { x: 302, y: 599 }], 800), null, 'toque mínimo');
+});
+
+// ── a zona de golpe (v3) ──────────────────────────────────────────────────
+// input.js wants a window and a canvas; a stub of each is enough to measure.
+function fakeInput(w, h) {
+  if (!global.window) global.window = { addEventListener() {}, PB };   // the stub shares the one PB
+  if (!PB.Input) vm.runInThisContext(fs.readFileSync(path.join(dir, 'input.js'), 'utf8'), { filename: 'input.js' });
+  const canvas = { clientWidth: w, clientHeight: h, addEventListener() {}, getBoundingClientRect() { return { left: 0, top: 0 }; } };
+  return new PB.Input(canvas);
+}
+
+test('em pé a zona é alta e estreita, fica embaixo à esquerda e deixa a base livre', () => {
+  const inp = fakeInput(390, 844);
+  const z = inp.zoneRect();
+  eq([z.x, z.y, z.w, z.h], [12, 388, 117, 245], 'retângulo da zona');
+  ok(z.h > 2 * z.w, 'mais alta que larga');
+  ok(844 - (z.y + z.h) > 200, 'faixa livre embaixo para o dedo que move');
+});
+
+test('deitado a zona é quase quadrada e encosta na base', () => {
+  const inp = fakeInput(844, 390);
+  const z = inp.zoneRect();
+  eq([z.x, z.y, z.w, z.h], [12, 119, 219, 257], 'retângulo da zona');
+  ok(z.h / z.w < 1.3 && z.h / z.w > 0.9, 'quase quadrada');
+  eq(390 - (z.y + z.h), 14, 'encostada na base');
+});
+
+test('dentro da zona é golpe, todo o resto é movimento', () => {
+  const inp = fakeInput(390, 844);
+  const z = inp.zoneRect();
+  eq(inp.roleFor(z.x + 10, z.y + 10), 'strike', 'canto de dentro');
+  eq(inp.roleFor(z.x + z.w / 2, z.y + z.h / 2), 'strike', 'meio da zona');
+  eq(inp.roleFor(z.x + z.w + 2, z.y + z.h / 2), 'move', 'logo à direita da zona');
+  eq(inp.roleFor(z.x + 10, z.y + z.h + 2), 'move', 'logo abaixo da zona');
+  eq(inp.roleFor(z.x + 10, z.y - 2), 'move', 'logo acima da zona');
+  eq(inp.roleFor(60, 800), 'move', 'canto de baixo à esquerda, fora da zona');
+  eq(inp.roleFor(300, 600), 'move', 'lado direito');
+});
+
+test('a régua é a zona: até a borda de cima ou a do lado é força máxima', () => {
+  const inp = fakeInput(390, 844);
+  const z = inp.zoneRect(), R = inp.ruler();
+  eq([R.w, R.h], [z.w, z.h], 'régua por eixo');
+  const cima = S.measure([{ x: 60, y: 600 }, { x: 60, y: 600 - z.h }], R);
+  const lado = S.measure([{ x: 60, y: 600 }, { x: 60 + z.w, y: 600 }], R);
+  ok(Math.abs(cima.power - 1) < 0.01, 'puxar a altura toda é 1,0');
+  ok(Math.abs(lado.power - 1) < 0.01, 'puxar a largura toda também é 1,0');
+  eq(cima.lateral, 0, 'reto para cima continua em frente');
+  ok(lado.lateral >= 0.99, 'deitado para a direita continua tudo para o lado');
+});
+
+test('em pé o deslize lateral ganha força mais depressa que o vertical', () => {
+  const inp = fakeInput(390, 844);
+  const R = inp.ruler();
+  const px = 80;
+  const cima = S.measure([{ x: 60, y: 600 }, { x: 60, y: 600 - px }], R);
+  const lado = S.measure([{ x: 60, y: 600 }, { x: 60 + px, y: 600 }], R);
+  ok(lado.power > cima.power * 1.8, 'os mesmos pixels valem mais de lado: ' + lado.power.toFixed(2) + ' vs ' + cima.power.toFixed(2));
+  // and the ratio is the zone's own shape
+  ok(Math.abs(lado.power / cima.power - R.h / R.w) < 0.01, 'a razão é a da zona');
+});
+
+test('deitado os dois eixos ficam quase iguais', () => {
+  const inp = fakeInput(844, 390);
+  const R = inp.ruler();
+  const px = 100;
+  const cima = S.measure([{ x: 60, y: 300 }, { x: 60, y: 300 - px }], R);
+  const lado = S.measure([{ x: 60, y: 300 }, { x: 60 + px, y: 300 }], R);
+  ok(lado.power / cima.power < 1.3 && lado.power / cima.power > 0.9, 'razão perto de 1');
+});
+
+test('os gestos continuam: arco é lob, para baixo é slice, inclinação é direção', () => {
+  const inp = fakeInput(390, 844);
+  const R = inp.ruler();
+  const arco = [];
+  for (let i = 0; i <= 12; i++) { const t = i / 12; arco.push({ x: 70 - Math.sin(t * Math.PI) * 40, y: 600 - t * 150 }); }
+  const lob = S.measure(arco, R);
+  ok(lob && lob.lob && !lob.slice, 'arco para cima é lob');
+  ok(lob.lateral < -0.5, 'C para a esquerda manda para a esquerda');
+  const slice = S.measure([{ x: 70, y: 450 }, { x: 40, y: 560 }], R);
+  ok(slice && slice.slice && !slice.lob, 'para baixo é slice');
+  ok(slice.lateral < -0.2, 'para baixo e para a esquerda vai para a esquerda');
+  const reto = S.measure([{ x: 70, y: 600 }, { x: 70, y: 470 }], R);
+  ok(reto && !reto.lob && !reto.slice && reto.lateral === 0, 'reto para cima é rebatida em frente');
+  // the old screen-height ruler still reads
+  const antigo = S.measure([{ x: 70, y: 600 }, { x: 70, y: 470 }], 844);
+  ok(antigo && antigo.power > 0 && antigo.power < reto.power, 'régua antiga continua válida e mais comprida');
 });
 
 // ── o gesto decide o golpe ────────────────────────────────────────────────

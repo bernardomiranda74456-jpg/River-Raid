@@ -40,16 +40,15 @@ PB.Tutorial = (function () {
     {
       title: T('tut.thumbs.title'),
       stage: court({ extra:
-        `<line x1="150" y1="4" x2="150" y2="164" stroke="#fff" stroke-width="2"
-               stroke-dasharray="7 7" opacity=".5"/>
-         <text x="76" y="22" fill="#d9ff3d" font-size="11" font-weight="800"
-               text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.left'))}</text>
-         <text x="76" y="36" fill="#cfe0ee" font-size="10" font-weight="700"
+        `<rect x="8" y="62" width="62" height="98" rx="8" fill="#08101a" fill-opacity=".34"
+               stroke="#9fe4ff" stroke-opacity=".7" stroke-width="1.5"/>
+         <text x="39" y="78" fill="#9fe4ff" font-size="9" font-weight="800" letter-spacing="1.5"
                text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.strike'))}</text>
-         <text x="224" y="22" fill="#9fe4ff" font-size="11" font-weight="800"
-               text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.right'))}</text>
-         <text x="224" y="36" fill="#cfe0ee" font-size="10" font-weight="700"
-               text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.move'))}</text>` })
+         <line x1="30" y1="150" x2="48" y2="96" stroke="#d9ff3d" stroke-width="4" stroke-linecap="round"
+               opacity=".9"/>
+         <circle cx="48" cy="96" r="5" fill="#ff8800"/>
+         <text x="292" y="162" fill="#cfe0ee" font-size="9" font-weight="800" letter-spacing="1"
+               text-anchor="end" font-family="system-ui" opacity=".8">${esc(T('tut.lbl.move'))}</text>` })
              + `<div class="hand drag" style="top:74%"></div>`,
       body: T('tut.thumbs.body'),
     },

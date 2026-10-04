@@ -60,6 +60,7 @@ PB.I18n = (function () {
 
     'name.you': 'VOCÊ',
     'hud.title': 'DUPLAS: ATÉ {n} PONTOS',
+    'hud.strike': 'GOLPE',
     'hud.call': 'CHAMADA',
     'prompt.serve': 'DESLIZE PARA SACAR',
     'prompt.serve.sub': 'comprimento = força  •  lado = direção',
@@ -93,12 +94,10 @@ PB.I18n = (function () {
     'hint.servebehind': 'Fique atrás da linha de fundo para sacar',
     'hint.partnerhit': 'Seu parceiro já bateu: a bola tem que cruzar a rede!',
 
-    'tut.thumbs.title': 'Dois dedos',
-    'tut.thumbs.body': '<p>A tela se divide em duas. O <b>dedo direito corre</b> e o <b>dedo esquerdo golpeia</b>.</p><p>Nada é lido como as duas coisas, então o golpe nunca empurra o jogador e correr nunca dispara um golpe.</p>',
-    'tut.lbl.left': 'ESQUERDO',
-    'tut.lbl.strike': 'golpe',
-    'tut.lbl.right': 'DIREITO',
-    'tut.lbl.move': 'mover',
+    'tut.thumbs.title': 'A zona de golpe',
+    'tut.thumbs.body': '<p>O retângulo translúcido à esquerda é a <b>zona de golpe</b>. Deslize que <b>começa dentro dela é golpe</b>; em <b>qualquer outro ponto da tela, é movimento</b>, e o jogador segue o dedo.</p><p>A zona é a régua da força: puxar até a borda de cima é força máxima, e até a borda do lado também. Como ela é mais alta que larga, um deslize lateral ganha força mais depressa que um para cima.</p>',
+    'tut.lbl.strike': 'GOLPE',
+    'tut.lbl.move': 'MOVER: TODO O RESTO',
 
     'tut.power.title': 'A força é o tamanho do deslize',
     'tut.power.body': '<p>O <b>traçado do seu dedo aparece na tela</b> e muda de cor conforme cresce. A cor é a força que a bola vai levar.</p><p>Laranja é uma bola bem funda. Rosa pinta a linha de fundo. <b>No vermelho você passou do ponto</b> e a bola sai.</p>',
@@ -133,7 +132,7 @@ PB.I18n = (function () {
     'tut.lbl.kitchen': 'COZINHA',
 
     'tut.score.title': 'Placar e saque',
-    'tut.score.body': '<p>O saque usa o mesmo deslize do dedo esquerdo, com força e direção. Um toque simples também saca, fraco e no meio.</p><p><b>Só quem saca pontua.</b> Perdeu o ponto sacando, o saque passa, mas o placar não muda.</p><p>As bolinhas dizem quem saca: <b>uma bola é o primeiro sacador</b> da dupla, <b>duas bolas é o segundo</b>. O nome aceso é quem está com a bola. Os dois parceiros sacam antes de o saque passar, e por isso o jogo começa em <b>0-0-2</b>.</p>',
+    'tut.score.body': '<p>O saque usa o mesmo deslize na zona de golpe, com força e direção. Um toque simples também saca, fraco e no meio.</p><p><b>Só quem saca pontua.</b> Perdeu o ponto sacando, o saque passa, mas o placar não muda.</p><p>As bolinhas dizem quem saca: <b>uma bola é o primeiro sacador</b> da dupla, <b>duas bolas é o segundo</b>. O nome aceso é quem está com a bola. Os dois parceiros sacam antes de o saque passar, e por isso o jogo começa em <b>0-0-2</b>.</p>',
   };
 
   const EN = {
@@ -185,6 +184,7 @@ PB.I18n = (function () {
 
     'name.you': 'YOU',
     'hud.title': 'DOUBLES: TO {n} POINTS',
+    'hud.strike': 'STRIKE',
     'hud.call': 'CALL',
     'prompt.serve': 'SWIPE TO SERVE',
     'prompt.serve.sub': 'length = power  •  tilt = direction',
@@ -218,12 +218,10 @@ PB.I18n = (function () {
     'hint.servebehind': 'Stay behind the baseline to serve',
     'hint.partnerhit': 'Your partner already hit it: the ball must cross the net!',
 
-    'tut.thumbs.title': 'Two thumbs',
-    'tut.thumbs.body': '<p>The screen splits in two. The <b>right thumb runs</b> and the <b>left thumb strikes</b>.</p><p>Nothing is read as both, so a stroke never shoves the player and running never fires a shot.</p>',
-    'tut.lbl.left': 'LEFT',
-    'tut.lbl.strike': 'strike',
-    'tut.lbl.right': 'RIGHT',
-    'tut.lbl.move': 'move',
+    'tut.thumbs.title': 'The strike zone',
+    'tut.thumbs.body': '<p>The translucent box on the left is the <b>strike zone</b>. A swipe that <b>starts inside it is a stroke</b>; <b>anywhere else on the screen it is movement</b>, and the player follows your finger.</p><p>The zone is the power ruler: a pull to its top edge is full power, and so is a pull to its side edge. It is taller than it is wide, so a sideways swipe gains power faster than an upward one.</p>',
+    'tut.lbl.strike': 'STRIKE',
+    'tut.lbl.move': 'MOVE: EVERYWHERE ELSE',
 
     'tut.power.title': 'Power is how far you swipe',
     'tut.power.body': '<p>The <b>path of your thumb shows on screen</b> and changes colour as it grows. The colour is the power the ball will carry.</p><p>Orange is a deep ball. Pink paints the baseline. <b>On red you have overdone it</b> and the ball goes out.</p>',
@@ -258,7 +256,7 @@ PB.I18n = (function () {
     'tut.lbl.kitchen': 'KITCHEN',
 
     'tut.score.title': 'Score and serve',
-    'tut.score.body': '<p>The serve uses the same left-thumb swipe, with power and direction. A plain tap serves too, softly and down the middle.</p><p><b>Only the serving side scores.</b> Lose the rally while serving and the serve passes on, but the score does not change.</p><p>The balls say who is serving: <b>one ball is the first server</b> of the pair, <b>two balls is the second</b>. The lit name is the one holding the ball. Both partners serve before the serve passes over, which is why the game starts at <b>0-0-2</b>.</p>',
+    'tut.score.body': '<p>The serve uses the same swipe in the strike zone, with power and direction. A plain tap serves too, softly and down the middle.</p><p><b>Only the serving side scores.</b> Lose the rally while serving and the serve passes on, but the score does not change.</p><p>The balls say who is serving: <b>one ball is the first server</b> of the pair, <b>two balls is the second</b>. The lit name is the one holding the ball. Both partners serve before the serve passes over, which is why the game starts at <b>0-0-2</b>.</p>',
   };
 
   const ES = {
@@ -310,6 +308,7 @@ PB.I18n = (function () {
 
     'name.you': 'TÚ',
     'hud.title': 'DOBLES: A {n} PUNTOS',
+    'hud.strike': 'GOLPE',
     'hud.call': 'CANTO',
     'prompt.serve': 'DESLIZA PARA SACAR',
     'prompt.serve.sub': 'largo = fuerza  •  inclinación = dirección',
@@ -343,12 +342,10 @@ PB.I18n = (function () {
     'hint.servebehind': 'Quédate detrás de la línea de fondo para sacar',
     'hint.partnerhit': 'Tu compañero ya golpeó: ¡la bola tiene que cruzar la red!',
 
-    'tut.thumbs.title': 'Dos dedos',
-    'tut.thumbs.body': '<p>La pantalla se divide en dos. El <b>dedo derecho corre</b> y el <b>dedo izquierdo golpea</b>.</p><p>Nada se lee como las dos cosas, así que el golpe nunca empuja al jugador y correr nunca lanza un golpe.</p>',
-    'tut.lbl.left': 'IZQUIERDO',
-    'tut.lbl.strike': 'golpe',
-    'tut.lbl.right': 'DERECHO',
-    'tut.lbl.move': 'mover',
+    'tut.thumbs.title': 'La zona de golpe',
+    'tut.thumbs.body': '<p>El rectángulo translúcido a la izquierda es la <b>zona de golpe</b>. Un deslizamiento que <b>empieza dentro de ella es golpe</b>; en <b>cualquier otro punto de la pantalla, es movimiento</b>, y el jugador sigue al dedo.</p><p>La zona es la regla de la fuerza: tirar hasta el borde de arriba es fuerza máxima, y hasta el borde del lado también. Como es más alta que ancha, un deslizamiento lateral gana fuerza más rápido que uno hacia arriba.</p>',
+    'tut.lbl.strike': 'GOLPE',
+    'tut.lbl.move': 'MOVER: TODO LO DEMÁS',
 
     'tut.power.title': 'La fuerza es el largo del deslizamiento',
     'tut.power.body': '<p>El <b>trazo de tu dedo aparece en pantalla</b> y cambia de color según crece. El color es la fuerza que llevará la bola.</p><p>Naranja es una bola muy profunda. Rosa pinta la línea de fondo. <b>En rojo te pasaste</b> y la bola sale.</p>',
@@ -383,7 +380,7 @@ PB.I18n = (function () {
     'tut.lbl.kitchen': 'COCINA',
 
     'tut.score.title': 'Marcador y saque',
-    'tut.score.body': '<p>El saque usa el mismo deslizamiento del dedo izquierdo, con fuerza y dirección. Un toque simple también saca, flojo y al medio.</p><p><b>Solo puntúa quien saca.</b> Si pierdes el punto sacando, el saque pasa, pero el marcador no cambia.</p><p>Las bolitas dicen quién saca: <b>una bola es el primer sacador</b> de la pareja, <b>dos bolas es el segundo</b>. El nombre encendido es quien tiene la bola. Los dos compañeros sacan antes de que el saque pase, y por eso el juego empieza en <b>0-0-2</b>.</p>',
+    'tut.score.body': '<p>El saque usa el mismo deslizamiento en la zona de golpe, con fuerza y dirección. Un toque simple también saca, flojo y al medio.</p><p><b>Solo puntúa quien saca.</b> Si pierdes el punto sacando, el saque pasa, pero el marcador no cambia.</p><p>Las bolitas dicen quién saca: <b>una bola es el primer sacador</b> de la pareja, <b>dos bolas es el segundo</b>. El nombre encendido es quien tiene la bola. Los dos compañeros sacan antes de que el saque pase, y por eso el juego empieza en <b>0-0-2</b>.</p>',
   };
 
   const DICT = { pt: PT, en: EN, es: ES };

@@ -5,7 +5,7 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
-## App para iPhone (o jogo continua na v47)
+## App para iPhone (o jogo continua na v48)
 
 `PickleballForever.swiftpm` embala a página do jogo num app nativo: uma
 `WKWebView` em tela cheia, som liberado sem toque, sem rolagem nem zoom, tela
@@ -13,6 +13,39 @@ sempre acesa, ícone feito da logo. `build-single.js` passa a gravar a página
 também em `Sources/Resources/index.html`, então o app é sempre a build testada.
 O porte antigo em SpriteKit (`Pickleball.swiftpm`), parado desde o começo e
 nunca compilado, saiu. Como compilar e publicar: `COMO-PUBLICAR-NO-IPHONE.md`.
+
+## v48
+
+Uma **zona de golpe** no lugar da divisão da tela ao meio, e jogadores que
+piscam.
+
+- **Zona:** um retângulo translúcido à esquerda, com a etiqueta GOLPE e uma
+  raquete. Em pé ele tem 30% da largura, começa em 46% da altura e termina em
+  75%, deixando o quarto de baixo da tela livre para o dedo que move; deitado
+  tem 26% da largura por 66% da altura e encosta na base. Em um iPhone comum
+  isso dá 117 × 245 pontos em pé e 219 × 257 deitado.
+- **Quem decide é onde o toque começa:** dentro da zona é golpe, mesmo que o
+  dedo saia dela no caminho; em qualquer outro ponto da tela é movimento. Nada
+  continua sendo lido como as duas coisas.
+- **A régua é a zona, um eixo por vez.** Puxar até a borda de cima é força
+  máxima (1,0) e puxar até a borda do lado também. Em pé a zona é 2,1 vezes
+  mais alta que larga, então os mesmos pixels valem 2,1 vezes mais força de
+  lado; deitado a razão é 1,2. Girar o celular gira a zona e a régua junto, e
+  por isso o ajuste de força por orientação deixou de ser uma conta à parte.
+- **Os gestos ficaram os mesmos:** arco para cima é lob (C para a esquerda vai
+  para a esquerda), para baixo é slice, a inclinação do dedo é a direção. A
+  direção sai do ângulo real do dedo, não da régua.
+- **Piscar:** cada jogador pisca a cada 2,4 a 5,5 s, por 0,14 s, com relógio
+  próprio, então nunca em sincronia. As pálpebras descem sobre o olho e, no
+  meio do piscar, viram um traço.
+- Tutorial: o passo 1 passa a mostrar a zona e explica a régua. README
+  atualizado.
+
+Medido na build, em pé: meia altura reta dá 0,50 de força; sair da zona por
+cima satura em 1,15; para baixo e à esquerda lê slice com lateral −0,36; um
+C para a esquerda lê lob com lateral −0,75. Toques fora da zona, inclusive na
+faixa livre embaixo dela, viram corrida e nunca golpe. Os jogadores passam
+3,0% dos quadros de olho fechado, o esperado para esse ritmo.
 
 ## v47
 
