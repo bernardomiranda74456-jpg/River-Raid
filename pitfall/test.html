@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pitfall! — Testes</title>
+  <style>
+    body { background: #111; color: #ddd; font: 14px/1.5 monospace; padding: 16px; max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 20px; margin-bottom: 8px; }
+    #summary { font-size: 16px; margin: 8px 0 16px; font-weight: bold; }
+    .ok { color: #6c6; } .fail { color: #f66; }
+    li { list-style: none; padding: 2px 0; }
+    .err { color: #f99; margin-left: 24px; font-size: 12px; }
+    a { color: #8ab; }
+  </style>
+</head>
+<body>
+  <h1>Pitfall! — Testes</h1>
+  <div id="summary">Rodando…</div>
+  <ul id="list"></ul>
+  <p><a href="index.html">← Voltar ao jogo</a></p>
+  <script src="engine.js"></script>
+  <script src="render.js"></script>
+  <script src="audio.js"></script>
+  <script src="tests.js"></script>
+  <script>
+    const res = window.__testResults;
+    const list = document.getElementById('list');
+    for (const r of res) {
+      const li = document.createElement('li');
+      li.innerHTML = '<span class="' + (r.ok ? 'ok">✔' : 'fail">✘') + '</span> ';
+      li.appendChild(document.createTextNode(r.name));
+      if (!r.ok) {
+        const e = document.createElement('div');
+        e.className = 'err'; e.textContent = r.error; li.appendChild(e);
+      }
+      list.appendChild(li);
+    }
+    const failed = res.filter(r => !r.ok).length;
+    const s = document.getElementById('summary');
+    s.className = failed ? 'fail' : 'ok';
+    s.textContent = failed ? failed + ' de ' + res.length + ' testes falharam' : 'Todos os ' + res.length + ' testes passaram';
+  </script>
+</body>
+</html>
