@@ -95,7 +95,7 @@ PB.I18n = (function () {
     'hint.partnerhit': 'Seu parceiro já bateu: a bola tem que cruzar a rede!',
 
     'tut.thumbs.title': 'A zona de golpe',
-    'tut.thumbs.body': '<p>O retângulo translúcido à esquerda é a <b>zona de golpe</b>. Deslize que <b>começa dentro dela é golpe</b>; em <b>qualquer outro ponto da tela, é movimento</b>, e o jogador segue o dedo.</p><p>A zona é a régua da força: puxar até a borda de cima é força máxima, e até a borda do lado também. Como ela é mais alta que larga, um deslize lateral ganha força mais depressa que um para cima.</p>',
+    'tut.thumbs.body': '<p>O retângulo translúcido à esquerda é a <b>zona de golpe</b>. Deslize que <b>começa dentro dela é golpe</b>; em <b>qualquer outro ponto da tela, é movimento</b>, e o jogador segue o dedo.</p><p>A zona é a régua da força: um deslize até a borda de cima cai na linha de fundo, e até a borda do lado também; passou da zona, a bola sai. Como ela é mais alta que larga, um deslize lateral ganha força mais depressa que um para cima.</p>',
     'tut.lbl.strike': 'GOLPE',
     'tut.lbl.move': 'MOVER: TODO O RESTO',
 
@@ -219,7 +219,7 @@ PB.I18n = (function () {
     'hint.partnerhit': 'Your partner already hit it: the ball must cross the net!',
 
     'tut.thumbs.title': 'The strike zone',
-    'tut.thumbs.body': '<p>The translucent box on the left is the <b>strike zone</b>. A swipe that <b>starts inside it is a stroke</b>; <b>anywhere else on the screen it is movement</b>, and the player follows your finger.</p><p>The zone is the power ruler: a pull to its top edge is full power, and so is a pull to its side edge. It is taller than it is wide, so a sideways swipe gains power faster than an upward one.</p>',
+    'tut.thumbs.body': '<p>The translucent box on the left is the <b>strike zone</b>. A swipe that <b>starts inside it is a stroke</b>; <b>anywhere else on the screen it is movement</b>, and the player follows your finger.</p><p>The zone is the power ruler: a swipe to its top edge lands on the baseline, and so does one to its side edge; past the zone, the ball goes long. It is taller than it is wide, so a sideways swipe gains power faster than an upward one.</p>',
     'tut.lbl.strike': 'STRIKE',
     'tut.lbl.move': 'MOVE: EVERYWHERE ELSE',
 
@@ -343,7 +343,7 @@ PB.I18n = (function () {
     'hint.partnerhit': 'Tu compañero ya golpeó: ¡la bola tiene que cruzar la red!',
 
     'tut.thumbs.title': 'La zona de golpe',
-    'tut.thumbs.body': '<p>El rectángulo translúcido a la izquierda es la <b>zona de golpe</b>. Un deslizamiento que <b>empieza dentro de ella es golpe</b>; en <b>cualquier otro punto de la pantalla, es movimiento</b>, y el jugador sigue al dedo.</p><p>La zona es la regla de la fuerza: tirar hasta el borde de arriba es fuerza máxima, y hasta el borde del lado también. Como es más alta que ancha, un deslizamiento lateral gana fuerza más rápido que uno hacia arriba.</p>',
+    'tut.thumbs.body': '<p>El rectángulo translúcido a la izquierda es la <b>zona de golpe</b>. Un deslizamiento que <b>empieza dentro de ella es golpe</b>; en <b>cualquier otro punto de la pantalla, es movimiento</b>, y el jugador sigue al dedo.</p><p>La zona es la regla de la fuerza: un deslizamiento hasta el borde de arriba cae en la línea de fondo, y hasta el borde del lado también; pasada la zona, la bola sale. Como es más alta que ancha, un deslizamiento lateral gana fuerza más rápido que uno hacia arriba.</p>',
     'tut.lbl.strike': 'GOLPE',
     'tut.lbl.move': 'MOVER: TODO LO DEMÁS',
 

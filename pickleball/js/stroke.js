@@ -97,9 +97,13 @@ PB.Stroke = (function () {
     return Math.abs(off) < 1 ? 0 : Math.sign(off);
   }
 
+  // A pull across the whole zone, up or sideways, is EDGE of power: pink, the
+  // ball painting the baseline. Only a stroke that leaves the zone goes out.
+  // At 1.0 the box was too hot: a full pull sent ball after ball long.
+  const EDGE = 0.70;
   function rulerOf(r) {
     if (typeof r === 'number') { const f = r * FULL; return { w: f, h: f }; }
-    return { w: Math.max(1, r.w), h: Math.max(1, r.h) };
+    return { w: Math.max(1, r.w) / EDGE, h: Math.max(1, r.h) / EDGE };
   }
 
   function measure(pts, ruler) {
@@ -111,7 +115,7 @@ PB.Stroke = (function () {
     const dx = b.x - a.x, dy = b.y - a.y;
     const chord = Math.hypot(dx, dy);
     if (chord < H * MIN) return null;
-    // the chord in ruler units: 1 is a pull across the whole zone on that axis
+    // the chord in ruler units: EDGE is a pull across the whole zone on that axis
     const chordN = Math.hypot(dx / R.w, dy / R.h);
 
     // how far the path bows away from the straight line between its ends
@@ -149,5 +153,5 @@ PB.Stroke = (function () {
     };
   }
 
-  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, sliceDepth, SLICE_COLOR, measure, rulerOf, tilt, bulge, FULL, SIDE, SIDE_DEG, MIN, ARC, LOB_SIDE };
+  return { RAMP, BASELINE, colorAt, nameAt, depthAt, goesOut, sliceDepth, SLICE_COLOR, measure, rulerOf, EDGE, tilt, bulge, FULL, SIDE, SIDE_DEG, MIN, ARC, LOB_SIDE };
 })();

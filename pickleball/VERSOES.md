@@ -5,7 +5,7 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
-## App para iPhone (o jogo continua na v48)
+## App para iPhone (o jogo continua na v49)
 
 `PickleballForever.swiftpm` embala a página do jogo num app nativo: uma
 `WKWebView` em tela cheia, som liberado sem toque, sem rolagem nem zoom, tela
@@ -13,6 +13,24 @@ sempre acesa, ícone feito da logo. `build-single.js` passa a gravar a página
 também em `Sources/Resources/index.html`, então o app é sempre a build testada.
 O porte antigo em SpriteKit (`Pickleball.swiftpm`), parado desde o começo e
 nunca compilado, saiu. Como compilar e publicar: `COMO-PUBLICAR-NO-IPHONE.md`.
+
+## v49
+
+Calibração da zona de golpe, depois do primeiro teste no celular.
+
+- **Régua mais calma.** Um deslize que percorre a zona inteira, de baixo a
+  cima ou de lado a lado, agora vale 0,70 de força: rosa, a bola pintando a
+  linha de fundo. Antes valia 1,0 e o percurso completo saía fora com
+  frequência. Só um deslize que passa da zona vai para fora (vermelho a partir
+  de 0,78, ou seja, 11% além da borda). O gradiente lateral continua 2,1 vezes
+  o vertical em pé, só que ambos 30% mais brandos.
+- **Zona sem borda** e com o fundo quase transparente (13% de preto, antes
+  28%). Ficam só a etiqueta GOLPE e a raquete para marcar o lugar.
+- Mesmo ajuste no desenho do tutorial e nos textos.
+
+Medido na build, em pé: meia altura reta dá 0,35 (antes 0,50); sair 120
+pontos acima da zona dá 0,94 (antes saturava em 1,15); o C para a esquerda lê
+lob com 0,51 e lateral −0,75.
 
 ## v48
 

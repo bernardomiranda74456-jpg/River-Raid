@@ -915,18 +915,16 @@ PB.Renderer = (function () {
       if (input) this.drawTouch(ctx, input);
     }
 
-    // The strike zone: dark glass with a pale edge, a label and a small paddle,
-    // so the eye finds where to strike without the box hiding the court.
+    // The strike zone: a faint wash of dark glass, no edge, with a label and
+    // a small paddle, so the eye finds where to strike and the court shows
+    // through almost untouched.
     drawZone(ctx, input, m) {
       const z = input.zoneRect();
       ctx.save();
       this.roundRect(ctx, z.x, z.y, z.w, z.h, 14);
-      ctx.fillStyle = 'rgba(8,16,26,0.28)';
+      ctx.fillStyle = 'rgba(8,16,26,0.13)';
       ctx.fill();
-      ctx.strokeStyle = 'rgba(159,228,255,0.55)';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(159,228,255,0.85)';
+      ctx.fillStyle = 'rgba(159,228,255,0.80)';
       ctx.font = '800 10px system-ui, -apple-system, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'alphabetic';

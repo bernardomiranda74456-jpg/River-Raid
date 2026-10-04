@@ -43,9 +43,10 @@ pontos, sempre com 2 de vantagem.
   dedo, e um arrasto rápido é uma corrida.
 - **Golpear:** um deslize para cima dentro da zona. O comprimento é a força e
   a cor do traço é o medidor: verde curto, laranja no fundo, rosa na linha,
-  vermelho fora. A zona é a régua, um eixo por vez: puxar até a borda de cima é
-  força máxima, e até a borda do lado também, então em pé um deslize lateral
-  ganha força bem mais depressa que um para cima.
+  vermelho fora. A zona é a régua, um eixo por vez: um deslize até a borda de
+  cima cai na linha de fundo, e até a borda do lado também; só passando da zona
+  a bola sai. Em pé um deslize lateral ganha força bem mais depressa que um
+  para cima.
 - **Direção:** a inclinação do deslize. Reto é em frente, deitado é todo para
   o lado.
 - **Lob:** deslize em arco para cima. Arco em C joga para a esquerda, C

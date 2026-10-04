@@ -129,8 +129,9 @@ PB.Input = (function () {
     }
 
     // The ruler a stroke is measured against is the zone itself, one ruler per
-    // axis: a pull from one edge of the zone to the other is full power whether
-    // it goes up or sideways. Upright the zone is far taller than wide, so a
+    // axis: a pull from one edge of the zone to the other is the same power
+    // whether it goes up or sideways (Stroke.EDGE, the ball on the baseline),
+    // and only a stroke that leaves the zone goes long. Upright the zone is far taller than wide, so a
     // sideways stroke gains power much faster than a vertical one; lying down
     // the two are nearly equal. Turning the phone turns the zone, and with it
     // the ruler, so the same thumb movement inside the box is the same shot.

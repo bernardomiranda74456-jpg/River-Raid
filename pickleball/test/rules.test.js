@@ -1221,14 +1221,18 @@ test('dentro da zona é golpe, todo o resto é movimento', () => {
   eq(inp.roleFor(300, 600), 'move', 'lado direito');
 });
 
-test('a régua é a zona: até a borda de cima ou a do lado é força máxima', () => {
+test('a régua é a zona: até a borda de cima ou a do lado cai na linha, só fora da zona sai', () => {
   const inp = fakeInput(390, 844);
   const z = inp.zoneRect(), R = inp.ruler();
   eq([R.w, R.h], [z.w, z.h], 'régua por eixo');
   const cima = S.measure([{ x: 60, y: 600 }, { x: 60, y: 600 - z.h }], R);
   const lado = S.measure([{ x: 60, y: 600 }, { x: 60 + z.w, y: 600 }], R);
-  ok(Math.abs(cima.power - 1) < 0.01, 'puxar a altura toda é 1,0');
-  ok(Math.abs(lado.power - 1) < 0.01, 'puxar a largura toda também é 1,0');
+  ok(Math.abs(cima.power - S.EDGE) < 0.01, 'puxar a altura toda é EDGE');
+  ok(Math.abs(lado.power - S.EDGE) < 0.01, 'puxar a largura toda também é EDGE');
+  ok(!S.goesOut(cima.power), 'a zona inteira ainda cai dentro');
+  ok(S.depthAt(cima.power) > 21, 'e cai na linha de fundo');
+  const fora = S.measure([{ x: 60, y: 600 }, { x: 60, y: 600 - z.h * 1.15 }], R);
+  ok(S.goesOut(fora.power), 'passou 15% da zona, sai');
   eq(cima.lateral, 0, 'reto para cima continua em frente');
   ok(lado.lateral >= 0.99, 'deitado para a direita continua tudo para o lado');
 });
