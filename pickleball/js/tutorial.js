@@ -41,8 +41,10 @@ PB.Tutorial = (function () {
       title: T('tut.thumbs.title'),
       stage: court({ extra:
         `<rect x="8" y="62" width="62" height="98" rx="8" fill="#08101a" fill-opacity=".22"/>
-         <text x="39" y="78" fill="#9fe4ff" font-size="9" font-weight="800" letter-spacing="1.5"
-               text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.strike'))}</text>
+         <text x="15" y="78" fill="#9fe4ff" font-size="9" font-weight="800" letter-spacing="1.5"
+               text-anchor="start" font-family="system-ui">${esc(T('tut.lbl.strike'))}</text>
+         <g transform="translate(22 94) rotate(-30)" fill="#9fe4ff" fill-opacity=".4">
+           <ellipse cx="0" cy="-5" rx="4.5" ry="6"/><rect x="-1.2" y="1" width="2.4" height="8"/></g>
          <line x1="30" y1="150" x2="48" y2="96" stroke="#d9ff3d" stroke-width="4" stroke-linecap="round"
                opacity=".9"/>
          <circle cx="48" cy="96" r="5" fill="#ff8800"/>

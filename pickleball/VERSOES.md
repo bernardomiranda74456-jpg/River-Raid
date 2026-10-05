@@ -5,7 +5,7 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
-## App para iPhone (o jogo continua na v49)
+## App para iPhone (o jogo continua na v50)
 
 `PickleballForever.swiftpm` embala a página do jogo num app nativo: uma
 `WKWebView` em tela cheia, som liberado sem toque, sem rolagem nem zoom, tela
@@ -13,6 +13,17 @@ sempre acesa, ícone feito da logo. `build-single.js` passa a gravar a página
 também em `Sources/Resources/index.html`, então o app é sempre a build testada.
 O porte antigo em SpriteKit (`Pickleball.swiftpm`), parado desde o começo e
 nunca compilado, saiu. Como compilar e publicar: `COMO-PUBLICAR-NO-IPHONE.md`.
+
+## v50
+
+A zona de golpe desce em pé e ganha a etiqueta alinhada à esquerda.
+
+- **Mais baixa.** Em pé o bloco vai de 55% a 84% da altura da tela, antes de
+  46% a 75%: a mão esquerda estava alta demais. O tamanho é o mesmo
+  (117 × 245 pontos num iPhone comum) e a faixa livre embaixo fica com 135
+  pontos. Deitado não muda.
+- **GOLPE à esquerda, raquete embaixo**, as duas com 12 pontos de margem, em
+  vez de centradas. Mesmo arranjo no desenho do tutorial.
 
 ## v49
 

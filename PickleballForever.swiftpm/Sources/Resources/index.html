@@ -256,7 +256,7 @@
       <button class="lang" data-lang="es" data-i18n-aria="lang.name.es"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" rx="3" fill="#c60b1e"/><rect width="30" height="10" y="5" fill="#ffc400"/></svg></button>
     </div>
     </div>
-    <div class="foot">v49 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
+    <div class="foot">v50 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
   </section>
 
   <!-- configuração -->
@@ -3474,13 +3474,13 @@ PB.Renderer = (function () {
       ctx.fill();
       ctx.fillStyle = 'rgba(159,228,255,0.80)';
       ctx.font = '800 10px system-ui, -apple-system, sans-serif';
-      ctx.textAlign = 'center';
+      ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
       if ('letterSpacing' in ctx) ctx.letterSpacing = '2px';
-      ctx.fillText(T('hud.strike'), z.x + z.w / 2, z.y + 17);
+      ctx.fillText(T('hud.strike'), z.x + 12, z.y + 17);
       if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
-      // the paddle glyph
-      ctx.translate(z.x + z.w / 2, z.y + 40);
+      // the paddle glyph, under the label and flush left with it
+      ctx.translate(z.x + 20, z.y + 40);
       ctx.rotate(-0.5);
       ctx.fillStyle = 'rgba(159,228,255,0.35)';
       ctx.beginPath();
@@ -4447,12 +4447,12 @@ PB.Input = (function () {
   // thumb speed, as a fraction of the viewport height per second, that means
   // "run flat out"; the small dead zone swallows a resting finger's tremor
   const MOVE_FULL = 0.34, MOVE_DEAD = 0.04, MOVE_SMOOTH = 0.045, MOVE_GAIN = 0.72;
-  // The strike zone, as fractions of the canvas. Upright it is a tall box
-  // that starts below the far court and leaves the bottom quarter of the
-  // screen free for the moving thumb; lying down it is nearly square and sits
-  // on the bottom edge.
+  // The strike zone, as fractions of the canvas. Upright it is a tall box in
+  // the lower half of the screen, where the left thumb rests, and leaves a
+  // band at the bottom free for the moving thumb; lying down it is nearly
+  // square and sits on the bottom edge.
   const ZONE_X = 12;                                            // px from the left edge
-  const ZONE_UP = { w: 0.30, top: 0.46, bottom: 0.75 };         // portrait
+  const ZONE_UP = { w: 0.30, top: 0.55, bottom: 0.84 };         // portrait
   const ZONE_WIDE = { w: 0.26, h: 0.66, bottom: 14 };           // landscape, bottom in px
 
   class Input {
@@ -5102,8 +5102,10 @@ PB.Tutorial = (function () {
       title: T('tut.thumbs.title'),
       stage: court({ extra:
         `<rect x="8" y="62" width="62" height="98" rx="8" fill="#08101a" fill-opacity=".22"/>
-         <text x="39" y="78" fill="#9fe4ff" font-size="9" font-weight="800" letter-spacing="1.5"
-               text-anchor="middle" font-family="system-ui">${esc(T('tut.lbl.strike'))}</text>
+         <text x="15" y="78" fill="#9fe4ff" font-size="9" font-weight="800" letter-spacing="1.5"
+               text-anchor="start" font-family="system-ui">${esc(T('tut.lbl.strike'))}</text>
+         <g transform="translate(22 94) rotate(-30)" fill="#9fe4ff" fill-opacity=".4">
+           <ellipse cx="0" cy="-5" rx="4.5" ry="6"/><rect x="-1.2" y="1" width="2.4" height="8"/></g>
          <line x1="30" y1="150" x2="48" y2="96" stroke="#d9ff3d" stroke-width="4" stroke-linecap="round"
                opacity=".9"/>
          <circle cx="48" cy="96" r="5" fill="#ff8800"/>

@@ -926,13 +926,13 @@ PB.Renderer = (function () {
       ctx.fill();
       ctx.fillStyle = 'rgba(159,228,255,0.80)';
       ctx.font = '800 10px system-ui, -apple-system, sans-serif';
-      ctx.textAlign = 'center';
+      ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
       if ('letterSpacing' in ctx) ctx.letterSpacing = '2px';
-      ctx.fillText(T('hud.strike'), z.x + z.w / 2, z.y + 17);
+      ctx.fillText(T('hud.strike'), z.x + 12, z.y + 17);
       if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
-      // the paddle glyph
-      ctx.translate(z.x + z.w / 2, z.y + 40);
+      // the paddle glyph, under the label and flush left with it
+      ctx.translate(z.x + 20, z.y + 40);
       ctx.rotate(-0.5);
       ctx.fillStyle = 'rgba(159,228,255,0.35)';
       ctx.beginPath();

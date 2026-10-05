@@ -13,12 +13,12 @@ PB.Input = (function () {
   // thumb speed, as a fraction of the viewport height per second, that means
   // "run flat out"; the small dead zone swallows a resting finger's tremor
   const MOVE_FULL = 0.34, MOVE_DEAD = 0.04, MOVE_SMOOTH = 0.045, MOVE_GAIN = 0.72;
-  // The strike zone, as fractions of the canvas. Upright it is a tall box
-  // that starts below the far court and leaves the bottom quarter of the
-  // screen free for the moving thumb; lying down it is nearly square and sits
-  // on the bottom edge.
+  // The strike zone, as fractions of the canvas. Upright it is a tall box in
+  // the lower half of the screen, where the left thumb rests, and leaves a
+  // band at the bottom free for the moving thumb; lying down it is nearly
+  // square and sits on the bottom edge.
   const ZONE_X = 12;                                            // px from the left edge
-  const ZONE_UP = { w: 0.30, top: 0.46, bottom: 0.75 };         // portrait
+  const ZONE_UP = { w: 0.30, top: 0.55, bottom: 0.84 };         // portrait
   const ZONE_WIDE = { w: 0.26, h: 0.66, bottom: 14 };           // landscape, bottom in px
 
   class Input {

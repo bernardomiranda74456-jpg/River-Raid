@@ -1196,9 +1196,10 @@ function fakeInput(w, h) {
 test('em pé a zona é alta e estreita, fica embaixo à esquerda e deixa a base livre', () => {
   const inp = fakeInput(390, 844);
   const z = inp.zoneRect();
-  eq([z.x, z.y, z.w, z.h], [12, 388, 117, 245], 'retângulo da zona');
+  eq([z.x, z.y, z.w, z.h], [12, 464, 117, 245], 'retângulo da zona');
   ok(z.h > 2 * z.w, 'mais alta que larga');
-  ok(844 - (z.y + z.h) > 200, 'faixa livre embaixo para o dedo que move');
+  ok(z.y > 844 * 0.5, 'começa na metade de baixo da tela, onde o polegar descansa');
+  ok(844 - (z.y + z.h) > 120, 'faixa livre embaixo para o dedo que move');
 });
 
 test('deitado a zona é quase quadrada e encosta na base', () => {
