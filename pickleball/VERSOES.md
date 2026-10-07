@@ -5,7 +5,7 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
-## App para iPhone (o jogo continua na v50)
+## App para iPhone (o jogo continua na v51)
 
 `PickleballForever.swiftpm` embala a página do jogo num app nativo: uma
 `WKWebView` em tela cheia, som liberado sem toque, sem rolagem nem zoom, tela
@@ -13,6 +13,24 @@ sempre acesa, ícone feito da logo. `build-single.js` passa a gravar a página
 também em `Sources/Resources/index.html`, então o app é sempre a build testada.
 O porte antigo em SpriteKit (`Pickleball.swiftpm`), parado desde o começo e
 nunca compilado, saiu. Como compilar e publicar: `COMO-PUBLICAR-NO-IPHONE.md`.
+
+## v51
+
+Tutorial redesenhado e placar sem a linha de chamada.
+
+- **Quadra do tutorial como a do jogo:** entorno azul-escuro, quadra azul,
+  cozinhas vermelhas dos dois lados da rede, linhas brancas, rede com malha,
+  fita branca e postes fora das laterais. Os cantos ficaram nos mesmos lugares,
+  então as setas e os traços dos outros passos continuam alinhados. Quando um
+  passo fala da cozinha, ela acende com um contorno claro.
+- **Passo 1 novo, "Mover: o polegar direito":** o boneco amarelo fica na
+  quadra de perto com as quatro direções marcadas e desliza para os lados,
+  para a rede e para o fundo, acompanhando um polegar que arrasta à direita,
+  no mesmo ritmo. A zona de golpe aparece apagada à esquerda. O passo da zona
+  vira o segundo; o tutorial passa a dez passos.
+- **Placar sem o rodapé** "CHAMADA 0-0-2": as bolinhas ao lado do nome já
+  dizem quem saca, e o rodapé só repetia o placar. O painel fica 15 pontos
+  mais baixo. O mini placar do tutorial perdeu a mesma linha.
 
 ## v50
 

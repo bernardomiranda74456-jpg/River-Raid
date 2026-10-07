@@ -167,6 +167,23 @@
     63%, 100% { top: 78%; opacity: 0 }
   }
   .hand.tap { left: 50%; top: 62%; animation: h-tap 1.8s ease-out infinite; }
+  /* moving: the right thumb drags and the player on the court follows, the
+     same path with the same timing, so the two read as one motion */
+  .tut-player {
+    position: absolute; width: 9.4%; aspect-ratio: 26 / 40;
+    transform: translate(-50%, -92%); pointer-events: none;
+  }
+  .tut-player svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .tut-player.walk { left: 50%; top: 80%; animation: p-walk 4.2s ease-in-out infinite; }
+  .hand.walk { left: 80%; top: 72%; animation: h-walk 4.2s ease-in-out infinite; }
+  @keyframes p-walk {
+    0%, 100% { left: 50%; top: 80% } 22% { left: 36%; top: 80% }
+    46% { left: 62%; top: 72% } 70% { left: 50%; top: 64% } 86% { left: 50%; top: 80% }
+  }
+  @keyframes h-walk {
+    0%, 100% { left: 80%; top: 72% } 22% { left: 66%; top: 72% }
+    46% { left: 92%; top: 64% } 70% { left: 80%; top: 56% } 86% { left: 80%; top: 72% }
+  }
   /* the slice: down and to the side, over the drawn gesture on the left */
   .hand.slice { left: 13%; animation: h-slice 1.9s cubic-bezier(.3,0,.2,1) infinite; }
   @keyframes h-slice {
@@ -188,7 +205,7 @@
     68% { left: 50%; top: 60% } 100% { left: 50%; top: 74% }
   }
   @media (prefers-reduced-motion: reduce) {
-    .hand, .ball-dot.hop { animation: none !important; }
+    .hand, .ball-dot.hop, .tut-player { animation: none !important; }
   }
   /* a short landscape window has no room for a stacked card, so the art moves
      beside the text and the buttons stay on screen */
@@ -293,7 +310,7 @@
   <section id="scr-tutorial" class="screen">
     <div class="tut">
       <div class="tut-top">
-        <span class="tut-step" id="tut-step">PASSO 1 DE 8</span>
+        <span class="tut-step" id="tut-step">PASSO 1 DE 10</span>
         <button class="tut-home" id="btn-tut-home" data-i18n="ui.tut.home">Menu principal</button>
       </div>
       <div class="tut-dots" id="tut-dots"></div>

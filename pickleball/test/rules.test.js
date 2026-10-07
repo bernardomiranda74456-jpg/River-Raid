@@ -528,22 +528,22 @@ test('trocar de idioma troca as chamadas e o tutorial', () => {
   const antes = PB.I18n.lang;
   PB.I18n.setLang('en');
   eq(PB.Match.reasonText('fora', m).label, 'Ball out');
-  eq(PB.Tutorial.steps()[0].title, 'The strike zone');
+  eq(PB.Tutorial.steps()[0].title, 'Moving: the right thumb');
   PB.I18n.setLang('es');
   eq(PB.Match.reasonText('fora', m).label, 'Bola fuera');
-  eq(PB.Tutorial.steps()[0].title, 'La zona de golpe');
+  eq(PB.Tutorial.steps()[0].title, 'Mover: el pulgar derecho');
   PB.I18n.setLang('pt');
   eq(PB.Match.reasonText('fora', m).label, 'Bola fora');
-  eq(PB.Tutorial.steps()[0].title, 'A zona de golpe');
+  eq(PB.Tutorial.steps()[0].title, 'Mover: o polegar direito');
   PB.I18n.setLang(antes);
 });
 
-test('os nove passos do tutorial vêm inteiros nos três idiomas', () => {
+test('os dez passos do tutorial vêm inteiros nos três idiomas', () => {
   const antes = PB.I18n.lang;
   for (const l of PB.I18n.LANGS) {
     PB.I18n.setLang(l);
     const st = PB.Tutorial.steps();
-    eq(st.length, 9, l + ': nove passos');
+    eq(st.length, 10, l + ': dez passos');
     for (const s of st) {
       ok(s.title && s.title.indexOf('tut.') < 0, l + ': título traduzido');
       ok(s.body && s.body.indexOf('tut.') < 0, l + ': texto traduzido');

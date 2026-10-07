@@ -1,5 +1,5 @@
 'use strict';
-// Nine-step tutorial. Every step draws its own little stage so the gesture is
+// Ten-step tutorial. Every step draws its own little stage so the gesture is
 // shown rather than described, and the way back to the menu never moves. The
 // steps are built on demand, because every word in them, the labels inside the
 // drawings included, comes from the language table.
@@ -11,32 +11,93 @@ var PB = (function () {
 PB.Tutorial = (function () {
   const T = (k, v) => (PB.I18n ? PB.I18n.t(k, v) : k);
   const esc = v => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  // A court seen from the game's own angle: near half wide at the bottom, far
-  // half narrow at the top, kitchen bands either side of the net.
+  // The court as the game draws it: a darker apron around a blue court, red
+  // kitchens either side of the net, white lines, and a net with posts and
+  // mesh. Seen from the game's own angle, near half wide at the bottom, far
+  // half narrow at the top. Later steps draw on top of it, so its corners are
+  // fixed: far baseline y=34 (x 118..182), near baseline y=150 (x 32..268),
+  // net y=82, kitchen lines y=55 and y=110.
   function court(opts) {
     const o = opts || {};
-    const kitchen = o.kitchen ? 'fill="#b8442f"' : 'fill="#2f79b8"';
+    const kit = o.kitchen ? '#d5553a' : '#b8442f';
+    const kitGlow = o.kitchen
+      ? `<polygon points="129,55 171,55 186,82 114,82" fill="none" stroke="#ffb09c" stroke-width="1.6" opacity=".8"/>
+         <polygon points="110,82 190,82 206,110 94,110" fill="none" stroke="#ffb09c" stroke-width="1.6" opacity=".8"/>`
+      : '';
     return `
       <svg viewBox="0 0 300 168" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <pattern id="mesh" width="3" height="3" patternUnits="userSpaceOnUse">
+            <path d="M0,0 L3,3 M3,0 L0,3" stroke="#6f8597" stroke-width=".5" opacity=".7"/>
+          </pattern>
+          <linearGradient id="apron" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1f4f78"/><stop offset="1" stop-color="#2a6c9c"/>
+          </linearGradient>
+        </defs>
+        <!-- apron and court -->
+        <polygon points="96,20 204,20 300,168 0,168" fill="url(#apron)"/>
         <polygon points="118,34 182,34 268,150 32,150" fill="#3a8fd0"/>
-        <polygon points="129,55 171,55 186,82 114,82" ${kitchen}/>
-        <polygon points="110,82 190,82 206,110 94,110" ${kitchen}/>
-        <polygon points="118,34 182,34 268,150 32,150" fill="none" stroke="#fff" stroke-width="2.4"/>
-        <line x1="114" y1="82" x2="186" y2="82" stroke="#e9f3fb" stroke-width="2.4"/>
-        <line x1="129" y1="55" x2="171" y2="55" stroke="#fff" stroke-width="1.8" opacity=".85"/>
-        <line x1="94" y1="110" x2="206" y2="110" stroke="#fff" stroke-width="1.8" opacity=".85"/>
-        <line x1="150" y1="34" x2="150" y2="55" stroke="#fff" stroke-width="1.6" opacity=".7"/>
-        <line x1="150" y1="110" x2="150" y2="150" stroke="#fff" stroke-width="1.6" opacity=".7"/>
-        <rect x="100" y="72" width="100" height="11" rx="2" fill="#0d1a26" opacity=".75"/>
+        <!-- kitchens, the red bands either side of the net -->
+        <polygon points="129,55 171,55 186,82 114,82" fill="${kit}"/>
+        <polygon points="110,82 190,82 206,110 94,110" fill="${kit}"/>
+        ${kitGlow}
+        <!-- lines -->
+        <polygon points="118,34 182,34 268,150 32,150" fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/>
+        <line x1="129" y1="55" x2="171" y2="55" stroke="#fff" stroke-width="1.9"/>
+        <line x1="94" y1="110" x2="206" y2="110" stroke="#fff" stroke-width="2.1"/>
+        <line x1="150" y1="34" x2="150" y2="55" stroke="#fff" stroke-width="1.5" opacity=".9"/>
+        <line x1="150" y1="110" x2="150" y2="150" stroke="#fff" stroke-width="1.7" opacity=".9"/>
+        <!-- net: posts just outside the sidelines, dark mesh, white tape -->
+        <line x1="107" y1="68" x2="107" y2="86" stroke="#d6dee8" stroke-width="2.4" stroke-linecap="round"/>
+        <line x1="193" y1="68" x2="193" y2="86" stroke="#d6dee8" stroke-width="2.4" stroke-linecap="round"/>
+        <rect x="107" y="70" width="86" height="13" fill="#141d27" opacity=".92"/>
+        <rect x="107" y="70" width="86" height="13" fill="url(#mesh)"/>
+        <line x1="107" y1="70" x2="193" y2="70" stroke="#f2f6fa" stroke-width="2.2"/>
+        <path d="M107,86 L193,86 L196,88 L104,88 z" fill="#000" opacity=".25"/>
         ${o.extra || ''}
       </svg>`;
   }
+
+  // A small figure in the yellow kit, the one the player controls. Drawn as
+  // HTML so it can be animated with the finger that moves it.
+  const PLAYER = `<div class="tut-player walk"><svg viewBox="0 0 26 40">
+      <ellipse cx="13" cy="38" rx="9" ry="2" fill="#000" opacity=".3"/>
+      <rect x="7.5" y="28" width="4" height="9" rx="1.6" fill="#b07a4e"/>
+      <rect x="14.5" y="28" width="4" height="9" rx="1.6" fill="#b07a4e"/>
+      <rect x="6.6" y="35" width="5.6" height="3.2" rx="1.4" fill="#f4f4f4"/>
+      <rect x="13.8" y="35" width="5.6" height="3.2" rx="1.4" fill="#f4f4f4"/>
+      <rect x="6.5" y="22" width="13" height="8" rx="2" fill="#27405a"/>
+      <rect x="5" y="11" width="16" height="13" rx="4" fill="#f3c623"/>
+      <rect x="2.2" y="12.5" width="3.6" height="9" rx="1.8" fill="#b07a4e"/>
+      <rect x="20.2" y="12.5" width="3.6" height="9" rx="1.8" fill="#b07a4e"/>
+      <circle cx="13" cy="7" r="5.6" fill="#c58c5b"/>
+      <path d="M7.4,6.6 A5.6,5.6 0 0 1 18.6,6.6 L18.6,5.4 A5.6,5.6 0 0 0 7.4,5.4 z" fill="#3a2a22"/>
+    </svg></div>`;
 
   const ARROW = `<defs><marker id="ah" markerWidth="7" markerHeight="7" refX="5.4" refY="3" orient="auto">
       <path d="M0,0 L6,3 L0,6 z" fill="#d9ff3d"/></marker></defs>`;
 
   function build() {
     return [
+    {
+      title: T('tut.move.title'),
+      // the strike zone sits faint on the left; the player on the near court
+      // slides where the right thumb drags, with the four ways marked
+      stage: court({ extra:
+        `<defs><marker id="ahm" markerWidth="8" markerHeight="8" refX="5.5" refY="4" orient="auto"
+                 markerUnits="userSpaceOnUse"><path d="M0,0 L7,4 L0,8 z" fill="#9fe4ff"/></marker></defs>
+         <rect x="8" y="62" width="62" height="98" rx="8" fill="#08101a" fill-opacity=".16"/>
+         <g stroke="#9fe4ff" stroke-width="2.2" stroke-linecap="round" opacity=".75" marker-end="url(#ahm)">
+           <line x1="150" y1="88" x2="150" y2="74"/>
+           <line x1="150" y1="140" x2="150" y2="156"/>
+           <line x1="134" y1="130" x2="106" y2="130"/>
+           <line x1="166" y1="130" x2="194" y2="130"/>
+         </g>
+         <text x="292" y="162" fill="#cfe0ee" font-size="9" font-weight="800" letter-spacing="1"
+               text-anchor="end" font-family="system-ui" opacity=".8">${esc(T('tut.lbl.move'))}</text>` })
+             + PLAYER + `<div class="hand walk"></div>`,
+      body: T('tut.move.body'),
+    },
     {
       title: T('tut.thumbs.title'),
       stage: court({ extra:
@@ -47,10 +108,7 @@ PB.Tutorial = (function () {
            <ellipse cx="0" cy="-5" rx="4.5" ry="6"/><rect x="-1.2" y="1" width="2.4" height="8"/></g>
          <line x1="30" y1="150" x2="48" y2="96" stroke="#d9ff3d" stroke-width="4" stroke-linecap="round"
                opacity=".9"/>
-         <circle cx="48" cy="96" r="5" fill="#ff8800"/>
-         <text x="292" y="162" fill="#cfe0ee" font-size="9" font-weight="800" letter-spacing="1"
-               text-anchor="end" font-family="system-ui" opacity=".8">${esc(T('tut.lbl.move'))}</text>` })
-             + `<div class="hand drag" style="top:74%"></div>`,
+         <circle cx="48" cy="96" r="5" fill="#ff8800"/>` }),
       body: T('tut.thumbs.body'),
     },
     {
@@ -155,8 +213,6 @@ PB.Tutorial = (function () {
                text-anchor="middle" font-family="system-ui">0</text>
          <text x="215" y="104" fill="#fff" font-size="15" font-weight="800"
                text-anchor="middle" font-family="system-ui">0</text>
-         <text x="150" y="140" fill="#7f9ab1" font-size="9.5" font-weight="700"
-               text-anchor="middle" font-family="system-ui" letter-spacing="1">${esc(T('hud.call'))}  0 - 0 - 2</text>
       </svg>`,
       body: T('tut.score.body'),
     },

@@ -167,6 +167,23 @@
     63%, 100% { top: 78%; opacity: 0 }
   }
   .hand.tap { left: 50%; top: 62%; animation: h-tap 1.8s ease-out infinite; }
+  /* moving: the right thumb drags and the player on the court follows, the
+     same path with the same timing, so the two read as one motion */
+  .tut-player {
+    position: absolute; width: 9.4%; aspect-ratio: 26 / 40;
+    transform: translate(-50%, -92%); pointer-events: none;
+  }
+  .tut-player svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .tut-player.walk { left: 50%; top: 80%; animation: p-walk 4.2s ease-in-out infinite; }
+  .hand.walk { left: 80%; top: 72%; animation: h-walk 4.2s ease-in-out infinite; }
+  @keyframes p-walk {
+    0%, 100% { left: 50%; top: 80% } 22% { left: 36%; top: 80% }
+    46% { left: 62%; top: 72% } 70% { left: 50%; top: 64% } 86% { left: 50%; top: 80% }
+  }
+  @keyframes h-walk {
+    0%, 100% { left: 80%; top: 72% } 22% { left: 66%; top: 72% }
+    46% { left: 92%; top: 64% } 70% { left: 80%; top: 56% } 86% { left: 80%; top: 72% }
+  }
   /* the slice: down and to the side, over the drawn gesture on the left */
   .hand.slice { left: 13%; animation: h-slice 1.9s cubic-bezier(.3,0,.2,1) infinite; }
   @keyframes h-slice {
@@ -188,7 +205,7 @@
     68% { left: 50%; top: 60% } 100% { left: 50%; top: 74% }
   }
   @media (prefers-reduced-motion: reduce) {
-    .hand, .ball-dot.hop { animation: none !important; }
+    .hand, .ball-dot.hop, .tut-player { animation: none !important; }
   }
   /* a short landscape window has no room for a stacked card, so the art moves
      beside the text and the buttons stay on screen */
@@ -256,7 +273,7 @@
       <button class="lang" data-lang="es" data-i18n-aria="lang.name.es"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" rx="3" fill="#c60b1e"/><rect width="30" height="10" y="5" fill="#ffc400"/></svg></button>
     </div>
     </div>
-    <div class="foot">v50 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
+    <div class="foot">v51 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
   </section>
 
   <!-- configuração -->
@@ -293,7 +310,7 @@
   <section id="scr-tutorial" class="screen">
     <div class="tut">
       <div class="tut-top">
-        <span class="tut-step" id="tut-step">PASSO 1 DE 8</span>
+        <span class="tut-step" id="tut-step">PASSO 1 DE 10</span>
         <button class="tut-home" id="btn-tut-home" data-i18n="ui.tut.home">Menu principal</button>
       </div>
       <div class="tut-dots" id="tut-dots"></div>
@@ -394,7 +411,6 @@ PB.I18n = (function () {
     'name.you': 'VOCÊ',
     'hud.title': 'DUPLAS: ATÉ {n} PONTOS',
     'hud.strike': 'GOLPE',
-    'hud.call': 'CHAMADA',
     'prompt.serve': 'DESLIZE PARA SACAR',
     'prompt.serve.sub': 'comprimento = força  •  lado = direção',
     'prompt.letbounce': 'DEIXE O SAQUE QUICAR',
@@ -427,6 +443,8 @@ PB.I18n = (function () {
     'hint.servebehind': 'Fique atrás da linha de fundo para sacar',
     'hint.partnerhit': 'Seu parceiro já bateu: a bola tem que cruzar a rede!',
 
+    'tut.move.title': 'Mover: o polegar direito',
+    'tut.move.body': '<p>Arraste o dedo em <b>qualquer ponto fora da zona de golpe</b> e o jogador segue o dedo: <b>para os lados, para a rede e para o fundo</b>.</p><p>Arrasto devagar ajusta a posição; <b>arrasto rápido é corrida</b>. Parou o dedo, o jogador para.</p>',
     'tut.thumbs.title': 'A zona de golpe',
     'tut.thumbs.body': '<p>O retângulo translúcido à esquerda é a <b>zona de golpe</b>. Deslize que <b>começa dentro dela é golpe</b>; em <b>qualquer outro ponto da tela, é movimento</b>, e o jogador segue o dedo.</p><p>A zona é a régua da força: um deslize até a borda de cima cai na linha de fundo, e até a borda do lado também; passou da zona, a bola sai. Como ela é mais alta que larga, um deslize lateral ganha força mais depressa que um para cima.</p>',
     'tut.lbl.strike': 'GOLPE',
@@ -518,7 +536,6 @@ PB.I18n = (function () {
     'name.you': 'YOU',
     'hud.title': 'DOUBLES: TO {n} POINTS',
     'hud.strike': 'STRIKE',
-    'hud.call': 'CALL',
     'prompt.serve': 'SWIPE TO SERVE',
     'prompt.serve.sub': 'length = power  •  tilt = direction',
     'prompt.letbounce': 'LET THE SERVE BOUNCE',
@@ -551,6 +568,8 @@ PB.I18n = (function () {
     'hint.servebehind': 'Stay behind the baseline to serve',
     'hint.partnerhit': 'Your partner already hit it: the ball must cross the net!',
 
+    'tut.move.title': 'Moving: the right thumb',
+    'tut.move.body': '<p>Drag your finger <b>anywhere outside the strike zone</b> and the player follows it: <b>sideways, up to the net and back to the baseline</b>.</p><p>A slow drag adjusts position; <b>a fast drag is a sprint</b>. Stop the finger and the player stops.</p>',
     'tut.thumbs.title': 'The strike zone',
     'tut.thumbs.body': '<p>The translucent box on the left is the <b>strike zone</b>. A swipe that <b>starts inside it is a stroke</b>; <b>anywhere else on the screen it is movement</b>, and the player follows your finger.</p><p>The zone is the power ruler: a swipe to its top edge lands on the baseline, and so does one to its side edge; past the zone, the ball goes long. It is taller than it is wide, so a sideways swipe gains power faster than an upward one.</p>',
     'tut.lbl.strike': 'STRIKE',
@@ -642,7 +661,6 @@ PB.I18n = (function () {
     'name.you': 'TÚ',
     'hud.title': 'DOBLES: A {n} PUNTOS',
     'hud.strike': 'GOLPE',
-    'hud.call': 'CANTO',
     'prompt.serve': 'DESLIZA PARA SACAR',
     'prompt.serve.sub': 'largo = fuerza  •  inclinación = dirección',
     'prompt.letbounce': 'DEJA BOTAR EL SAQUE',
@@ -675,6 +693,8 @@ PB.I18n = (function () {
     'hint.servebehind': 'Quédate detrás de la línea de fondo para sacar',
     'hint.partnerhit': 'Tu compañero ya golpeó: ¡la bola tiene que cruzar la red!',
 
+    'tut.move.title': 'Mover: el pulgar derecho',
+    'tut.move.body': '<p>Arrastra el dedo en <b>cualquier punto fuera de la zona de golpe</b> y el jugador sigue al dedo: <b>a los lados, a la red y al fondo</b>.</p><p>Arrastrar despacio ajusta la posición; <b>arrastrar rápido es correr</b>. Si el dedo se detiene, el jugador se detiene.</p>',
     'tut.thumbs.title': 'La zona de golpe',
     'tut.thumbs.body': '<p>El rectángulo translúcido a la izquierda es la <b>zona de golpe</b>. Un deslizamiento que <b>empieza dentro de ella es golpe</b>; en <b>cualquier otro punto de la pantalla, es movimiento</b>, y el jugador sigue al dedo.</p><p>La zona es la regla de la fuerza: un deslizamiento hasta el borde de arriba cae en la línea de fondo, y hasta el borde del lado también; pasada la zona, la bola sale. Como es más alta que ancha, un deslizamiento lateral gana fuerza más rápido que uno hacia arriba.</p>',
     'tut.lbl.strike': 'GOLPE',
@@ -4207,9 +4227,9 @@ PB.Renderer = (function () {
       ctx.restore();
     }
 
-    // Broadcast-style panel: title strip, one row per team with its score box,
-    // and a footer carrying the serve. Drawn per viewport, so split screen gives
-    // each player their own.
+    // Broadcast-style panel: title strip and one row per team with its score
+    // box. The serve shows as balls beside the server's name, so the panel
+    // carries no score call line. Drawn per viewport.
     drawScoreboard(ctx, m, rect) {
       const k = hudScale(rect);
       const pad = 10 * k;
@@ -4219,10 +4239,10 @@ PB.Renderer = (function () {
       const col = 27 * k;
       const box = 40 * k;
       const w = Math.min(rect.w - pad * 2, 330 * k + done.length * col);
-      const head = 20 * k, row = 30 * k, foot = 15 * k;
+      const head = 20 * k, row = 30 * k;
       const x = rect.x + pad;
       const y = rect.y + pad;
-      const h = head + row * 2 + foot;
+      const h = head + row * 2;
       const colX = i => x + w - box - (done.length - i) * col;   // left edge of set i
 
       ctx.save();
@@ -4318,18 +4338,6 @@ PB.Renderer = (function () {
         ctx.fillText(String(m.score[t]), x + w - box / 2, ry + row / 2);
       }
 
-      // footer
-      ctx.fillStyle = '#0c1622';
-      ctx.fillRect(x, y + head + row * 2, w, foot);
-      const fy = y + head + row * 2 + foot / 2;
-      ctx.fillStyle = 'rgba(255,255,255,0.45)';
-      ctx.font = `700 ${8.5 * k}px system-ui, sans-serif`;
-      ctx.textAlign = 'left';
-      ctx.fillText(spaced(T('hud.call')), x + 8 * k, fy);
-      ctx.textAlign = 'right';
-      ctx.fillStyle = 'rgba(255,255,255,0.92)';
-      ctx.font = `800 ${11 * k}px system-ui, sans-serif`;
-      ctx.fillText(m.scoreText(), x + w - 8 * k, fy);
       ctx.restore();
       return h;
     }
@@ -5060,7 +5068,7 @@ PB.Audio = (function () {
 </script>
 <script>
 'use strict';
-// Nine-step tutorial. Every step draws its own little stage so the gesture is
+// Ten-step tutorial. Every step draws its own little stage so the gesture is
 // shown rather than described, and the way back to the menu never moves. The
 // steps are built on demand, because every word in them, the labels inside the
 // drawings included, comes from the language table.
@@ -5072,32 +5080,93 @@ var PB = (function () {
 PB.Tutorial = (function () {
   const T = (k, v) => (PB.I18n ? PB.I18n.t(k, v) : k);
   const esc = v => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  // A court seen from the game's own angle: near half wide at the bottom, far
-  // half narrow at the top, kitchen bands either side of the net.
+  // The court as the game draws it: a darker apron around a blue court, red
+  // kitchens either side of the net, white lines, and a net with posts and
+  // mesh. Seen from the game's own angle, near half wide at the bottom, far
+  // half narrow at the top. Later steps draw on top of it, so its corners are
+  // fixed: far baseline y=34 (x 118..182), near baseline y=150 (x 32..268),
+  // net y=82, kitchen lines y=55 and y=110.
   function court(opts) {
     const o = opts || {};
-    const kitchen = o.kitchen ? 'fill="#b8442f"' : 'fill="#2f79b8"';
+    const kit = o.kitchen ? '#d5553a' : '#b8442f';
+    const kitGlow = o.kitchen
+      ? `<polygon points="129,55 171,55 186,82 114,82" fill="none" stroke="#ffb09c" stroke-width="1.6" opacity=".8"/>
+         <polygon points="110,82 190,82 206,110 94,110" fill="none" stroke="#ffb09c" stroke-width="1.6" opacity=".8"/>`
+      : '';
     return `
       <svg viewBox="0 0 300 168" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <pattern id="mesh" width="3" height="3" patternUnits="userSpaceOnUse">
+            <path d="M0,0 L3,3 M3,0 L0,3" stroke="#6f8597" stroke-width=".5" opacity=".7"/>
+          </pattern>
+          <linearGradient id="apron" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1f4f78"/><stop offset="1" stop-color="#2a6c9c"/>
+          </linearGradient>
+        </defs>
+        <!-- apron and court -->
+        <polygon points="96,20 204,20 300,168 0,168" fill="url(#apron)"/>
         <polygon points="118,34 182,34 268,150 32,150" fill="#3a8fd0"/>
-        <polygon points="129,55 171,55 186,82 114,82" ${kitchen}/>
-        <polygon points="110,82 190,82 206,110 94,110" ${kitchen}/>
-        <polygon points="118,34 182,34 268,150 32,150" fill="none" stroke="#fff" stroke-width="2.4"/>
-        <line x1="114" y1="82" x2="186" y2="82" stroke="#e9f3fb" stroke-width="2.4"/>
-        <line x1="129" y1="55" x2="171" y2="55" stroke="#fff" stroke-width="1.8" opacity=".85"/>
-        <line x1="94" y1="110" x2="206" y2="110" stroke="#fff" stroke-width="1.8" opacity=".85"/>
-        <line x1="150" y1="34" x2="150" y2="55" stroke="#fff" stroke-width="1.6" opacity=".7"/>
-        <line x1="150" y1="110" x2="150" y2="150" stroke="#fff" stroke-width="1.6" opacity=".7"/>
-        <rect x="100" y="72" width="100" height="11" rx="2" fill="#0d1a26" opacity=".75"/>
+        <!-- kitchens, the red bands either side of the net -->
+        <polygon points="129,55 171,55 186,82 114,82" fill="${kit}"/>
+        <polygon points="110,82 190,82 206,110 94,110" fill="${kit}"/>
+        ${kitGlow}
+        <!-- lines -->
+        <polygon points="118,34 182,34 268,150 32,150" fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/>
+        <line x1="129" y1="55" x2="171" y2="55" stroke="#fff" stroke-width="1.9"/>
+        <line x1="94" y1="110" x2="206" y2="110" stroke="#fff" stroke-width="2.1"/>
+        <line x1="150" y1="34" x2="150" y2="55" stroke="#fff" stroke-width="1.5" opacity=".9"/>
+        <line x1="150" y1="110" x2="150" y2="150" stroke="#fff" stroke-width="1.7" opacity=".9"/>
+        <!-- net: posts just outside the sidelines, dark mesh, white tape -->
+        <line x1="107" y1="68" x2="107" y2="86" stroke="#d6dee8" stroke-width="2.4" stroke-linecap="round"/>
+        <line x1="193" y1="68" x2="193" y2="86" stroke="#d6dee8" stroke-width="2.4" stroke-linecap="round"/>
+        <rect x="107" y="70" width="86" height="13" fill="#141d27" opacity=".92"/>
+        <rect x="107" y="70" width="86" height="13" fill="url(#mesh)"/>
+        <line x1="107" y1="70" x2="193" y2="70" stroke="#f2f6fa" stroke-width="2.2"/>
+        <path d="M107,86 L193,86 L196,88 L104,88 z" fill="#000" opacity=".25"/>
         ${o.extra || ''}
       </svg>`;
   }
+
+  // A small figure in the yellow kit, the one the player controls. Drawn as
+  // HTML so it can be animated with the finger that moves it.
+  const PLAYER = `<div class="tut-player walk"><svg viewBox="0 0 26 40">
+      <ellipse cx="13" cy="38" rx="9" ry="2" fill="#000" opacity=".3"/>
+      <rect x="7.5" y="28" width="4" height="9" rx="1.6" fill="#b07a4e"/>
+      <rect x="14.5" y="28" width="4" height="9" rx="1.6" fill="#b07a4e"/>
+      <rect x="6.6" y="35" width="5.6" height="3.2" rx="1.4" fill="#f4f4f4"/>
+      <rect x="13.8" y="35" width="5.6" height="3.2" rx="1.4" fill="#f4f4f4"/>
+      <rect x="6.5" y="22" width="13" height="8" rx="2" fill="#27405a"/>
+      <rect x="5" y="11" width="16" height="13" rx="4" fill="#f3c623"/>
+      <rect x="2.2" y="12.5" width="3.6" height="9" rx="1.8" fill="#b07a4e"/>
+      <rect x="20.2" y="12.5" width="3.6" height="9" rx="1.8" fill="#b07a4e"/>
+      <circle cx="13" cy="7" r="5.6" fill="#c58c5b"/>
+      <path d="M7.4,6.6 A5.6,5.6 0 0 1 18.6,6.6 L18.6,5.4 A5.6,5.6 0 0 0 7.4,5.4 z" fill="#3a2a22"/>
+    </svg></div>`;
 
   const ARROW = `<defs><marker id="ah" markerWidth="7" markerHeight="7" refX="5.4" refY="3" orient="auto">
       <path d="M0,0 L6,3 L0,6 z" fill="#d9ff3d"/></marker></defs>`;
 
   function build() {
     return [
+    {
+      title: T('tut.move.title'),
+      // the strike zone sits faint on the left; the player on the near court
+      // slides where the right thumb drags, with the four ways marked
+      stage: court({ extra:
+        `<defs><marker id="ahm" markerWidth="8" markerHeight="8" refX="5.5" refY="4" orient="auto"
+                 markerUnits="userSpaceOnUse"><path d="M0,0 L7,4 L0,8 z" fill="#9fe4ff"/></marker></defs>
+         <rect x="8" y="62" width="62" height="98" rx="8" fill="#08101a" fill-opacity=".16"/>
+         <g stroke="#9fe4ff" stroke-width="2.2" stroke-linecap="round" opacity=".75" marker-end="url(#ahm)">
+           <line x1="150" y1="88" x2="150" y2="74"/>
+           <line x1="150" y1="140" x2="150" y2="156"/>
+           <line x1="134" y1="130" x2="106" y2="130"/>
+           <line x1="166" y1="130" x2="194" y2="130"/>
+         </g>
+         <text x="292" y="162" fill="#cfe0ee" font-size="9" font-weight="800" letter-spacing="1"
+               text-anchor="end" font-family="system-ui" opacity=".8">${esc(T('tut.lbl.move'))}</text>` })
+             + PLAYER + `<div class="hand walk"></div>`,
+      body: T('tut.move.body'),
+    },
     {
       title: T('tut.thumbs.title'),
       stage: court({ extra:
@@ -5108,10 +5177,7 @@ PB.Tutorial = (function () {
            <ellipse cx="0" cy="-5" rx="4.5" ry="6"/><rect x="-1.2" y="1" width="2.4" height="8"/></g>
          <line x1="30" y1="150" x2="48" y2="96" stroke="#d9ff3d" stroke-width="4" stroke-linecap="round"
                opacity=".9"/>
-         <circle cx="48" cy="96" r="5" fill="#ff8800"/>
-         <text x="292" y="162" fill="#cfe0ee" font-size="9" font-weight="800" letter-spacing="1"
-               text-anchor="end" font-family="system-ui" opacity=".8">${esc(T('tut.lbl.move'))}</text>` })
-             + `<div class="hand drag" style="top:74%"></div>`,
+         <circle cx="48" cy="96" r="5" fill="#ff8800"/>` }),
       body: T('tut.thumbs.body'),
     },
     {
@@ -5216,8 +5282,6 @@ PB.Tutorial = (function () {
                text-anchor="middle" font-family="system-ui">0</text>
          <text x="215" y="104" fill="#fff" font-size="15" font-weight="800"
                text-anchor="middle" font-family="system-ui">0</text>
-         <text x="150" y="140" fill="#7f9ab1" font-size="9.5" font-weight="700"
-               text-anchor="middle" font-family="system-ui" letter-spacing="1">${esc(T('hud.call'))}  0 - 0 - 2</text>
       </svg>`,
       body: T('tut.score.body'),
     },

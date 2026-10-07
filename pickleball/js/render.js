@@ -1659,9 +1659,9 @@ PB.Renderer = (function () {
       ctx.restore();
     }
 
-    // Broadcast-style panel: title strip, one row per team with its score box,
-    // and a footer carrying the serve. Drawn per viewport, so split screen gives
-    // each player their own.
+    // Broadcast-style panel: title strip and one row per team with its score
+    // box. The serve shows as balls beside the server's name, so the panel
+    // carries no score call line. Drawn per viewport.
     drawScoreboard(ctx, m, rect) {
       const k = hudScale(rect);
       const pad = 10 * k;
@@ -1671,10 +1671,10 @@ PB.Renderer = (function () {
       const col = 27 * k;
       const box = 40 * k;
       const w = Math.min(rect.w - pad * 2, 330 * k + done.length * col);
-      const head = 20 * k, row = 30 * k, foot = 15 * k;
+      const head = 20 * k, row = 30 * k;
       const x = rect.x + pad;
       const y = rect.y + pad;
-      const h = head + row * 2 + foot;
+      const h = head + row * 2;
       const colX = i => x + w - box - (done.length - i) * col;   // left edge of set i
 
       ctx.save();
@@ -1770,18 +1770,6 @@ PB.Renderer = (function () {
         ctx.fillText(String(m.score[t]), x + w - box / 2, ry + row / 2);
       }
 
-      // footer
-      ctx.fillStyle = '#0c1622';
-      ctx.fillRect(x, y + head + row * 2, w, foot);
-      const fy = y + head + row * 2 + foot / 2;
-      ctx.fillStyle = 'rgba(255,255,255,0.45)';
-      ctx.font = `700 ${8.5 * k}px system-ui, sans-serif`;
-      ctx.textAlign = 'left';
-      ctx.fillText(spaced(T('hud.call')), x + 8 * k, fy);
-      ctx.textAlign = 'right';
-      ctx.fillStyle = 'rgba(255,255,255,0.92)';
-      ctx.font = `800 ${11 * k}px system-ui, sans-serif`;
-      ctx.fillText(m.scoreText(), x + w - 8 * k, fy);
       ctx.restore();
       return h;
     }
