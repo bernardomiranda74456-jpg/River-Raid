@@ -295,7 +295,7 @@
       <button class="lang" data-lang="es" data-i18n-aria="lang.name.es"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" rx="3" fill="#c60b1e"/><rect width="30" height="10" y="5" fill="#ffc400"/></svg></button>
     </div>
     </div>
-    <div class="foot">v54 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
+    <div class="foot">v55 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
   </section>
 
   <!-- configuração -->
@@ -360,12 +360,21 @@
             </div>
           </div>
           <div class="group">
-            <div class="label" id="lbl-shirt">Roupa</div>
+            <div class="label" id="lbl-shirt">Camisa</div>
             <div class="opts looks" data-look="shirt">
               <button class="opt swatch" data-val="amarelo" data-i18n-aria="ui.shirt.amarelo"><i></i></button>
               <button class="opt swatch" data-val="azul" data-i18n-aria="ui.shirt.azul"><i></i></button>
               <button class="opt swatch" data-val="verde" data-i18n-aria="ui.shirt.verde"><i></i></button>
               <button class="opt swatch" data-val="branco" data-i18n-aria="ui.shirt.branco"><i></i></button>
+            </div>
+          </div>
+          <div class="group">
+            <div class="label" id="lbl-bottom">Short</div>
+            <div class="opts looks" data-look="bottom">
+              <button class="opt swatch" data-val="marinho" data-i18n-aria="ui.bottom.marinho"><i></i></button>
+              <button class="opt swatch" data-val="branco" data-i18n-aria="ui.bottom.branco"><i></i></button>
+              <button class="opt swatch" data-val="azul" data-i18n-aria="ui.bottom.azul"><i></i></button>
+              <button class="opt swatch" data-val="vermelho" data-i18n-aria="ui.bottom.vermelho"><i></i></button>
             </div>
           </div>
         </div>
@@ -472,11 +481,17 @@ PB.I18n = (function () {
     'ui.skin.dourado': 'Dourado',
     'ui.skin.moreno': 'Moreno',
     'ui.skin.escuro': 'Escuro',
-    'ui.shirt': 'Roupa',
+    'ui.shirt': 'Camisa',
     'ui.shirt.amarelo': 'Amarela',
     'ui.shirt.azul': 'Azul',
     'ui.shirt.verde': 'Verde',
     'ui.shirt.branco': 'Branca',
+    'ui.bottomcolor.skirt': 'Cor da saia',
+    'ui.bottomcolor.shorts': 'Cor do short',
+    'ui.bottom.marinho': 'Marinho',
+    'ui.bottom.branco': 'Branco',
+    'ui.bottom.azul': 'Azul',
+    'ui.bottom.vermelho': 'Vermelho',
 
     'ui.tut.step': 'PASSO {a} DE {b}',
     'ui.tut.home': 'Menu principal',
@@ -622,6 +637,12 @@ PB.I18n = (function () {
     'ui.shirt.azul': 'Blue',
     'ui.shirt.verde': 'Green',
     'ui.shirt.branco': 'White',
+    'ui.bottomcolor.skirt': 'Skirt colour',
+    'ui.bottomcolor.shorts': 'Shorts colour',
+    'ui.bottom.marinho': 'Navy',
+    'ui.bottom.branco': 'White',
+    'ui.bottom.azul': 'Blue',
+    'ui.bottom.vermelho': 'Red',
 
     'ui.tut.step': 'STEP {a} OF {b}',
     'ui.tut.home': 'Main menu',
@@ -767,6 +788,12 @@ PB.I18n = (function () {
     'ui.shirt.azul': 'Azul',
     'ui.shirt.verde': 'Verde',
     'ui.shirt.branco': 'Blanca',
+    'ui.bottomcolor.skirt': 'Color de la falda',
+    'ui.bottomcolor.shorts': 'Color del short',
+    'ui.bottom.marinho': 'Marino',
+    'ui.bottom.branco': 'Blanco',
+    'ui.bottom.azul': 'Azul',
+    'ui.bottom.vermelho': 'Rojo',
 
     'ui.tut.step': 'PASO {a} DE {b}',
     'ui.tut.home': 'Menú principal',
@@ -1710,8 +1737,13 @@ PB.Looks = (function () {
   // None of these is close to that pink.
   const SHIRT = { amarelo: '#ffd24a', azul: '#3b9cff', verde: '#3ddc84', branco: '#f2f5f8' };
   const SHIRT_ORDER = ['amarelo', 'azul', 'verde', 'branco'];
+  // The lower garment, a skirt with long hair and shorts otherwise, in one of
+  // these; navy is the team's own shorts colour.
+  const BOTTOM = { marinho: '#1b2634', branco: '#f2f5f8', azul: '#2f6fd6', vermelho: '#c8323a' };
+  const BOTTOM_ORDER = ['marinho', 'branco', 'azul', 'vermelho'];
   const DEFAULT = { skin: 'dourado', hair: 'castanho', style: 'curto' };
   const DEFAULT_SHIRT = 'amarelo';
+  const DEFAULT_BOTTOM = 'marinho';
 
   // The cast: the partner is a woman with a dark skin tone; the rivals are a
   // light-skinned man and a dark-skinned woman.
@@ -1733,10 +1765,12 @@ PB.Looks = (function () {
       hair: HAIR[r.hair] ? r.hair : DEFAULT.hair,
       style: STYLE.indexOf(r.style) >= 0 ? r.style : DEFAULT.style,
       shirt: SHIRT[r.shirt] ? r.shirt : null,
+      bottom: BOTTOM[r.bottom] ? r.bottom : null,
     };
   }
 
-  return { SKIN, SKIN_ORDER, HAIR, HAIR_ORDER, STYLE, SHIRT, SHIRT_ORDER, DEFAULT, DEFAULT_SHIRT, CAST, normalize };
+  return { SKIN, SKIN_ORDER, HAIR, HAIR_ORDER, STYLE, SHIRT, SHIRT_ORDER, BOTTOM, BOTTOM_ORDER,
+           DEFAULT, DEFAULT_SHIRT, DEFAULT_BOTTOM, CAST, normalize };
 })();
 
 </script>
@@ -3020,21 +3054,27 @@ PB.Renderer = (function () {
           hair: l ? L.HAIR[l.hair] : COL.hair[(i * 2 + 1) % COL.hair.length],
           long: l ? l.style === 'rabo' : i % 4 === 1,
           shirt: l && l.shirt ? L.SHIRT[l.shirt] : null,
+          bottom: l && l.bottom ? L.BOTTOM[l.bottom] : null,
           paddle: COL.paddleFace[i % COL.paddleFace.length],
         };
       }
       return p._look;
     },
 
-    // What the player wears: the team's kit, unless the look names a shirt,
-    // which only the human's does. The shorts stay the team's own.
+    // What the player wears: the team's kit, unless the look names a shirt or
+    // a skirt/shorts colour, which only the human's does.
     kit(p, look) {
       const team = COL.team[p.team];
-      if (!look.shirt || look.shirt === team.shirt) return team;
+      const shirt = look.shirt && look.shirt !== team.shirt ? look.shirt : null;
+      const shorts = look.bottom && look.bottom !== team.shorts ? look.bottom : null;
+      if (!shirt && !shorts) return team;
       if (!look._kit) {
         look._kit = {
-          shirt: look.shirt, shirt2: tintHex(look.shirt, -0.22), trim: tintHex(look.shirt, 0.5),
-          shorts: team.shorts, shorts2: team.shorts2,
+          shirt: shirt || team.shirt,
+          shirt2: shirt ? tintHex(shirt, -0.22) : team.shirt2,
+          trim: shirt ? tintHex(shirt, 0.5) : team.trim,
+          shorts: shorts || team.shorts,
+          shorts2: shorts ? tintHex(shorts, -0.25) : team.shorts2,
         };
       }
       return look._kit;
@@ -3302,6 +3342,53 @@ PB.Renderer = (function () {
         ctx.fill();
       }
 
+      // The lower garment, over the top of the thighs and under the shirt: a
+      // skirt with long hair, shorts otherwise, in the kit's shorts colour.
+      // Both hang from a waistband a little above the hip joint; the shorts
+      // stop mid-thigh with a notch between the legs, the skirt flares to a
+      // hem that swings a touch below its corners, with two pleat lines.
+      {
+        const hx = (hipL.x + hipR.x) / 2, hipHalf = (hipR.x - hipL.x) / 2;
+        const waistY = hipY + 0.28, waistHalf = hipHalf + 0.14;
+        const g = new Path2D();
+        if (look.long) {
+          const hemY = hipY - 0.62, hemHalf = hipHalf + 0.56;
+          g.moveTo(X(hx - waistHalf), Y(waistY));
+          g.lineTo(X(hx + waistHalf), Y(waistY));
+          g.quadraticCurveTo(X(hx + hemHalf * 0.72), Y(hemY + 0.52), X(hx + hemHalf), Y(hemY + 0.04));
+          g.quadraticCurveTo(X(hx), Y(hemY - 0.16), X(hx - hemHalf), Y(hemY + 0.04));
+          g.quadraticCurveTo(X(hx - hemHalf * 0.72), Y(hemY + 0.52), X(hx - waistHalf), Y(waistY));
+        } else {
+          const hemY = hipY - 0.55, hemHalf = hipHalf + 0.26;
+          g.moveTo(X(hx - waistHalf), Y(waistY));
+          g.lineTo(X(hx + waistHalf), Y(waistY));
+          g.lineTo(X(hx + hemHalf), Y(hemY + 0.12));
+          g.quadraticCurveTo(X(hx + hemHalf), Y(hemY), X(hx + hemHalf - 0.12), Y(hemY));
+          g.lineTo(X(hx + 0.07), Y(hemY));
+          g.lineTo(X(hx), Y(hemY + 0.20));
+          g.lineTo(X(hx - 0.07), Y(hemY));
+          g.lineTo(X(hx - hemHalf + 0.12), Y(hemY));
+          g.quadraticCurveTo(X(hx - hemHalf), Y(hemY), X(hx - hemHalf), Y(hemY + 0.12));
+        }
+        g.closePath();
+        const sg = ctx.createLinearGradient(X(hx - waistHalf - 0.3), 0, X(hx + waistHalf + 0.3), 0);
+        sg.addColorStop(0, tint(kit.shorts, 0.18));
+        sg.addColorStop(0.5, kit.shorts);
+        sg.addColorStop(1, tint(kit.shorts, -0.22));
+        ctx.fillStyle = sg;
+        ctx.fill(g);
+        if (look.long) {
+          ctx.strokeStyle = tint(kit.shorts, -0.30);
+          ctx.lineWidth = Math.max(1, P.s * 0.035);
+          ctx.beginPath();
+          for (const f of [-0.45, 0.45]) {
+            ctx.moveTo(X(hx + f * waistHalf), Y(waistY - 0.06));
+            ctx.lineTo(X(hx + f * (hipHalf + 0.56) * 0.9), Y(hipY - 0.56));
+          }
+          ctx.stroke();
+        }
+      }
+
       // arms: thin tubes with mitten hands. Rounded caps at the shoulder and the
       // elbow hide the seam where two bones meet at a sharp angle — and in the
       // ready pose the elbows are bent hard, so the seam would show.
@@ -3326,7 +3413,8 @@ PB.Renderer = (function () {
       const fromBehind = facing > 0;
       if (fromBehind) { arms(); drawPaddle(); }
 
-      const bodyTop = shY + 0.10, bodyBot = hipY - 0.30;
+      // the shirt ends just under the waistband, so the garment shows below it
+      const bodyTop = shY + 0.10, bodyBot = hipY + 0.10;
       const halfTop = BODY.shoulderHalf, halfBot = BODY.hipHalf + 0.20;
       const body = new Path2D();
       body.moveTo(X(-halfTop + (shL.x + shR.x) / 2), Y(bodyTop));
@@ -5593,11 +5681,18 @@ PB.Tutorial = (function () {
       if (ESCOLHAS[k].indexOf(raw[k]) >= 0) c[k] = raw[k];
     }
     // the player's look, key by key, with the default for anything unknown
-    c.look = PB.Looks.normalize(raw.look);
-    c.look.shirt = c.look.shirt || PB.Looks.DEFAULT_SHIRT;
+    c.look = menuLook(raw.look);
     return c;
   }
   function save() { store.set('pb.cfg', JSON.stringify(cfg)); }
+  // On the menu every choice has a value: a missing shirt or skirt/shorts
+  // colour is the team's own, which the match reads as null.
+  function menuLook(raw) {
+    const l = PB.Looks.normalize(raw);
+    l.shirt = l.shirt || PB.Looks.DEFAULT_SHIRT;
+    l.bottom = l.bottom || PB.Looks.DEFAULT_BOTTOM;
+    return l;
+  }
 
   // ── screens ──────────────────────────────────────────────────────────────
   const screens = ['scr-splash', 'scr-title', 'scr-setup', 'scr-player', 'scr-tutorial', 'scr-pause', 'scr-over'];
@@ -5640,14 +5735,13 @@ PB.Tutorial = (function () {
   // figure does not wear.
   const Looks = PB.Looks;
   document.querySelectorAll('.looks').forEach(grp => {
-    const table = { hair: Looks.HAIR, skin: Looks.SKIN, shirt: Looks.SHIRT }[grp.dataset.look] || null;
+    const table = { hair: Looks.HAIR, skin: Looks.SKIN, shirt: Looks.SHIRT, bottom: Looks.BOTTOM }[grp.dataset.look] || null;
     if (table) grp.querySelectorAll('.opt i').forEach(i => { i.style.background = table[i.parentNode.dataset.val]; });
     grp.addEventListener('click', e => {
       const b = e.target.closest('.opt');
       if (!b) return;
       cfg.look[grp.dataset.look] = b.dataset.val;
-      cfg.look = Looks.normalize(cfg.look);
-      cfg.look.shirt = cfg.look.shirt || Looks.DEFAULT_SHIRT;
+      cfg.look = menuLook(cfg.look);
       syncLooks();
       save();
       buzz(8);
@@ -5663,6 +5757,9 @@ PB.Tutorial = (function () {
     $('lbl-haircolor').textContent = I18n.t('ui.haircolor') + ' · ' + I18n.t('ui.hair.' + cfg.look.hair);
     $('lbl-skin').textContent = I18n.t('ui.skin') + ' · ' + I18n.t('ui.skin.' + cfg.look.skin);
     $('lbl-shirt').textContent = I18n.t('ui.shirt') + ' · ' + I18n.t('ui.shirt.' + cfg.look.shirt);
+    // the garment follows the hair: long hair wears a skirt, short hair shorts
+    const garment = cfg.look.style === 'rabo' ? 'ui.bottomcolor.skirt' : 'ui.bottomcolor.shorts';
+    $('lbl-bottom').textContent = I18n.t(garment) + ' · ' + I18n.t('ui.bottom.' + cfg.look.bottom);
   }
 
   // The figure beside the choices is drawn by the game's own rig, facing the

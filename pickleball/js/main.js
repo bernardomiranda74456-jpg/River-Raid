@@ -32,11 +32,18 @@
       if (ESCOLHAS[k].indexOf(raw[k]) >= 0) c[k] = raw[k];
     }
     // the player's look, key by key, with the default for anything unknown
-    c.look = PB.Looks.normalize(raw.look);
-    c.look.shirt = c.look.shirt || PB.Looks.DEFAULT_SHIRT;
+    c.look = menuLook(raw.look);
     return c;
   }
   function save() { store.set('pb.cfg', JSON.stringify(cfg)); }
+  // On the menu every choice has a value: a missing shirt or skirt/shorts
+  // colour is the team's own, which the match reads as null.
+  function menuLook(raw) {
+    const l = PB.Looks.normalize(raw);
+    l.shirt = l.shirt || PB.Looks.DEFAULT_SHIRT;
+    l.bottom = l.bottom || PB.Looks.DEFAULT_BOTTOM;
+    return l;
+  }
 
   // ── screens ──────────────────────────────────────────────────────────────
   const screens = ['scr-splash', 'scr-title', 'scr-setup', 'scr-player', 'scr-tutorial', 'scr-pause', 'scr-over'];
@@ -79,14 +86,13 @@
   // figure does not wear.
   const Looks = PB.Looks;
   document.querySelectorAll('.looks').forEach(grp => {
-    const table = { hair: Looks.HAIR, skin: Looks.SKIN, shirt: Looks.SHIRT }[grp.dataset.look] || null;
+    const table = { hair: Looks.HAIR, skin: Looks.SKIN, shirt: Looks.SHIRT, bottom: Looks.BOTTOM }[grp.dataset.look] || null;
     if (table) grp.querySelectorAll('.opt i').forEach(i => { i.style.background = table[i.parentNode.dataset.val]; });
     grp.addEventListener('click', e => {
       const b = e.target.closest('.opt');
       if (!b) return;
       cfg.look[grp.dataset.look] = b.dataset.val;
-      cfg.look = Looks.normalize(cfg.look);
-      cfg.look.shirt = cfg.look.shirt || Looks.DEFAULT_SHIRT;
+      cfg.look = menuLook(cfg.look);
       syncLooks();
       save();
       buzz(8);
@@ -102,6 +108,9 @@
     $('lbl-haircolor').textContent = I18n.t('ui.haircolor') + ' · ' + I18n.t('ui.hair.' + cfg.look.hair);
     $('lbl-skin').textContent = I18n.t('ui.skin') + ' · ' + I18n.t('ui.skin.' + cfg.look.skin);
     $('lbl-shirt').textContent = I18n.t('ui.shirt') + ' · ' + I18n.t('ui.shirt.' + cfg.look.shirt);
+    // the garment follows the hair: long hair wears a skirt, short hair shorts
+    const garment = cfg.look.style === 'rabo' ? 'ui.bottomcolor.skirt' : 'ui.bottomcolor.shorts';
+    $('lbl-bottom').textContent = I18n.t(garment) + ' · ' + I18n.t('ui.bottom.' + cfg.look.bottom);
   }
 
   // The figure beside the choices is drawn by the game's own rig, facing the

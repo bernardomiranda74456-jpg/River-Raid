@@ -255,21 +255,27 @@ PB.Renderer = (function () {
           hair: l ? L.HAIR[l.hair] : COL.hair[(i * 2 + 1) % COL.hair.length],
           long: l ? l.style === 'rabo' : i % 4 === 1,
           shirt: l && l.shirt ? L.SHIRT[l.shirt] : null,
+          bottom: l && l.bottom ? L.BOTTOM[l.bottom] : null,
           paddle: COL.paddleFace[i % COL.paddleFace.length],
         };
       }
       return p._look;
     },
 
-    // What the player wears: the team's kit, unless the look names a shirt,
-    // which only the human's does. The shorts stay the team's own.
+    // What the player wears: the team's kit, unless the look names a shirt or
+    // a skirt/shorts colour, which only the human's does.
     kit(p, look) {
       const team = COL.team[p.team];
-      if (!look.shirt || look.shirt === team.shirt) return team;
+      const shirt = look.shirt && look.shirt !== team.shirt ? look.shirt : null;
+      const shorts = look.bottom && look.bottom !== team.shorts ? look.bottom : null;
+      if (!shirt && !shorts) return team;
       if (!look._kit) {
         look._kit = {
-          shirt: look.shirt, shirt2: tintHex(look.shirt, -0.22), trim: tintHex(look.shirt, 0.5),
-          shorts: team.shorts, shorts2: team.shorts2,
+          shirt: shirt || team.shirt,
+          shirt2: shirt ? tintHex(shirt, -0.22) : team.shirt2,
+          trim: shirt ? tintHex(shirt, 0.5) : team.trim,
+          shorts: shorts || team.shorts,
+          shorts2: shorts ? tintHex(shorts, -0.25) : team.shorts2,
         };
       }
       return look._kit;
@@ -537,6 +543,53 @@ PB.Renderer = (function () {
         ctx.fill();
       }
 
+      // The lower garment, over the top of the thighs and under the shirt: a
+      // skirt with long hair, shorts otherwise, in the kit's shorts colour.
+      // Both hang from a waistband a little above the hip joint; the shorts
+      // stop mid-thigh with a notch between the legs, the skirt flares to a
+      // hem that swings a touch below its corners, with two pleat lines.
+      {
+        const hx = (hipL.x + hipR.x) / 2, hipHalf = (hipR.x - hipL.x) / 2;
+        const waistY = hipY + 0.28, waistHalf = hipHalf + 0.14;
+        const g = new Path2D();
+        if (look.long) {
+          const hemY = hipY - 0.62, hemHalf = hipHalf + 0.56;
+          g.moveTo(X(hx - waistHalf), Y(waistY));
+          g.lineTo(X(hx + waistHalf), Y(waistY));
+          g.quadraticCurveTo(X(hx + hemHalf * 0.72), Y(hemY + 0.52), X(hx + hemHalf), Y(hemY + 0.04));
+          g.quadraticCurveTo(X(hx), Y(hemY - 0.16), X(hx - hemHalf), Y(hemY + 0.04));
+          g.quadraticCurveTo(X(hx - hemHalf * 0.72), Y(hemY + 0.52), X(hx - waistHalf), Y(waistY));
+        } else {
+          const hemY = hipY - 0.55, hemHalf = hipHalf + 0.26;
+          g.moveTo(X(hx - waistHalf), Y(waistY));
+          g.lineTo(X(hx + waistHalf), Y(waistY));
+          g.lineTo(X(hx + hemHalf), Y(hemY + 0.12));
+          g.quadraticCurveTo(X(hx + hemHalf), Y(hemY), X(hx + hemHalf - 0.12), Y(hemY));
+          g.lineTo(X(hx + 0.07), Y(hemY));
+          g.lineTo(X(hx), Y(hemY + 0.20));
+          g.lineTo(X(hx - 0.07), Y(hemY));
+          g.lineTo(X(hx - hemHalf + 0.12), Y(hemY));
+          g.quadraticCurveTo(X(hx - hemHalf), Y(hemY), X(hx - hemHalf), Y(hemY + 0.12));
+        }
+        g.closePath();
+        const sg = ctx.createLinearGradient(X(hx - waistHalf - 0.3), 0, X(hx + waistHalf + 0.3), 0);
+        sg.addColorStop(0, tint(kit.shorts, 0.18));
+        sg.addColorStop(0.5, kit.shorts);
+        sg.addColorStop(1, tint(kit.shorts, -0.22));
+        ctx.fillStyle = sg;
+        ctx.fill(g);
+        if (look.long) {
+          ctx.strokeStyle = tint(kit.shorts, -0.30);
+          ctx.lineWidth = Math.max(1, P.s * 0.035);
+          ctx.beginPath();
+          for (const f of [-0.45, 0.45]) {
+            ctx.moveTo(X(hx + f * waistHalf), Y(waistY - 0.06));
+            ctx.lineTo(X(hx + f * (hipHalf + 0.56) * 0.9), Y(hipY - 0.56));
+          }
+          ctx.stroke();
+        }
+      }
+
       // arms: thin tubes with mitten hands. Rounded caps at the shoulder and the
       // elbow hide the seam where two bones meet at a sharp angle — and in the
       // ready pose the elbows are bent hard, so the seam would show.
@@ -561,7 +614,8 @@ PB.Renderer = (function () {
       const fromBehind = facing > 0;
       if (fromBehind) { arms(); drawPaddle(); }
 
-      const bodyTop = shY + 0.10, bodyBot = hipY - 0.30;
+      // the shirt ends just under the waistband, so the garment shows below it
+      const bodyTop = shY + 0.10, bodyBot = hipY + 0.10;
       const halfTop = BODY.shoulderHalf, halfBot = BODY.hipHalf + 0.20;
       const body = new Path2D();
       body.moveTo(X(-halfTop + (shL.x + shR.x) / 2), Y(bodyTop));

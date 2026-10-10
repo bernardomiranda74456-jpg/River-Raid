@@ -5,7 +5,7 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
-## App para iPhone (o jogo continua na v54)
+## App para iPhone (o jogo continua na v55)
 
 `PickleballForever.swiftpm` embala a página do jogo num app nativo: uma
 `WKWebView` em tela cheia, som liberado sem toque, sem rolagem nem zoom, tela
@@ -13,6 +13,22 @@ sempre acesa, ícone feito da logo. `build-single.js` passa a gravar a página
 também em `Sources/Resources/index.html`, então o app é sempre a build testada.
 O porte antigo em SpriteKit (`Pickleball.swiftpm`), parado desde o começo e
 nunca compilado, saiu. Como compilar e publicar: `COMO-PUBLICAR-NO-IPHONE.md`.
+
+## v55
+
+Saia e short, com a cor à escolha.
+
+- **A parte de baixo da roupa passa a existir.** Cabelo comprido veste
+  **saia**: cai da cintura um pouco acima do quadril, abre até uma barra que
+  balança um pouco abaixo dos cantos, com duas pregas. Cabelo curto veste
+  **short** até o meio da coxa, com o recorte entre as pernas. A camisa agora
+  termina logo abaixo do cós, em vez de descer até o quadril. Vale para todo
+  mundo: a parceira e a rival de saia, o rival de short.
+- **Cor da saia ou do short** na tela do jogador: marinho (a do time),
+  branco, azul ou vermelho. Só para o seu boneco; o rótulo diz "Cor da saia"
+  ou "Cor do short" conforme o cabelo escolhido. O grupo "Roupa" passa a se
+  chamar "Camisa".
+- App do iPhone: a mesma página, `bundleVersion` 55.
 
 ## v54
 

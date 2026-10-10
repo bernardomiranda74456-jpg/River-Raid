@@ -1278,13 +1278,13 @@ test('os gestos continuam: arco é lob, para baixo é slice, inclinação é dir
 
 // ── quem é quem ───────────────────────────────────────────────────────────
 test('o humano veste a escolha do menu e o elenco em volta é fixo', () => {
-  const m = mk({ format: 'doubles', look: { skin: 'claro', hair: 'loiro', style: 'rabo', shirt: 'azul' } });
+  const m = mk({ format: 'doubles', look: { skin: 'claro', hair: 'loiro', style: 'rabo', shirt: 'azul', bottom: 'branco' } });
   const you = m.players[m.humanIdx];
-  eq(you.look, { skin: 'claro', hair: 'loiro', style: 'rabo', shirt: 'azul' }, 'a escolha do menu');
+  eq(you.look, { skin: 'claro', hair: 'loiro', style: 'rabo', shirt: 'azul', bottom: 'branco' }, 'a escolha do menu');
   const mate = m.players.find(p => p.team === 0 && p.ctrl !== 'human');
   eq([mate.look.style, mate.look.skin], ['rabo', 'escuro'], 'a parceira: mulher de pele escura');
-  ok(!mate.look.shirt, 'a parceira fica com a camisa do time');
-  ok(m.players.filter(p => p.team === 1).every(p => !p.look.shirt), 'os rivais ficam com a camisa deles');
+  ok(!mate.look.shirt && !mate.look.bottom, 'a parceira fica com o uniforme do time');
+  ok(m.players.filter(p => p.team === 1).every(p => !p.look.shirt && !p.look.bottom), 'os rivais ficam com o uniforme deles');
   const rivals = m.players.filter(p => p.team === 1);
   eq(rivals.length, 2, 'dois rivais');
   ok(rivals.some(p => p.look.style === 'curto' && p.look.skin === 'claro'), 'um rival homem de pele clara');
@@ -1294,11 +1294,13 @@ test('o humano veste a escolha do menu e o elenco em volta é fixo', () => {
 
 test('uma escolha inválida cai no padrão, chave por chave', () => {
   const L = PB.Looks;
-  const padrao = Object.assign({}, L.DEFAULT, { shirt: null });
+  const padrao = Object.assign({}, L.DEFAULT, { shirt: null, bottom: null });
   eq(L.normalize(null), padrao, 'nada escolhido');
-  eq(L.normalize({ skin: 'verde', hair: 'preto', style: 7, shirt: 'rosa' }),
-     { skin: L.DEFAULT.skin, hair: 'preto', style: L.DEFAULT.style, shirt: null }, 'só o que existe passa');
-  eq(L.normalize({ shirt: 'verde' }).shirt, 'verde', 'uma camisa da lista passa');
+  eq(L.normalize({ skin: 'verde', hair: 'preto', style: 7, shirt: 'rosa', bottom: 'roxo' }),
+     { skin: L.DEFAULT.skin, hair: 'preto', style: L.DEFAULT.style, shirt: null, bottom: null }, 'só o que existe passa');
+  eq(L.normalize({ shirt: 'verde', bottom: 'vermelho' }).shirt, 'verde', 'uma camisa da lista passa');
+  eq(L.normalize({ bottom: 'vermelho' }).bottom, 'vermelho', 'uma cor de saia ou short da lista passa');
+  for (const k of L.BOTTOM_ORDER) ok(/^#[0-9a-f]{6}$/i.test(L.BOTTOM[k]), 'saia/short ' + k + ' tem cor');
   eq(mk({}).players[0].look, padrao, 'sem escolha, o padrão');
   for (const k of L.SHIRT_ORDER) ok(/^#[0-9a-f]{6}$/i.test(L.SHIRT[k]), 'camisa ' + k + ' tem cor');
   for (const k of L.SKIN_ORDER) ok(/^#[0-9a-f]{6}$/i.test(L.SKIN[k]), 'tom de pele ' + k + ' tem cor');

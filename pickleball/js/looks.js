@@ -20,8 +20,13 @@ PB.Looks = (function () {
   // None of these is close to that pink.
   const SHIRT = { amarelo: '#ffd24a', azul: '#3b9cff', verde: '#3ddc84', branco: '#f2f5f8' };
   const SHIRT_ORDER = ['amarelo', 'azul', 'verde', 'branco'];
+  // The lower garment, a skirt with long hair and shorts otherwise, in one of
+  // these; navy is the team's own shorts colour.
+  const BOTTOM = { marinho: '#1b2634', branco: '#f2f5f8', azul: '#2f6fd6', vermelho: '#c8323a' };
+  const BOTTOM_ORDER = ['marinho', 'branco', 'azul', 'vermelho'];
   const DEFAULT = { skin: 'dourado', hair: 'castanho', style: 'curto' };
   const DEFAULT_SHIRT = 'amarelo';
+  const DEFAULT_BOTTOM = 'marinho';
 
   // The cast: the partner is a woman with a dark skin tone; the rivals are a
   // light-skinned man and a dark-skinned woman.
@@ -43,8 +48,10 @@ PB.Looks = (function () {
       hair: HAIR[r.hair] ? r.hair : DEFAULT.hair,
       style: STYLE.indexOf(r.style) >= 0 ? r.style : DEFAULT.style,
       shirt: SHIRT[r.shirt] ? r.shirt : null,
+      bottom: BOTTOM[r.bottom] ? r.bottom : null,
     };
   }
 
-  return { SKIN, SKIN_ORDER, HAIR, HAIR_ORDER, STYLE, SHIRT, SHIRT_ORDER, DEFAULT, DEFAULT_SHIRT, CAST, normalize };
+  return { SKIN, SKIN_ORDER, HAIR, HAIR_ORDER, STYLE, SHIRT, SHIRT_ORDER, BOTTOM, BOTTOM_ORDER,
+           DEFAULT, DEFAULT_SHIRT, DEFAULT_BOTTOM, CAST, normalize };
 })();
