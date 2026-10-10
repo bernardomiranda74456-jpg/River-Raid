@@ -5,7 +5,7 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
-## App para iPhone (o jogo continua na v53)
+## App para iPhone (o jogo continua na v54)
 
 `PickleballForever.swiftpm` embala a página do jogo num app nativo: uma
 `WKWebView` em tela cheia, som liberado sem toque, sem rolagem nem zoom, tela
@@ -13,6 +13,19 @@ sempre acesa, ícone feito da logo. `build-single.js` passa a gravar a página
 também em `Sources/Resources/index.html`, então o app é sempre a build testada.
 O porte antigo em SpriteKit (`Pickleball.swiftpm`), parado desde o começo e
 nunca compilado, saiu. Como compilar e publicar: `COMO-PUBLICAR-NO-IPHONE.md`.
+
+## v54
+
+Os logos da cozinha: o do lado adversário sai, o do seu lado escurece.
+
+- **Cozinha adversária sem logo.** Só a cozinha do lado do jogador carrega a
+  marca, no mesmo lugar deslocado para a direita.
+- **Marca em vermelho escuro** em vez de branco: a marca branca escondia o
+  disco branco que mostra onde a bola quicou, e um quique sobre o logo não se
+  via. A arte branca é multiplicada pela cor (`#6e1f12`, mais escura que a
+  faixa vermelha), com as sombras cinzas entre as letras saindo um tom mais
+  escuro ainda, então as letras continuam separadas. Alfa 0,82.
+- App do iPhone: a mesma página, `bundleVersion` 54.
 
 ## v53
 

@@ -781,7 +781,8 @@ PB.Renderer = (function () {
   // screen with a constant width: slice the artwork into bands and the
   // perspective falls out, no texture mapper needed.
   const LOGO_IMG = {};
-  function logo(name) {
+  function logo(name, tint) {
+    if (tint) return tintedLogo(name, tint);
     if (LOGO_IMG[name] === undefined) {
       LOGO_IMG[name] = null;
       const data = PB.LOGOS_PNG && PB.LOGOS_PNG[name];
@@ -793,6 +794,28 @@ PB.Renderer = (function () {
       }
     }
     return LOGO_IMG[name];
+  }
+
+  // The same mark in a colour: the white artwork multiplied by the tint, so
+  // the letters take the colour and the grey shadows between them come out a
+  // shade darker and keep the letters apart. Built once the base image is
+  // in, and cached per colour.
+  function tintedLogo(name, tint) {
+    const key = name + '|' + tint;
+    if (LOGO_IMG[key] !== undefined) return LOGO_IMG[key];
+    const base = logo(name);
+    if (!base || !base.width) return null;      // not loaded yet: ask again next frame
+    const c = document.createElement('canvas');
+    c.width = base.width; c.height = base.height;
+    const g = c.getContext('2d');
+    g.drawImage(base, 0, 0);
+    g.globalCompositeOperation = 'multiply';
+    g.fillStyle = tint;
+    g.fillRect(0, 0, c.width, c.height);
+    g.globalCompositeOperation = 'destination-in';
+    g.drawImage(base, 0, 0);
+    LOGO_IMG[key] = c;
+    return c;
   }
 
   // `edge(t)` gives the world points of the artwork's left and right edge,
@@ -832,8 +855,8 @@ PB.Renderer = (function () {
   }
 
   // Flat on the ground, reading upright from behind the near baseline.
-  function groundLogo(ctx, cam, name, cx, cz, w, alpha) {
-    const img = logo(name);
+  function groundLogo(ctx, cam, name, cx, cz, w, alpha, tint) {
+    const img = logo(name, tint);
     if (!img || !img.width) return;
     const d = w * img.height / img.width;
     const z0 = cz - d / 2;
@@ -862,6 +885,9 @@ PB.Renderer = (function () {
   const BANNER_BOARDS = [
     { name: '3emp', x: 0, h: 0.62 },
   ];
+
+  // the near kitchen's mark: a darker red than the band it sits on
+  const KITCHEN_LOGO = '#6e1f12', KITCHEN_LOGO_ALPHA = 0.82;
 
   const WALL_Z = FENCE_Z - 2.2, WALL_H = 5.6;
   const WALL_BOARDS = [
@@ -1494,13 +1520,12 @@ PB.Renderer = (function () {
     drawFloorLogos(ctx, cam, onCourt) {
       const F = cam.side === 1 ? -1 : 1;
       if (onCourt) {
-        // Only the kitchens carry a logo: white on the red band, which is the
-        // strongest contrast the court has, and off the blue where the ball
-        // lands. The pair is offset the same way on both halves as seen from
-        // the camera, the far one toward the left, the near one toward the
-        // right (F keeps that true whichever side the camera is on).
-        groundLogo(ctx, cam, '3emp', -4.0 * F, 3.5 * F, 8.0, 0.62);
-        groundLogo(ctx, cam, '3emp', 4.0 * F, -3.5 * F, 8.0, 0.62);
+        // One logo on the court, in the near kitchen, offset toward the right
+        // as seen from the camera (F keeps that true from either side). It is
+        // a darker red than the band, not white: a white mark hid the white
+        // bounce mark, so a ball landing on it could not be seen to bounce.
+        // The far kitchen carries nothing.
+        groundLogo(ctx, cam, '3emp', 4.0 * F, -3.5 * F, 8.0, KITCHEN_LOGO_ALPHA, KITCHEN_LOGO);
         return;
       }
       // Out in the surround, where nothing is at stake, one mark at full
