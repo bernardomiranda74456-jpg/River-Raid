@@ -105,6 +105,7 @@ PB.Match = (function () {
         targetPoints: 11,
         winBy: 2,
         sets: 1,                // games in the match: best of 1 or best of 3
+        look: null,             // the human's look (PB.Looks); null is the default
       }, cfg || {});
 
       const d = SKILL[this.cfg.difficulty] || SKILL.pro;
@@ -137,6 +138,7 @@ PB.Match = (function () {
         p.speedBoost = p.ctrl === 'cpu' ? rampComp(d.accel) : 1;
       }
       this.nameEveryone();
+      this.dressEveryone();
 
       this.ball = P.newBall();
       this.score = [0, 0];
@@ -172,6 +174,19 @@ PB.Match = (function () {
       for (const p of this.players) {
         p.role = p.ctrl === 'human' ? 'human' : (p.team === 0 ? 'mate' : 'rival');
         p.name = p.ctrl === 'human' ? T('name.you') : surnames[(p.id * 2 + 1) % surnames.length];
+      }
+    }
+
+    // Who looks like what: the human wears the look chosen in the menu; the
+    // partner and the rivals come from the fixed cast.
+    dressEveryone() {
+      const L = PB.Looks;
+      if (!L) return;
+      let rival = 0;
+      for (const p of this.players) {
+        if (p.ctrl === 'human') p.look = L.normalize(this.cfg.look);
+        else if (p.team === 0) p.look = L.CAST.mate;
+        else p.look = L.CAST.rivals[(rival++) % L.CAST.rivals.length];
       }
     }
 

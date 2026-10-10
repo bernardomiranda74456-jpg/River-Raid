@@ -28,10 +28,13 @@ Sempre um jogador humano. Idioma em português, inglês ou espanhol, escolhido
 pelas bandeiras na tela principal; na primeira vez o jogo segue o idioma do
 aparelho.
 
-Dificuldade: **Fácil** (golpe automático, faltas assistidas), **Normal**
-(você golpeia, mas o jogo evita faltas de cozinha e de dois quiques) e
-**Difícil** (regras aplicadas sem perdão, CPU forte). Partidas de 7, 11 ou 15
-pontos, sempre com 2 de vantagem.
+Dificuldade: **Fácil** (golpe automático, faltas assistidas) e **Pro** (você
+golpeia, faltas assistidas). Partidas de 5 ou 11 pontos, melhor de 1 ou de 3
+sets, sempre com 2 de vantagem. Na tela seguinte você monta o seu jogador:
+cabelo curto ou comprido com rabo de cavalo, cor do cabelo (loiro, castanho,
+preto) e tom de pele (claro, dourado, moreno, escuro), com o boneco desenhado
+ao vivo pelo próprio jogo. A parceira é uma mulher de pele escura; a dupla
+adversária, um homem de pele clara e uma mulher de pele escura.
 
 ## Controles
 

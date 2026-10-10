@@ -5,7 +5,7 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
-## App para iPhone (o jogo continua na v51)
+## App para iPhone (o jogo continua na v52)
 
 `PickleballForever.swiftpm` embala a página do jogo num app nativo: uma
 `WKWebView` em tela cheia, som liberado sem toque, sem rolagem nem zoom, tela
@@ -13,6 +13,32 @@ sempre acesa, ícone feito da logo. `build-single.js` passa a gravar a página
 também em `Sources/Resources/index.html`, então o app é sempre a build testada.
 O porte antigo em SpriteKit (`Pickleball.swiftpm`), parado desde o começo e
 nunca compilado, saiu. Como compilar e publicar: `COMO-PUBLICAR-NO-IPHONE.md`.
+
+## v52
+
+Escolha do jogador, e um elenco fixo em volta dele.
+
+- **Tela nova depois do formato da partida:** "Seu jogador", com o boneco
+  desenhado ao vivo pelo rig do próprio jogo, de frente, na camisa amarela,
+  piscando como em quadra. Três escolhas: **cabelo** curto ou comprido com
+  rabo de cavalo; **cor do cabelo** loiro, castanho ou preto; **tom de pele**
+  claro, dourado, moreno ou escuro. Cor e tom são amostras redondas pintadas
+  da mesma tabela que o renderizador lê (`js/looks.js`), e o rótulo diz o nome
+  do que está escolhido. A escolha fica guardada no aparelho junto com o
+  resto da configuração, chave por chave, e qualquer valor desconhecido cai
+  no padrão (curto, castanho, dourado).
+- **Rabo de cavalo de verdade.** De costas, o rabo cai da coroa por cima do
+  cabelo até o meio das costas, com o laço na cor do detalhe do time; de
+  frente, ele aparece ao lado do pescoço, do lado da mão livre. O antigo
+  "estilo 1" riscava o rosto quando visto de frente e saiu.
+- **Elenco:** a parceira é uma mulher de pele escura (cabelo preto). A dupla
+  adversária é um homem de pele clara (loiro) e uma mulher de pele escura
+  (castanha). O humano veste o que escolheu.
+- O botão do menu de formato vira PRÓXIMO; COMEÇAR fica na tela do jogador.
+  Reiniciar e revanche usam a mesma escolha sem passar pela tela.
+- A regra de CSS que esticava qualquer `canvas` à tela inteira passou a valer
+  só para o canvas do jogo, para a pré-visualização ter o tamanho da caixa.
+- App do iPhone: a mesma página, e o pacote passa a `bundleVersion` 52.
 
 ## v51
 

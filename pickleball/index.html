@@ -16,7 +16,8 @@
     overscroll-behavior: none; user-select: none; -webkit-user-select: none;
   }
   #app { position: fixed; top: 0; right: 0; bottom: 0; left: 0; inset: 0; }
-  canvas {
+  /* the game canvas fills the app; other canvases (the player preview) lay out normally */
+  #game {
     position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0;
     width: 100%; height: 100%; display: block; touch-action: none;
   }
@@ -100,6 +101,24 @@
   .opt[aria-pressed="true"] small { color: #b9e6ff; }
   .opt:active { transform: scale(.97); }
   .opt[hidden] { display: none; }
+
+  /* the player: a live figure beside the choices */
+  .player { display: flex; gap: 14px; align-items: stretch; }
+  .preview {
+    flex: 0 0 118px; min-height: 212px; border-radius: 14px; border: 1.5px solid #24384c;
+    background: radial-gradient(90% 60% at 50% 100%, #2f86c4 0%, #1d5b86 50%, #122a40 100%);
+  }
+  .preview canvas { width: 100%; height: 100%; display: block; }
+  .player-opts { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+  .player-opts .opt { min-width: 0; padding: 10px 6px; font-size: 13px; }
+  .opt.swatch {
+    flex: 0 0 auto; width: 40px; height: 40px; padding: 0; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .opt.swatch i {
+    display: block; width: 26px; height: 26px; border-radius: 50%;
+    box-shadow: inset 0 -3px 6px rgba(0,0,0,.28), 0 0 0 1px rgba(255,255,255,.12);
+  }
 
   .btn {
     padding: 15px 22px; border-radius: 14px; border: none; font-size: 16px; font-weight: 800;
@@ -301,8 +320,46 @@
           <button class="opt" data-val="3" data-i18n="ui.sets.3">Melhor de 3</button>
         </div>
       </div>
-      <button class="btn" id="btn-start" data-i18n="ui.start">COMEÇAR</button>
+      <button class="btn" id="btn-next" data-i18n="ui.next">PRÓXIMO</button>
       <button class="btn ghost" id="btn-back" data-i18n="ui.back">Voltar</button>
+    </div>
+  </section>
+
+  <!-- jogador -->
+  <section id="scr-player" class="screen">
+    <div class="card">
+      <h2 data-i18n="ui.player">Seu jogador</h2>
+      <div class="player">
+        <div class="preview"><canvas id="player-preview"></canvas></div>
+        <div class="player-opts">
+          <div class="group">
+            <div class="label" data-i18n="ui.hair">Cabelo</div>
+            <div class="opts looks" data-look="style">
+              <button class="opt" data-val="curto" data-i18n="ui.hair.curto">Curto</button>
+              <button class="opt" data-val="rabo" data-i18n="ui.hair.rabo">Rabo de cavalo</button>
+            </div>
+          </div>
+          <div class="group">
+            <div class="label" id="lbl-haircolor">Cor do cabelo</div>
+            <div class="opts looks" data-look="hair">
+              <button class="opt swatch" data-val="loiro" data-i18n-aria="ui.hair.loiro"><i></i></button>
+              <button class="opt swatch" data-val="castanho" data-i18n-aria="ui.hair.castanho"><i></i></button>
+              <button class="opt swatch" data-val="preto" data-i18n-aria="ui.hair.preto"><i></i></button>
+            </div>
+          </div>
+          <div class="group">
+            <div class="label" id="lbl-skin">Tom de pele</div>
+            <div class="opts looks" data-look="skin">
+              <button class="opt swatch" data-val="claro" data-i18n-aria="ui.skin.claro"><i></i></button>
+              <button class="opt swatch" data-val="dourado" data-i18n-aria="ui.skin.dourado"><i></i></button>
+              <button class="opt swatch" data-val="moreno" data-i18n-aria="ui.skin.moreno"><i></i></button>
+              <button class="opt swatch" data-val="escuro" data-i18n-aria="ui.skin.escuro"><i></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="btn" id="btn-start" data-i18n="ui.start">COMEÇAR</button>
+      <button class="btn ghost" id="btn-player-back" data-i18n="ui.back">Voltar</button>
     </div>
   </section>
 
@@ -353,6 +410,7 @@
 <script src="js/shots.js"></script>
 <script src="js/ai.js"></script>
 <script src="js/stroke.js"></script>
+<script src="js/looks.js"></script>
 <script src="js/match.js"></script>
 <script src="js/render.js"></script>
 <script src="js/input.js"></script>

@@ -16,7 +16,8 @@
     overscroll-behavior: none; user-select: none; -webkit-user-select: none;
   }
   #app { position: fixed; top: 0; right: 0; bottom: 0; left: 0; inset: 0; }
-  canvas {
+  /* the game canvas fills the app; other canvases (the player preview) lay out normally */
+  #game {
     position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0;
     width: 100%; height: 100%; display: block; touch-action: none;
   }
@@ -100,6 +101,24 @@
   .opt[aria-pressed="true"] small { color: #b9e6ff; }
   .opt:active { transform: scale(.97); }
   .opt[hidden] { display: none; }
+
+  /* the player: a live figure beside the choices */
+  .player { display: flex; gap: 14px; align-items: stretch; }
+  .preview {
+    flex: 0 0 118px; min-height: 212px; border-radius: 14px; border: 1.5px solid #24384c;
+    background: radial-gradient(90% 60% at 50% 100%, #2f86c4 0%, #1d5b86 50%, #122a40 100%);
+  }
+  .preview canvas { width: 100%; height: 100%; display: block; }
+  .player-opts { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+  .player-opts .opt { min-width: 0; padding: 10px 6px; font-size: 13px; }
+  .opt.swatch {
+    flex: 0 0 auto; width: 40px; height: 40px; padding: 0; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .opt.swatch i {
+    display: block; width: 26px; height: 26px; border-radius: 50%;
+    box-shadow: inset 0 -3px 6px rgba(0,0,0,.28), 0 0 0 1px rgba(255,255,255,.12);
+  }
 
   .btn {
     padding: 15px 22px; border-radius: 14px; border: none; font-size: 16px; font-weight: 800;
@@ -273,7 +292,7 @@
       <button class="lang" data-lang="es" data-i18n-aria="lang.name.es"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" rx="3" fill="#c60b1e"/><rect width="30" height="10" y="5" fill="#ffc400"/></svg></button>
     </div>
     </div>
-    <div class="foot">v51 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
+    <div class="foot">v52 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
   </section>
 
   <!-- configuração -->
@@ -301,8 +320,46 @@
           <button class="opt" data-val="3" data-i18n="ui.sets.3">Melhor de 3</button>
         </div>
       </div>
-      <button class="btn" id="btn-start" data-i18n="ui.start">COMEÇAR</button>
+      <button class="btn" id="btn-next" data-i18n="ui.next">PRÓXIMO</button>
       <button class="btn ghost" id="btn-back" data-i18n="ui.back">Voltar</button>
+    </div>
+  </section>
+
+  <!-- jogador -->
+  <section id="scr-player" class="screen">
+    <div class="card">
+      <h2 data-i18n="ui.player">Seu jogador</h2>
+      <div class="player">
+        <div class="preview"><canvas id="player-preview"></canvas></div>
+        <div class="player-opts">
+          <div class="group">
+            <div class="label" data-i18n="ui.hair">Cabelo</div>
+            <div class="opts looks" data-look="style">
+              <button class="opt" data-val="curto" data-i18n="ui.hair.curto">Curto</button>
+              <button class="opt" data-val="rabo" data-i18n="ui.hair.rabo">Rabo de cavalo</button>
+            </div>
+          </div>
+          <div class="group">
+            <div class="label" id="lbl-haircolor">Cor do cabelo</div>
+            <div class="opts looks" data-look="hair">
+              <button class="opt swatch" data-val="loiro" data-i18n-aria="ui.hair.loiro"><i></i></button>
+              <button class="opt swatch" data-val="castanho" data-i18n-aria="ui.hair.castanho"><i></i></button>
+              <button class="opt swatch" data-val="preto" data-i18n-aria="ui.hair.preto"><i></i></button>
+            </div>
+          </div>
+          <div class="group">
+            <div class="label" id="lbl-skin">Tom de pele</div>
+            <div class="opts looks" data-look="skin">
+              <button class="opt swatch" data-val="claro" data-i18n-aria="ui.skin.claro"><i></i></button>
+              <button class="opt swatch" data-val="dourado" data-i18n-aria="ui.skin.dourado"><i></i></button>
+              <button class="opt swatch" data-val="moreno" data-i18n-aria="ui.skin.moreno"><i></i></button>
+              <button class="opt swatch" data-val="escuro" data-i18n-aria="ui.skin.escuro"><i></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="btn" id="btn-start" data-i18n="ui.start">COMEÇAR</button>
+      <button class="btn ghost" id="btn-player-back" data-i18n="ui.back">Voltar</button>
     </div>
   </section>
 
@@ -387,7 +444,22 @@ PB.I18n = (function () {
     'ui.upto': 'Partida até',
     'ui.points': '{n} pontos',
     'ui.start': 'COMEÇAR',
+    'ui.next': 'PRÓXIMO',
     'ui.back': 'Voltar',
+
+    'ui.player': 'Seu jogador',
+    'ui.hair': 'Cabelo',
+    'ui.hair.curto': 'Curto',
+    'ui.hair.rabo': 'Rabo de cavalo',
+    'ui.haircolor': 'Cor do cabelo',
+    'ui.hair.loiro': 'Loiro',
+    'ui.hair.castanho': 'Castanho',
+    'ui.hair.preto': 'Preto',
+    'ui.skin': 'Tom de pele',
+    'ui.skin.claro': 'Claro',
+    'ui.skin.dourado': 'Dourado',
+    'ui.skin.moreno': 'Moreno',
+    'ui.skin.escuro': 'Escuro',
 
     'ui.tut.step': 'PASSO {a} DE {b}',
     'ui.tut.home': 'Menu principal',
@@ -512,7 +584,22 @@ PB.I18n = (function () {
     'ui.upto': 'Game to',
     'ui.points': '{n} points',
     'ui.start': 'START',
+    'ui.next': 'NEXT',
     'ui.back': 'Back',
+
+    'ui.player': 'Your player',
+    'ui.hair': 'Hair',
+    'ui.hair.curto': 'Short',
+    'ui.hair.rabo': 'Ponytail',
+    'ui.haircolor': 'Hair colour',
+    'ui.hair.loiro': 'Blonde',
+    'ui.hair.castanho': 'Brown',
+    'ui.hair.preto': 'Black',
+    'ui.skin': 'Skin tone',
+    'ui.skin.claro': 'Fair',
+    'ui.skin.dourado': 'Golden',
+    'ui.skin.moreno': 'Brown',
+    'ui.skin.escuro': 'Dark',
 
     'ui.tut.step': 'STEP {a} OF {b}',
     'ui.tut.home': 'Main menu',
@@ -637,7 +724,22 @@ PB.I18n = (function () {
     'ui.upto': 'Partida a',
     'ui.points': '{n} puntos',
     'ui.start': 'EMPEZAR',
+    'ui.next': 'SIGUIENTE',
     'ui.back': 'Volver',
+
+    'ui.player': 'Tu jugador',
+    'ui.hair': 'Pelo',
+    'ui.hair.curto': 'Corto',
+    'ui.hair.rabo': 'Cola de caballo',
+    'ui.haircolor': 'Color de pelo',
+    'ui.hair.loiro': 'Rubio',
+    'ui.hair.castanho': 'Castaño',
+    'ui.hair.preto': 'Negro',
+    'ui.skin': 'Tono de piel',
+    'ui.skin.claro': 'Claro',
+    'ui.skin.dourado': 'Dorado',
+    'ui.skin.moreno': 'Moreno',
+    'ui.skin.escuro': 'Oscuro',
 
     'ui.tut.step': 'PASO {a} DE {b}',
     'ui.tut.home': 'Menú principal',
@@ -1560,6 +1662,51 @@ PB.Stroke = (function () {
 </script>
 <script>
 'use strict';
+// Who the players look like: the skin tones, hair colours and hair styles the
+// menu offers, the default pick, and the fixed cast around the human. The
+// renderer turns these names into paint; the match hands them to each player.
+var PB = (function () {
+  var g = typeof window !== 'undefined' ? window : globalThis;
+  return g.PB || (g.PB = {});
+})();
+
+PB.Looks = (function () {
+  // skin, light to dark: fair, golden, brown, dark
+  const SKIN = { claro: '#f3d3b4', dourado: '#e3b382', moreno: '#b3784b', escuro: '#6b4228' };
+  const SKIN_ORDER = ['claro', 'dourado', 'moreno', 'escuro'];
+  const HAIR = { loiro: '#d9b35a', castanho: '#6a4222', preto: '#1b130e' };
+  const HAIR_ORDER = ['loiro', 'castanho', 'preto'];
+  // short hair, or long hair tied in a ponytail
+  const STYLE = ['curto', 'rabo'];
+  const DEFAULT = { skin: 'dourado', hair: 'castanho', style: 'curto' };
+
+  // The cast: the partner is a woman with a dark skin tone; the rivals are a
+  // light-skinned man and a dark-skinned woman.
+  const CAST = {
+    mate: { skin: 'escuro', hair: 'preto', style: 'rabo' },
+    rivals: [
+      { skin: 'claro', hair: 'loiro', style: 'curto' },
+      { skin: 'escuro', hair: 'castanho', style: 'rabo' },
+    ],
+  };
+
+  // A look read from storage, or from anywhere else, is trusted key by key:
+  // whatever is not on offer falls back to the default.
+  function normalize(raw) {
+    const r = raw && typeof raw === 'object' ? raw : {};
+    return {
+      skin: SKIN[r.skin] ? r.skin : DEFAULT.skin,
+      hair: HAIR[r.hair] ? r.hair : DEFAULT.hair,
+      style: STYLE.indexOf(r.style) >= 0 ? r.style : DEFAULT.style,
+    };
+  }
+
+  return { SKIN, SKIN_ORDER, HAIR, HAIR_ORDER, STYLE, DEFAULT, CAST, normalize };
+})();
+
+</script>
+<script>
+'use strict';
 // Match engine: players, rally state machine and the official rule set
 // (two-bounce rule, non-volley zone, diagonal underhand serve, side-out scoring,
 // doubles serve rotation starting at 0-0-2).
@@ -1666,6 +1813,7 @@ PB.Match = (function () {
         targetPoints: 11,
         winBy: 2,
         sets: 1,                // games in the match: best of 1 or best of 3
+        look: null,             // the human's look (PB.Looks); null is the default
       }, cfg || {});
 
       const d = SKILL[this.cfg.difficulty] || SKILL.pro;
@@ -1698,6 +1846,7 @@ PB.Match = (function () {
         p.speedBoost = p.ctrl === 'cpu' ? rampComp(d.accel) : 1;
       }
       this.nameEveryone();
+      this.dressEveryone();
 
       this.ball = P.newBall();
       this.score = [0, 0];
@@ -1733,6 +1882,19 @@ PB.Match = (function () {
       for (const p of this.players) {
         p.role = p.ctrl === 'human' ? 'human' : (p.team === 0 ? 'mate' : 'rival');
         p.name = p.ctrl === 'human' ? T('name.you') : surnames[(p.id * 2 + 1) % surnames.length];
+      }
+    }
+
+    // Who looks like what: the human wears the look chosen in the menu; the
+    // partner and the rivals come from the fixed cast.
+    dressEveryone() {
+      const L = PB.Looks;
+      if (!L) return;
+      let rival = 0;
+      for (const p of this.players) {
+        if (p.ctrl === 'human') p.look = L.normalize(this.cfg.look);
+        else if (p.team === 0) p.look = L.CAST.mate;
+        else p.look = L.CAST.rivals[(rival++) % L.CAST.rivals.length];
       }
     }
 
@@ -2801,13 +2963,17 @@ PB.Renderer = (function () {
   const BLINK_GAP = [2.4, 5.5];     // s between blinks, drawn at random each time
 
   const Char = {
+    // A player dressed by the match (p.look: skin, hair, style by name) wears
+    // that; anyone else draws from the old rota by id.
     look(p) {
       if (!p._look) {
         const i = p.id;
+        const L = PB.Looks;
+        const l = p.look && L ? L.normalize(p.look) : null;
         p._look = {
-          skin: i % COL.skin.length,
-          hair: COL.hair[(i * 2 + 1) % COL.hair.length],
-          style: i % 4,
+          skin: l ? L.SKIN[l.skin] : COL.skin[i % COL.skin.length],
+          hair: l ? L.HAIR[l.hair] : COL.hair[(i * 2 + 1) % COL.hair.length],
+          long: l ? l.style === 'rabo' : i % 4 === 1,
           paddle: COL.paddleFace[i % COL.paddleFace.length],
         };
       }
@@ -2896,7 +3062,7 @@ PB.Renderer = (function () {
       const look = this.look(p);
       const kit = COL.team[p.team];
       const blink = this.blink(p);
-      const skin = COL.skin[look.skin];
+      const skin = look.skin;
       const facing = cam.side === p.team ? 1 : -1;
       const hand = facing;
       const P = { s, X: v => base.x + v * s, Y: v => base.y - v * s };
@@ -3128,6 +3294,15 @@ PB.Renderer = (function () {
       const cx = (shL.x + shR.x) / 2 + Math.sin(turn) * 0.10;
       const R = BODY.headR;
       const cy = shY + (BODY.head - BODY.shoulder);
+      // Long hair is tied in a ponytail. Facing the camera the tail hangs
+      // behind the head and shows beside the neck, on the free-hand side;
+      // seen from behind it falls from the crown, over the cap, down the back.
+      const tail = (x1, y1, x2, y2) =>
+        this.bone(ctx, P, x1, y1, x2, y2, [[0, 0.20], [0.45, 0.27], [1, 0.10]], look.hair);
+      const crownX = cx + Math.sin(turn) * 0.18;
+      if (look.long && !fromBehind) {
+        tail(cx - facing * R * 0.45, cy + R * 0.35, cx - facing * R * 1.0, cy - R * 1.75);
+      }
       const hg = ctx.createRadialGradient(X(cx - R * 0.4), Y(cy + R * 0.4), P.s * R * 0.1,
                                           X(cx), Y(cy), P.s * R * 1.15);
       hg.addColorStop(0, tint(skin, 0.16));
@@ -3160,9 +3335,13 @@ PB.Renderer = (function () {
       cap.closePath();
       ctx.fillStyle = look.hair;
       ctx.fill(cap);
-      if (look.style === 1) {
-        this.bone(ctx, P, cx - R * 0.1, cy + R * 0.7, cx - R * 0.1 + Math.sin(turn) * 0.2, cy - R * 0.2,
-                  [[0, 0.2], [0.5, 0.24], [1, 0.08]], look.hair, { raw: true });
+      if (look.long && fromBehind) {
+        tail(crownX, cy + R * 0.72, crownX + R * 0.14, cy - R * 2.0);
+        // the tie, in the team's trim colour
+        ctx.beginPath();
+        ctx.ellipse(X(crownX), Y(cy + R * 0.66), P.s * R * 0.17, P.s * R * 0.11, 0, 0, Math.PI * 2);
+        ctx.fillStyle = kit.trim;
+        ctx.fill();
       }
       if (facing < 0) this.face(ctx, P, cx, cy, R, look, blink);
       if (!fromBehind) drawPaddle();
@@ -4435,6 +4614,7 @@ PB.Renderer = (function () {
 
   Renderer.COL = COL;
   Renderer.Cam = Cam;
+  Renderer.Char = Char;
   return Renderer;
 })();
 
@@ -5327,17 +5507,19 @@ PB.Tutorial = (function () {
     for (const k of Object.keys(DEFAULTS)) {
       if (ESCOLHAS[k].indexOf(raw[k]) >= 0) c[k] = raw[k];
     }
+    // the player's look, key by key, with the default for anything unknown
+    c.look = PB.Looks.normalize(raw.look);
     return c;
   }
   function save() { store.set('pb.cfg', JSON.stringify(cfg)); }
 
   // ── screens ──────────────────────────────────────────────────────────────
-  const screens = ['scr-splash', 'scr-title', 'scr-setup', 'scr-tutorial', 'scr-pause', 'scr-over'];
+  const screens = ['scr-splash', 'scr-title', 'scr-setup', 'scr-player', 'scr-tutorial', 'scr-pause', 'scr-over'];
   // The company mark is shown in silence and the music comes in as it closes.
   // The menu screens share one loop; the match itself has none, so the
   // rally sounds and the crowd carry it. The end-of-match cue is started by
   // gameOver, and the pause screen keeps the match's silence.
-  const MENU_SCREENS = ['scr-title', 'scr-setup', 'scr-tutorial'];
+  const MENU_SCREENS = ['scr-title', 'scr-setup', 'scr-player', 'scr-tutorial'];
   function show(id) {
     if (MENU_SCREENS.indexOf(id) >= 0) PB.Audio.music('menu');
     else if (id === null) PB.Audio.stopMusic(0.6);
@@ -5360,11 +5542,65 @@ PB.Tutorial = (function () {
   });
 
   function syncOpts() {
-    document.querySelectorAll('.opts').forEach(grp => {
+    document.querySelectorAll('.opts[data-group]').forEach(grp => {
       const key = grp.dataset.group;
       grp.querySelectorAll('.opt').forEach(b => b.setAttribute('aria-pressed', String(cfg[key] === b.dataset.val)));
     });
   }
+
+  // ── the player's look ────────────────────────────────────────────────────
+  // Hair style, hair colour and skin tone. The swatches are painted from the
+  // same table the renderer reads, so the menu can never show a colour the
+  // figure does not wear.
+  const Looks = PB.Looks;
+  document.querySelectorAll('.looks').forEach(grp => {
+    const table = grp.dataset.look === 'hair' ? Looks.HAIR : grp.dataset.look === 'skin' ? Looks.SKIN : null;
+    if (table) grp.querySelectorAll('.opt i').forEach(i => { i.style.background = table[i.parentNode.dataset.val]; });
+    grp.addEventListener('click', e => {
+      const b = e.target.closest('.opt');
+      if (!b) return;
+      cfg.look[grp.dataset.look] = b.dataset.val;
+      cfg.look = Looks.normalize(cfg.look);
+      syncLooks();
+      save();
+      buzz(8);
+    });
+  });
+
+  function syncLooks() {
+    document.querySelectorAll('.looks').forEach(grp => {
+      const key = grp.dataset.look;
+      grp.querySelectorAll('.opt').forEach(b => b.setAttribute('aria-pressed', String(cfg.look[key] === b.dataset.val)));
+    });
+    // a swatch carries no word, so the label names the pick
+    $('lbl-haircolor').textContent = I18n.t('ui.haircolor') + ' · ' + I18n.t('ui.hair.' + cfg.look.hair);
+    $('lbl-skin').textContent = I18n.t('ui.skin') + ' · ' + I18n.t('ui.skin.' + cfg.look.skin);
+  }
+
+  // The figure beside the choices is drawn by the game's own rig, facing the
+  // camera in the yellow kit, so what is chosen here is exactly what plays.
+  // It redraws every frame while the screen is up, which keeps the blink.
+  const preview = $('player-preview');
+  const model = { id: 0, team: 0, ctrl: 'cpu', crouch: 0.12, runPhase: 0, speedN: 0, prep: 0, swingT: 0 };
+  function drawPreview() {
+    if (!$('scr-player').classList.contains('on')) return;
+    requestAnimationFrame(drawPreview);
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = preview.clientWidth, h = preview.clientHeight;
+    if (!w || !h) return;
+    if (preview.width !== Math.round(w * dpr) || preview.height !== Math.round(h * dpr)) {
+      preview.width = Math.round(w * dpr);
+      preview.height = Math.round(h * dpr);
+    }
+    const ctx = preview.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    model.look = cfg.look;
+    delete model._look;
+    const s = h / 7.0;
+    PB.Renderer.Char.draw(ctx, { side: 1 }, model, { x: w / 2, y: h - s * 0.7 }, s, false);
+  }
+  function openPlayer() { syncLooks(); show('scr-player'); drawPreview(); }
 
   // ── language ─────────────────────────────────────────────────────────────
   function paintLangs() {
@@ -5379,6 +5615,7 @@ PB.Tutorial = (function () {
     paintSound();
     // anything painted by hand rather than by data-i18n
     if ($('scr-tutorial').classList.contains('on')) paintTutorial();
+    if ($('scr-player').classList.contains('on')) syncLooks();
   }
   document.querySelectorAll('#langs .lang').forEach(b => {
     b.onclick = () => { setLang(b.dataset.lang); buzz(8); };
@@ -5439,6 +5676,8 @@ PB.Tutorial = (function () {
     store.set('pb.sound', sound ? '1' : '0');
     paintSound();
   };
+  $('btn-next').onclick = () => openPlayer();
+  $('btn-player-back').onclick = () => show('scr-setup');
   $('btn-start').onclick = () => start();
   $('pauseBtn').onclick = () => { if (match) { match.paused = true; show('scr-pause'); } };
   $('btn-resume').onclick = () => { if (match) { match.paused = false; show(null); } };
@@ -5455,6 +5694,7 @@ PB.Tutorial = (function () {
       difficulty: cfg.difficulty,
       targetPoints: parseInt(cfg.targetPoints, 10),
       sets: parseInt(cfg.sets, 10),
+      look: cfg.look,
     });
     input.reset();
     renderer.trail.length = 0;

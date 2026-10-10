@@ -31,17 +31,19 @@
     for (const k of Object.keys(DEFAULTS)) {
       if (ESCOLHAS[k].indexOf(raw[k]) >= 0) c[k] = raw[k];
     }
+    // the player's look, key by key, with the default for anything unknown
+    c.look = PB.Looks.normalize(raw.look);
     return c;
   }
   function save() { store.set('pb.cfg', JSON.stringify(cfg)); }
 
   // ── screens ──────────────────────────────────────────────────────────────
-  const screens = ['scr-splash', 'scr-title', 'scr-setup', 'scr-tutorial', 'scr-pause', 'scr-over'];
+  const screens = ['scr-splash', 'scr-title', 'scr-setup', 'scr-player', 'scr-tutorial', 'scr-pause', 'scr-over'];
   // The company mark is shown in silence and the music comes in as it closes.
   // The menu screens share one loop; the match itself has none, so the
   // rally sounds and the crowd carry it. The end-of-match cue is started by
   // gameOver, and the pause screen keeps the match's silence.
-  const MENU_SCREENS = ['scr-title', 'scr-setup', 'scr-tutorial'];
+  const MENU_SCREENS = ['scr-title', 'scr-setup', 'scr-player', 'scr-tutorial'];
   function show(id) {
     if (MENU_SCREENS.indexOf(id) >= 0) PB.Audio.music('menu');
     else if (id === null) PB.Audio.stopMusic(0.6);
@@ -64,11 +66,65 @@
   });
 
   function syncOpts() {
-    document.querySelectorAll('.opts').forEach(grp => {
+    document.querySelectorAll('.opts[data-group]').forEach(grp => {
       const key = grp.dataset.group;
       grp.querySelectorAll('.opt').forEach(b => b.setAttribute('aria-pressed', String(cfg[key] === b.dataset.val)));
     });
   }
+
+  // ── the player's look ────────────────────────────────────────────────────
+  // Hair style, hair colour and skin tone. The swatches are painted from the
+  // same table the renderer reads, so the menu can never show a colour the
+  // figure does not wear.
+  const Looks = PB.Looks;
+  document.querySelectorAll('.looks').forEach(grp => {
+    const table = grp.dataset.look === 'hair' ? Looks.HAIR : grp.dataset.look === 'skin' ? Looks.SKIN : null;
+    if (table) grp.querySelectorAll('.opt i').forEach(i => { i.style.background = table[i.parentNode.dataset.val]; });
+    grp.addEventListener('click', e => {
+      const b = e.target.closest('.opt');
+      if (!b) return;
+      cfg.look[grp.dataset.look] = b.dataset.val;
+      cfg.look = Looks.normalize(cfg.look);
+      syncLooks();
+      save();
+      buzz(8);
+    });
+  });
+
+  function syncLooks() {
+    document.querySelectorAll('.looks').forEach(grp => {
+      const key = grp.dataset.look;
+      grp.querySelectorAll('.opt').forEach(b => b.setAttribute('aria-pressed', String(cfg.look[key] === b.dataset.val)));
+    });
+    // a swatch carries no word, so the label names the pick
+    $('lbl-haircolor').textContent = I18n.t('ui.haircolor') + ' · ' + I18n.t('ui.hair.' + cfg.look.hair);
+    $('lbl-skin').textContent = I18n.t('ui.skin') + ' · ' + I18n.t('ui.skin.' + cfg.look.skin);
+  }
+
+  // The figure beside the choices is drawn by the game's own rig, facing the
+  // camera in the yellow kit, so what is chosen here is exactly what plays.
+  // It redraws every frame while the screen is up, which keeps the blink.
+  const preview = $('player-preview');
+  const model = { id: 0, team: 0, ctrl: 'cpu', crouch: 0.12, runPhase: 0, speedN: 0, prep: 0, swingT: 0 };
+  function drawPreview() {
+    if (!$('scr-player').classList.contains('on')) return;
+    requestAnimationFrame(drawPreview);
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = preview.clientWidth, h = preview.clientHeight;
+    if (!w || !h) return;
+    if (preview.width !== Math.round(w * dpr) || preview.height !== Math.round(h * dpr)) {
+      preview.width = Math.round(w * dpr);
+      preview.height = Math.round(h * dpr);
+    }
+    const ctx = preview.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    model.look = cfg.look;
+    delete model._look;
+    const s = h / 7.0;
+    PB.Renderer.Char.draw(ctx, { side: 1 }, model, { x: w / 2, y: h - s * 0.7 }, s, false);
+  }
+  function openPlayer() { syncLooks(); show('scr-player'); drawPreview(); }
 
   // ── language ─────────────────────────────────────────────────────────────
   function paintLangs() {
@@ -83,6 +139,7 @@
     paintSound();
     // anything painted by hand rather than by data-i18n
     if ($('scr-tutorial').classList.contains('on')) paintTutorial();
+    if ($('scr-player').classList.contains('on')) syncLooks();
   }
   document.querySelectorAll('#langs .lang').forEach(b => {
     b.onclick = () => { setLang(b.dataset.lang); buzz(8); };
@@ -143,6 +200,8 @@
     store.set('pb.sound', sound ? '1' : '0');
     paintSound();
   };
+  $('btn-next').onclick = () => openPlayer();
+  $('btn-player-back').onclick = () => show('scr-setup');
   $('btn-start').onclick = () => start();
   $('pauseBtn').onclick = () => { if (match) { match.paused = true; show('scr-pause'); } };
   $('btn-resume').onclick = () => { if (match) { match.paused = false; show(null); } };
@@ -159,6 +218,7 @@
       difficulty: cfg.difficulty,
       targetPoints: parseInt(cfg.targetPoints, 10),
       sets: parseInt(cfg.sets, 10),
+      look: cfg.look,
     });
     input.reset();
     renderer.trail.length = 0;

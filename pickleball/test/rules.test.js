@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const dir = path.join(__dirname, '..', 'js');
-for (const f of ['i18n', 'calls', 'logos', 'court', 'physics', 'shots', 'stroke', 'match', 'ai', 'tutorial']) {
+for (const f of ['i18n', 'calls', 'logos', 'court', 'physics', 'shots', 'stroke', 'looks', 'match', 'ai', 'tutorial']) {
   vm.runInThisContext(fs.readFileSync(path.join(dir, f + '.js'), 'utf8'), { filename: f + '.js' });
 }
 const C = PB.Court;
@@ -1274,6 +1274,30 @@ test('os gestos continuam: arco é lob, para baixo é slice, inclinação é dir
   // the old screen-height ruler still reads
   const antigo = S.measure([{ x: 70, y: 600 }, { x: 70, y: 470 }], 844);
   ok(antigo && antigo.power > 0 && antigo.power < reto.power, 'régua antiga continua válida e mais comprida');
+});
+
+// ── quem é quem ───────────────────────────────────────────────────────────
+test('o humano veste a escolha do menu e o elenco em volta é fixo', () => {
+  const m = mk({ format: 'doubles', look: { skin: 'claro', hair: 'loiro', style: 'rabo' } });
+  const you = m.players[m.humanIdx];
+  eq(you.look, { skin: 'claro', hair: 'loiro', style: 'rabo' }, 'a escolha do menu');
+  const mate = m.players.find(p => p.team === 0 && p.ctrl !== 'human');
+  eq([mate.look.style, mate.look.skin], ['rabo', 'escuro'], 'a parceira: mulher de pele escura');
+  const rivals = m.players.filter(p => p.team === 1);
+  eq(rivals.length, 2, 'dois rivais');
+  ok(rivals.some(p => p.look.style === 'curto' && p.look.skin === 'claro'), 'um rival homem de pele clara');
+  ok(rivals.some(p => p.look.style === 'rabo' && p.look.skin === 'escuro'), 'uma rival mulher de pele escura');
+  ok(rivals[0].look.hair !== rivals[1].look.hair, 'rivais com cabelos diferentes');
+});
+
+test('uma escolha inválida cai no padrão, chave por chave', () => {
+  const L = PB.Looks;
+  eq(L.normalize(null), L.DEFAULT, 'nada escolhido');
+  eq(L.normalize({ skin: 'verde', hair: 'preto', style: 7 }),
+     { skin: L.DEFAULT.skin, hair: 'preto', style: L.DEFAULT.style }, 'só o que existe passa');
+  eq(mk({}).players[0].look, L.DEFAULT, 'sem escolha, o padrão');
+  for (const k of L.SKIN_ORDER) ok(/^#[0-9a-f]{6}$/i.test(L.SKIN[k]), 'tom de pele ' + k + ' tem cor');
+  for (const k of L.HAIR_ORDER) ok(/^#[0-9a-f]{6}$/i.test(L.HAIR[k]), 'cabelo ' + k + ' tem cor');
 });
 
 // ── o gesto decide o golpe ────────────────────────────────────────────────

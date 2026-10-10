@@ -233,13 +233,17 @@ PB.Renderer = (function () {
   const BLINK_GAP = [2.4, 5.5];     // s between blinks, drawn at random each time
 
   const Char = {
+    // A player dressed by the match (p.look: skin, hair, style by name) wears
+    // that; anyone else draws from the old rota by id.
     look(p) {
       if (!p._look) {
         const i = p.id;
+        const L = PB.Looks;
+        const l = p.look && L ? L.normalize(p.look) : null;
         p._look = {
-          skin: i % COL.skin.length,
-          hair: COL.hair[(i * 2 + 1) % COL.hair.length],
-          style: i % 4,
+          skin: l ? L.SKIN[l.skin] : COL.skin[i % COL.skin.length],
+          hair: l ? L.HAIR[l.hair] : COL.hair[(i * 2 + 1) % COL.hair.length],
+          long: l ? l.style === 'rabo' : i % 4 === 1,
           paddle: COL.paddleFace[i % COL.paddleFace.length],
         };
       }
@@ -328,7 +332,7 @@ PB.Renderer = (function () {
       const look = this.look(p);
       const kit = COL.team[p.team];
       const blink = this.blink(p);
-      const skin = COL.skin[look.skin];
+      const skin = look.skin;
       const facing = cam.side === p.team ? 1 : -1;
       const hand = facing;
       const P = { s, X: v => base.x + v * s, Y: v => base.y - v * s };
@@ -560,6 +564,15 @@ PB.Renderer = (function () {
       const cx = (shL.x + shR.x) / 2 + Math.sin(turn) * 0.10;
       const R = BODY.headR;
       const cy = shY + (BODY.head - BODY.shoulder);
+      // Long hair is tied in a ponytail. Facing the camera the tail hangs
+      // behind the head and shows beside the neck, on the free-hand side;
+      // seen from behind it falls from the crown, over the cap, down the back.
+      const tail = (x1, y1, x2, y2) =>
+        this.bone(ctx, P, x1, y1, x2, y2, [[0, 0.20], [0.45, 0.27], [1, 0.10]], look.hair);
+      const crownX = cx + Math.sin(turn) * 0.18;
+      if (look.long && !fromBehind) {
+        tail(cx - facing * R * 0.45, cy + R * 0.35, cx - facing * R * 1.0, cy - R * 1.75);
+      }
       const hg = ctx.createRadialGradient(X(cx - R * 0.4), Y(cy + R * 0.4), P.s * R * 0.1,
                                           X(cx), Y(cy), P.s * R * 1.15);
       hg.addColorStop(0, tint(skin, 0.16));
@@ -592,9 +605,13 @@ PB.Renderer = (function () {
       cap.closePath();
       ctx.fillStyle = look.hair;
       ctx.fill(cap);
-      if (look.style === 1) {
-        this.bone(ctx, P, cx - R * 0.1, cy + R * 0.7, cx - R * 0.1 + Math.sin(turn) * 0.2, cy - R * 0.2,
-                  [[0, 0.2], [0.5, 0.24], [1, 0.08]], look.hair, { raw: true });
+      if (look.long && fromBehind) {
+        tail(crownX, cy + R * 0.72, crownX + R * 0.14, cy - R * 2.0);
+        // the tie, in the team's trim colour
+        ctx.beginPath();
+        ctx.ellipse(X(crownX), Y(cy + R * 0.66), P.s * R * 0.17, P.s * R * 0.11, 0, 0, Math.PI * 2);
+        ctx.fillStyle = kit.trim;
+        ctx.fill();
       }
       if (facing < 0) this.face(ctx, P, cx, cy, R, look, blink);
       if (!fromBehind) drawPaddle();
@@ -1867,5 +1884,6 @@ PB.Renderer = (function () {
 
   Renderer.COL = COL;
   Renderer.Cam = Cam;
+  Renderer.Char = Char;
   return Renderer;
 })();
