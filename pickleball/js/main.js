@@ -33,6 +33,7 @@
     }
     // the player's look, key by key, with the default for anything unknown
     c.look = PB.Looks.normalize(raw.look);
+    c.look.shirt = c.look.shirt || PB.Looks.DEFAULT_SHIRT;
     return c;
   }
   function save() { store.set('pb.cfg', JSON.stringify(cfg)); }
@@ -78,13 +79,14 @@
   // figure does not wear.
   const Looks = PB.Looks;
   document.querySelectorAll('.looks').forEach(grp => {
-    const table = grp.dataset.look === 'hair' ? Looks.HAIR : grp.dataset.look === 'skin' ? Looks.SKIN : null;
+    const table = { hair: Looks.HAIR, skin: Looks.SKIN, shirt: Looks.SHIRT }[grp.dataset.look] || null;
     if (table) grp.querySelectorAll('.opt i').forEach(i => { i.style.background = table[i.parentNode.dataset.val]; });
     grp.addEventListener('click', e => {
       const b = e.target.closest('.opt');
       if (!b) return;
       cfg.look[grp.dataset.look] = b.dataset.val;
       cfg.look = Looks.normalize(cfg.look);
+      cfg.look.shirt = cfg.look.shirt || Looks.DEFAULT_SHIRT;
       syncLooks();
       save();
       buzz(8);
@@ -99,22 +101,31 @@
     // a swatch carries no word, so the label names the pick
     $('lbl-haircolor').textContent = I18n.t('ui.haircolor') + ' · ' + I18n.t('ui.hair.' + cfg.look.hair);
     $('lbl-skin').textContent = I18n.t('ui.skin') + ' · ' + I18n.t('ui.skin.' + cfg.look.skin);
+    $('lbl-shirt').textContent = I18n.t('ui.shirt') + ' · ' + I18n.t('ui.shirt.' + cfg.look.shirt);
   }
 
   // The figure beside the choices is drawn by the game's own rig, facing the
-  // camera in the yellow kit, so what is chosen here is exactly what plays.
+  // camera in the chosen shirt, so what is chosen here is exactly what plays.
   // It redraws every frame while the screen is up, which keeps the blink.
+  //
+  // The canvas is measured by its box, never by itself: it sits out of the
+  // flow (absolute inside the box), so changing its pixel size can never
+  // change the layout. Measured on itself, in Safari, a canvas whose height
+  // was a percentage of an auto-height box grew by the pixel ratio every
+  // frame, and the whole screen zoomed away.
   const preview = $('player-preview');
+  const previewBox = preview.parentNode;
   const model = { id: 0, team: 0, ctrl: 'cpu', crouch: 0.12, runPhase: 0, speedN: 0, prep: 0, swingT: 0 };
   function drawPreview() {
     if (!$('scr-player').classList.contains('on')) return;
     requestAnimationFrame(drawPreview);
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = preview.clientWidth, h = preview.clientHeight;
+    const w = previewBox.clientWidth, h = previewBox.clientHeight;
     if (!w || !h) return;
-    if (preview.width !== Math.round(w * dpr) || preview.height !== Math.round(h * dpr)) {
-      preview.width = Math.round(w * dpr);
-      preview.height = Math.round(h * dpr);
+    const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+    if (preview.width !== pw || preview.height !== ph) {
+      preview.width = pw;
+      preview.height = ph;
     }
     const ctx = preview.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);

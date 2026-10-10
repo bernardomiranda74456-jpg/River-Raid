@@ -15,7 +15,13 @@ PB.Looks = (function () {
   const HAIR_ORDER = ['loiro', 'castanho', 'preto'];
   // short hair, or long hair tied in a ponytail
   const STYLE = ['curto', 'rabo'];
+  // The shirt is the human's alone: the partner keeps the team's yellow and
+  // the rivals always wear their pink, so the away team is never mistaken.
+  // None of these is close to that pink.
+  const SHIRT = { amarelo: '#ffd24a', azul: '#3b9cff', verde: '#3ddc84', branco: '#f2f5f8' };
+  const SHIRT_ORDER = ['amarelo', 'azul', 'verde', 'branco'];
   const DEFAULT = { skin: 'dourado', hair: 'castanho', style: 'curto' };
+  const DEFAULT_SHIRT = 'amarelo';
 
   // The cast: the partner is a woman with a dark skin tone; the rivals are a
   // light-skinned man and a dark-skinned woman.
@@ -28,15 +34,17 @@ PB.Looks = (function () {
   };
 
   // A look read from storage, or from anywhere else, is trusted key by key:
-  // whatever is not on offer falls back to the default.
+  // whatever is not on offer falls back to the default. A shirt that is not
+  // on offer is no shirt at all (null), which means the team's own kit.
   function normalize(raw) {
     const r = raw && typeof raw === 'object' ? raw : {};
     return {
       skin: SKIN[r.skin] ? r.skin : DEFAULT.skin,
       hair: HAIR[r.hair] ? r.hair : DEFAULT.hair,
       style: STYLE.indexOf(r.style) >= 0 ? r.style : DEFAULT.style,
+      shirt: SHIRT[r.shirt] ? r.shirt : null,
     };
   }
 
-  return { SKIN, SKIN_ORDER, HAIR, HAIR_ORDER, STYLE, DEFAULT, CAST, normalize };
+  return { SKIN, SKIN_ORDER, HAIR, HAIR_ORDER, STYLE, SHIRT, SHIRT_ORDER, DEFAULT, DEFAULT_SHIRT, CAST, normalize };
 })();

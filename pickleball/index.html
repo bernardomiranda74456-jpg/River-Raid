@@ -104,11 +104,14 @@
 
   /* the player: a live figure beside the choices */
   .player { display: flex; gap: 14px; align-items: stretch; }
+  /* the box sets the size; the canvas inside is out of the flow, so its
+     pixel size can never feed back into the layout */
   .preview {
-    flex: 0 0 118px; min-height: 212px; border-radius: 14px; border: 1.5px solid #24384c;
+    position: relative; overflow: hidden; flex: 0 0 118px; min-height: 212px;
+    border-radius: 14px; border: 1.5px solid #24384c;
     background: radial-gradient(90% 60% at 50% 100%, #2f86c4 0%, #1d5b86 50%, #122a40 100%);
   }
-  .preview canvas { width: 100%; height: 100%; display: block; }
+  .preview canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; }
   .player-opts { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
   .player-opts .opt { min-width: 0; padding: 10px 6px; font-size: 13px; }
   .opt.swatch {
@@ -354,6 +357,15 @@
               <button class="opt swatch" data-val="dourado" data-i18n-aria="ui.skin.dourado"><i></i></button>
               <button class="opt swatch" data-val="moreno" data-i18n-aria="ui.skin.moreno"><i></i></button>
               <button class="opt swatch" data-val="escuro" data-i18n-aria="ui.skin.escuro"><i></i></button>
+            </div>
+          </div>
+          <div class="group">
+            <div class="label" id="lbl-shirt">Roupa</div>
+            <div class="opts looks" data-look="shirt">
+              <button class="opt swatch" data-val="amarelo" data-i18n-aria="ui.shirt.amarelo"><i></i></button>
+              <button class="opt swatch" data-val="azul" data-i18n-aria="ui.shirt.azul"><i></i></button>
+              <button class="opt swatch" data-val="verde" data-i18n-aria="ui.shirt.verde"><i></i></button>
+              <button class="opt swatch" data-val="branco" data-i18n-aria="ui.shirt.branco"><i></i></button>
             </div>
           </div>
         </div>

@@ -189,6 +189,16 @@ PB.Renderer = (function () {
   const LIGHT = { x: -0.55, y: -0.83 };     // key light, upper left
 
   // ── colour helpers ───────────────────────────────────────────────────────
+  // The same lightening and darkening, but back to hex, for colours that are
+  // tinted again later (a kit's shirt2 goes through tint on the shoes).
+  function tintHex(hex, amt) {
+    const n = parseInt(hex.slice(1), 16);
+    let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    if (amt >= 0) { r += (255 - r) * amt; g += (255 - g) * amt; b += (255 - b) * amt; }
+    else { r *= 1 + amt; g *= 1 + amt; b *= 1 + amt; }
+    return '#' + [r, g, b].map(v => (v | 0).toString(16).padStart(2, '0')).join('');
+  }
+
   const tintCache = new Map();
   function tint(hex, amt) {
     const key = hex + '|' + amt;
@@ -244,10 +254,25 @@ PB.Renderer = (function () {
           skin: l ? L.SKIN[l.skin] : COL.skin[i % COL.skin.length],
           hair: l ? L.HAIR[l.hair] : COL.hair[(i * 2 + 1) % COL.hair.length],
           long: l ? l.style === 'rabo' : i % 4 === 1,
+          shirt: l && l.shirt ? L.SHIRT[l.shirt] : null,
           paddle: COL.paddleFace[i % COL.paddleFace.length],
         };
       }
       return p._look;
+    },
+
+    // What the player wears: the team's kit, unless the look names a shirt,
+    // which only the human's does. The shorts stay the team's own.
+    kit(p, look) {
+      const team = COL.team[p.team];
+      if (!look.shirt || look.shirt === team.shirt) return team;
+      if (!look._kit) {
+        look._kit = {
+          shirt: look.shirt, shirt2: tintHex(look.shirt, -0.22), trim: tintHex(look.shirt, 0.5),
+          shorts: team.shorts, shorts2: team.shorts2,
+        };
+      }
+      return look._kit;
     },
 
     // ── the drawn limb ─────────────────────────────────────────────────────
@@ -330,7 +355,7 @@ PB.Renderer = (function () {
 
     draw(ctx, cam, p, base, s, isMe) {
       const look = this.look(p);
-      const kit = COL.team[p.team];
+      const kit = this.kit(p, look);
       const blink = this.blink(p);
       const skin = look.skin;
       const facing = cam.side === p.team ? 1 : -1;

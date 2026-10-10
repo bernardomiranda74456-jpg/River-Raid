@@ -5,7 +5,7 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
-## App para iPhone (o jogo continua na v52)
+## App para iPhone (o jogo continua na v53)
 
 `PickleballForever.swiftpm` embala a página do jogo num app nativo: uma
 `WKWebView` em tela cheia, som liberado sem toque, sem rolagem nem zoom, tela
@@ -13,6 +13,23 @@ sempre acesa, ícone feito da logo. `build-single.js` passa a gravar a página
 também em `Sources/Resources/index.html`, então o app é sempre a build testada.
 O porte antigo em SpriteKit (`Pickleball.swiftpm`), parado desde o começo e
 nunca compilado, saiu. Como compilar e publicar: `COMO-PUBLICAR-NO-IPHONE.md`.
+
+## v53
+
+Conserto da tela do jogador no iPhone, e a cor da camisa.
+
+- **O zoom sem fim.** No Safari, o canvas da pré-visualização tinha altura
+  em porcentagem dentro de uma caixa cuja altura vinha do esticamento do
+  flex; a cada quadro o jogo lia a altura do próprio canvas, gravava o dobro
+  nos pixels, e o Safari usava esse tamanho como altura do elemento, e tudo
+  crescia e subia. Agora o canvas fica fora do fluxo (absoluto dentro da
+  caixa), o jogo mede a caixa e não o canvas, e o tamanho em pixels só muda
+  quando a caixa muda.
+- **Cor da camisa:** amarela, azul, verde ou branca, só para o seu boneco. A
+  parceira continua de amarelo e os adversários sempre de rosa, para os
+  times continuarem distintos; nenhuma das quatro chega perto do rosa. O
+  laço do rabo de cavalo e a sola do tênis seguem a cor escolhida.
+- App do iPhone: a mesma página, `bundleVersion` 53.
 
 ## v52
 

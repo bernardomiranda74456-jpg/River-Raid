@@ -104,11 +104,14 @@
 
   /* the player: a live figure beside the choices */
   .player { display: flex; gap: 14px; align-items: stretch; }
+  /* the box sets the size; the canvas inside is out of the flow, so its
+     pixel size can never feed back into the layout */
   .preview {
-    flex: 0 0 118px; min-height: 212px; border-radius: 14px; border: 1.5px solid #24384c;
+    position: relative; overflow: hidden; flex: 0 0 118px; min-height: 212px;
+    border-radius: 14px; border: 1.5px solid #24384c;
     background: radial-gradient(90% 60% at 50% 100%, #2f86c4 0%, #1d5b86 50%, #122a40 100%);
   }
-  .preview canvas { width: 100%; height: 100%; display: block; }
+  .preview canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; }
   .player-opts { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
   .player-opts .opt { min-width: 0; padding: 10px 6px; font-size: 13px; }
   .opt.swatch {
@@ -292,7 +295,7 @@
       <button class="lang" data-lang="es" data-i18n-aria="lang.name.es"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" rx="3" fill="#c60b1e"/><rect width="30" height="10" y="5" fill="#ffc400"/></svg></button>
     </div>
     </div>
-    <div class="foot">v52 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
+    <div class="foot">v53 &middot; <span data-i18n="ui.tip">Dica: vire o celular na horizontal</span></div>
   </section>
 
   <!-- configuração -->
@@ -354,6 +357,15 @@
               <button class="opt swatch" data-val="dourado" data-i18n-aria="ui.skin.dourado"><i></i></button>
               <button class="opt swatch" data-val="moreno" data-i18n-aria="ui.skin.moreno"><i></i></button>
               <button class="opt swatch" data-val="escuro" data-i18n-aria="ui.skin.escuro"><i></i></button>
+            </div>
+          </div>
+          <div class="group">
+            <div class="label" id="lbl-shirt">Roupa</div>
+            <div class="opts looks" data-look="shirt">
+              <button class="opt swatch" data-val="amarelo" data-i18n-aria="ui.shirt.amarelo"><i></i></button>
+              <button class="opt swatch" data-val="azul" data-i18n-aria="ui.shirt.azul"><i></i></button>
+              <button class="opt swatch" data-val="verde" data-i18n-aria="ui.shirt.verde"><i></i></button>
+              <button class="opt swatch" data-val="branco" data-i18n-aria="ui.shirt.branco"><i></i></button>
             </div>
           </div>
         </div>
@@ -460,6 +472,11 @@ PB.I18n = (function () {
     'ui.skin.dourado': 'Dourado',
     'ui.skin.moreno': 'Moreno',
     'ui.skin.escuro': 'Escuro',
+    'ui.shirt': 'Roupa',
+    'ui.shirt.amarelo': 'Amarela',
+    'ui.shirt.azul': 'Azul',
+    'ui.shirt.verde': 'Verde',
+    'ui.shirt.branco': 'Branca',
 
     'ui.tut.step': 'PASSO {a} DE {b}',
     'ui.tut.home': 'Menu principal',
@@ -600,6 +617,11 @@ PB.I18n = (function () {
     'ui.skin.dourado': 'Golden',
     'ui.skin.moreno': 'Brown',
     'ui.skin.escuro': 'Dark',
+    'ui.shirt': 'Shirt',
+    'ui.shirt.amarelo': 'Yellow',
+    'ui.shirt.azul': 'Blue',
+    'ui.shirt.verde': 'Green',
+    'ui.shirt.branco': 'White',
 
     'ui.tut.step': 'STEP {a} OF {b}',
     'ui.tut.home': 'Main menu',
@@ -740,6 +762,11 @@ PB.I18n = (function () {
     'ui.skin.dourado': 'Dorado',
     'ui.skin.moreno': 'Moreno',
     'ui.skin.escuro': 'Oscuro',
+    'ui.shirt': 'Camiseta',
+    'ui.shirt.amarelo': 'Amarilla',
+    'ui.shirt.azul': 'Azul',
+    'ui.shirt.verde': 'Verde',
+    'ui.shirt.branco': 'Blanca',
 
     'ui.tut.step': 'PASO {a} DE {b}',
     'ui.tut.home': 'Menú principal',
@@ -1678,7 +1705,13 @@ PB.Looks = (function () {
   const HAIR_ORDER = ['loiro', 'castanho', 'preto'];
   // short hair, or long hair tied in a ponytail
   const STYLE = ['curto', 'rabo'];
+  // The shirt is the human's alone: the partner keeps the team's yellow and
+  // the rivals always wear their pink, so the away team is never mistaken.
+  // None of these is close to that pink.
+  const SHIRT = { amarelo: '#ffd24a', azul: '#3b9cff', verde: '#3ddc84', branco: '#f2f5f8' };
+  const SHIRT_ORDER = ['amarelo', 'azul', 'verde', 'branco'];
   const DEFAULT = { skin: 'dourado', hair: 'castanho', style: 'curto' };
+  const DEFAULT_SHIRT = 'amarelo';
 
   // The cast: the partner is a woman with a dark skin tone; the rivals are a
   // light-skinned man and a dark-skinned woman.
@@ -1691,17 +1724,19 @@ PB.Looks = (function () {
   };
 
   // A look read from storage, or from anywhere else, is trusted key by key:
-  // whatever is not on offer falls back to the default.
+  // whatever is not on offer falls back to the default. A shirt that is not
+  // on offer is no shirt at all (null), which means the team's own kit.
   function normalize(raw) {
     const r = raw && typeof raw === 'object' ? raw : {};
     return {
       skin: SKIN[r.skin] ? r.skin : DEFAULT.skin,
       hair: HAIR[r.hair] ? r.hair : DEFAULT.hair,
       style: STYLE.indexOf(r.style) >= 0 ? r.style : DEFAULT.style,
+      shirt: SHIRT[r.shirt] ? r.shirt : null,
     };
   }
 
-  return { SKIN, SKIN_ORDER, HAIR, HAIR_ORDER, STYLE, DEFAULT, CAST, normalize };
+  return { SKIN, SKIN_ORDER, HAIR, HAIR_ORDER, STYLE, SHIRT, SHIRT_ORDER, DEFAULT, DEFAULT_SHIRT, CAST, normalize };
 })();
 
 </script>
@@ -2919,6 +2954,16 @@ PB.Renderer = (function () {
   const LIGHT = { x: -0.55, y: -0.83 };     // key light, upper left
 
   // ── colour helpers ───────────────────────────────────────────────────────
+  // The same lightening and darkening, but back to hex, for colours that are
+  // tinted again later (a kit's shirt2 goes through tint on the shoes).
+  function tintHex(hex, amt) {
+    const n = parseInt(hex.slice(1), 16);
+    let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    if (amt >= 0) { r += (255 - r) * amt; g += (255 - g) * amt; b += (255 - b) * amt; }
+    else { r *= 1 + amt; g *= 1 + amt; b *= 1 + amt; }
+    return '#' + [r, g, b].map(v => (v | 0).toString(16).padStart(2, '0')).join('');
+  }
+
   const tintCache = new Map();
   function tint(hex, amt) {
     const key = hex + '|' + amt;
@@ -2974,10 +3019,25 @@ PB.Renderer = (function () {
           skin: l ? L.SKIN[l.skin] : COL.skin[i % COL.skin.length],
           hair: l ? L.HAIR[l.hair] : COL.hair[(i * 2 + 1) % COL.hair.length],
           long: l ? l.style === 'rabo' : i % 4 === 1,
+          shirt: l && l.shirt ? L.SHIRT[l.shirt] : null,
           paddle: COL.paddleFace[i % COL.paddleFace.length],
         };
       }
       return p._look;
+    },
+
+    // What the player wears: the team's kit, unless the look names a shirt,
+    // which only the human's does. The shorts stay the team's own.
+    kit(p, look) {
+      const team = COL.team[p.team];
+      if (!look.shirt || look.shirt === team.shirt) return team;
+      if (!look._kit) {
+        look._kit = {
+          shirt: look.shirt, shirt2: tintHex(look.shirt, -0.22), trim: tintHex(look.shirt, 0.5),
+          shorts: team.shorts, shorts2: team.shorts2,
+        };
+      }
+      return look._kit;
     },
 
     // ── the drawn limb ─────────────────────────────────────────────────────
@@ -3060,7 +3120,7 @@ PB.Renderer = (function () {
 
     draw(ctx, cam, p, base, s, isMe) {
       const look = this.look(p);
-      const kit = COL.team[p.team];
+      const kit = this.kit(p, look);
       const blink = this.blink(p);
       const skin = look.skin;
       const facing = cam.side === p.team ? 1 : -1;
@@ -5509,6 +5569,7 @@ PB.Tutorial = (function () {
     }
     // the player's look, key by key, with the default for anything unknown
     c.look = PB.Looks.normalize(raw.look);
+    c.look.shirt = c.look.shirt || PB.Looks.DEFAULT_SHIRT;
     return c;
   }
   function save() { store.set('pb.cfg', JSON.stringify(cfg)); }
@@ -5554,13 +5615,14 @@ PB.Tutorial = (function () {
   // figure does not wear.
   const Looks = PB.Looks;
   document.querySelectorAll('.looks').forEach(grp => {
-    const table = grp.dataset.look === 'hair' ? Looks.HAIR : grp.dataset.look === 'skin' ? Looks.SKIN : null;
+    const table = { hair: Looks.HAIR, skin: Looks.SKIN, shirt: Looks.SHIRT }[grp.dataset.look] || null;
     if (table) grp.querySelectorAll('.opt i').forEach(i => { i.style.background = table[i.parentNode.dataset.val]; });
     grp.addEventListener('click', e => {
       const b = e.target.closest('.opt');
       if (!b) return;
       cfg.look[grp.dataset.look] = b.dataset.val;
       cfg.look = Looks.normalize(cfg.look);
+      cfg.look.shirt = cfg.look.shirt || Looks.DEFAULT_SHIRT;
       syncLooks();
       save();
       buzz(8);
@@ -5575,22 +5637,31 @@ PB.Tutorial = (function () {
     // a swatch carries no word, so the label names the pick
     $('lbl-haircolor').textContent = I18n.t('ui.haircolor') + ' · ' + I18n.t('ui.hair.' + cfg.look.hair);
     $('lbl-skin').textContent = I18n.t('ui.skin') + ' · ' + I18n.t('ui.skin.' + cfg.look.skin);
+    $('lbl-shirt').textContent = I18n.t('ui.shirt') + ' · ' + I18n.t('ui.shirt.' + cfg.look.shirt);
   }
 
   // The figure beside the choices is drawn by the game's own rig, facing the
-  // camera in the yellow kit, so what is chosen here is exactly what plays.
+  // camera in the chosen shirt, so what is chosen here is exactly what plays.
   // It redraws every frame while the screen is up, which keeps the blink.
+  //
+  // The canvas is measured by its box, never by itself: it sits out of the
+  // flow (absolute inside the box), so changing its pixel size can never
+  // change the layout. Measured on itself, in Safari, a canvas whose height
+  // was a percentage of an auto-height box grew by the pixel ratio every
+  // frame, and the whole screen zoomed away.
   const preview = $('player-preview');
+  const previewBox = preview.parentNode;
   const model = { id: 0, team: 0, ctrl: 'cpu', crouch: 0.12, runPhase: 0, speedN: 0, prep: 0, swingT: 0 };
   function drawPreview() {
     if (!$('scr-player').classList.contains('on')) return;
     requestAnimationFrame(drawPreview);
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = preview.clientWidth, h = preview.clientHeight;
+    const w = previewBox.clientWidth, h = previewBox.clientHeight;
     if (!w || !h) return;
-    if (preview.width !== Math.round(w * dpr) || preview.height !== Math.round(h * dpr)) {
-      preview.width = Math.round(w * dpr);
-      preview.height = Math.round(h * dpr);
+    const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+    if (preview.width !== pw || preview.height !== ph) {
+      preview.width = pw;
+      preview.height = ph;
     }
     const ctx = preview.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
