@@ -20,21 +20,22 @@ PB.Looks = (function () {
   // None of these is close to that pink.
   const SHIRT = { amarelo: '#ffd24a', azul: '#3b9cff', verde: '#3ddc84', branco: '#f2f5f8' };
   const SHIRT_ORDER = ['amarelo', 'azul', 'verde', 'branco'];
-  // The lower garment, a skirt with long hair and shorts otherwise, in one of
-  // these; navy is the team's own shorts colour.
+  // The lower garment, a skirt or shorts, chosen on its own, in one of these
+  // colours; navy is the team's own shorts colour.
+  const GARMENT = ['saia', 'short'];
   const BOTTOM = { marinho: '#1b2634', branco: '#f2f5f8', azul: '#2f6fd6', vermelho: '#c8323a' };
   const BOTTOM_ORDER = ['marinho', 'branco', 'azul', 'vermelho'];
-  const DEFAULT = { skin: 'dourado', hair: 'castanho', style: 'curto' };
+  const DEFAULT = { skin: 'dourado', hair: 'castanho', style: 'curto', garment: 'short' };
   const DEFAULT_SHIRT = 'amarelo';
   const DEFAULT_BOTTOM = 'marinho';
 
   // The cast: the partner is a woman with a dark skin tone; the rivals are a
   // light-skinned man and a dark-skinned woman.
   const CAST = {
-    mate: { skin: 'escuro', hair: 'preto', style: 'rabo' },
+    mate: { skin: 'escuro', hair: 'preto', style: 'rabo', garment: 'saia' },
     rivals: [
-      { skin: 'claro', hair: 'loiro', style: 'curto' },
-      { skin: 'escuro', hair: 'castanho', style: 'rabo' },
+      { skin: 'claro', hair: 'loiro', style: 'curto', garment: 'short' },
+      { skin: 'escuro', hair: 'castanho', style: 'rabo', garment: 'saia' },
     ],
   };
 
@@ -43,15 +44,19 @@ PB.Looks = (function () {
   // on offer is no shirt at all (null), which means the team's own kit.
   function normalize(raw) {
     const r = raw && typeof raw === 'object' ? raw : {};
+    const style = STYLE.indexOf(r.style) >= 0 ? r.style : DEFAULT.style;
     return {
       skin: SKIN[r.skin] ? r.skin : DEFAULT.skin,
       hair: HAIR[r.hair] ? r.hair : DEFAULT.hair,
-      style: STYLE.indexOf(r.style) >= 0 ? r.style : DEFAULT.style,
+      style,
+      // a look saved before the garment was a choice of its own: long hair
+      // wore the skirt, short hair the shorts
+      garment: GARMENT.indexOf(r.garment) >= 0 ? r.garment : (style === 'rabo' ? 'saia' : 'short'),
       shirt: SHIRT[r.shirt] ? r.shirt : null,
       bottom: BOTTOM[r.bottom] ? r.bottom : null,
     };
   }
 
-  return { SKIN, SKIN_ORDER, HAIR, HAIR_ORDER, STYLE, SHIRT, SHIRT_ORDER, BOTTOM, BOTTOM_ORDER,
+  return { SKIN, SKIN_ORDER, HAIR, HAIR_ORDER, STYLE, GARMENT, SHIRT, SHIRT_ORDER, BOTTOM, BOTTOM_ORDER,
            DEFAULT, DEFAULT_SHIRT, DEFAULT_BOTTOM, CAST, normalize };
 })();

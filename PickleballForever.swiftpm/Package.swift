@@ -16,7 +16,7 @@ let package = Package(
             targets: ["PickleballForever"],
             bundleIdentifier: "br.com.3emp.pickleballforever",
             displayVersion: "1.0",
-            bundleVersion: "55",
+            bundleVersion: "56",
             appIcon: .asset("AppIcon"),
             accentColor: .presetColor(.green),
             supportedDeviceFamilies: [.phone, .pad],

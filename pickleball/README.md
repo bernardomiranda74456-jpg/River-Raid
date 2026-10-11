@@ -33,9 +33,8 @@ golpeia, faltas assistidas). Partidas de 5 ou 11 pontos, melhor de 1 ou de 3
 sets, sempre com 2 de vantagem. Na tela seguinte você monta o seu jogador:
 cabelo curto ou comprido com rabo de cavalo, cor do cabelo (loiro, castanho,
 preto), tom de pele (claro, dourado, moreno, escuro), cor da camisa (amarela,
-azul, verde, branca) e cor da saia ou do short (marinho, branco, azul,
-vermelho), com o boneco desenhado ao vivo pelo próprio jogo. Cabelo comprido
-veste saia; cabelo curto veste short. A parceira é uma mulher de pele escura; a dupla
+azul, verde, branca), saia ou short, e a cor dela ou dele (marinho, branco,
+azul, vermelho), com o boneco desenhado ao vivo pelo próprio jogo. A parceira é uma mulher de pele escura; a dupla
 adversária, um homem de pele clara e uma mulher de pele escura.
 
 ## Controles

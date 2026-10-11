@@ -5,7 +5,7 @@ Cada versão implementada vira um arquivo único jogável com o número no nome,
 num lugar só, a constante `VERSION` em `build-single.js`: mudar ela renomeia o
 arquivo e carimba a tela. Cada versão também ganha uma tag no git.
 
-## App para iPhone (o jogo continua na v55)
+## App para iPhone (o jogo continua na v56)
 
 `PickleballForever.swiftpm` embala a página do jogo num app nativo: uma
 `WKWebView` em tela cheia, som liberado sem toque, sem rolagem nem zoom, tela
@@ -13,6 +13,18 @@ sempre acesa, ícone feito da logo. `build-single.js` passa a gravar a página
 também em `Sources/Resources/index.html`, então o app é sempre a build testada.
 O porte antigo em SpriteKit (`Pickleball.swiftpm`), parado desde o começo e
 nunca compilado, saiu. Como compilar e publicar: `COMO-PUBLICAR-NO-IPHONE.md`.
+
+## v56
+
+Saia ou short vira escolha própria, antes da cor.
+
+- **Grupo novo "Saia ou short"** na tela do jogador, entre a camisa e a cor
+  da saia ou do short, que passa a vir logo depois dele. A escolha não
+  depende mais do cabelo: cabelo comprido pode vestir short e cabelo curto
+  pode vestir saia. Uma escolha guardada antes desta versão, sem esse campo,
+  continua lendo como antes (comprido de saia, curto de short).
+- O elenco diz o que veste: a parceira e a rival de saia, o rival de short.
+- App do iPhone: a mesma página, `bundleVersion` 56.
 
 ## v55
 

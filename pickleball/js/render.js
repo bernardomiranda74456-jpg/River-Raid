@@ -254,6 +254,7 @@ PB.Renderer = (function () {
           skin: l ? L.SKIN[l.skin] : COL.skin[i % COL.skin.length],
           hair: l ? L.HAIR[l.hair] : COL.hair[(i * 2 + 1) % COL.hair.length],
           long: l ? l.style === 'rabo' : i % 4 === 1,
+          skirt: l ? l.garment === 'saia' : i % 4 === 1,
           shirt: l && l.shirt ? L.SHIRT[l.shirt] : null,
           bottom: l && l.bottom ? L.BOTTOM[l.bottom] : null,
           paddle: COL.paddleFace[i % COL.paddleFace.length],
@@ -544,7 +545,7 @@ PB.Renderer = (function () {
       }
 
       // The lower garment, over the top of the thighs and under the shirt: a
-      // skirt with long hair, shorts otherwise, in the kit's shorts colour.
+      // skirt or shorts, as the look says, in the kit's shorts colour.
       // Both hang from a waistband a little above the hip joint; the shorts
       // stop mid-thigh with a notch between the legs, the skirt flares to a
       // hem that swings a touch below its corners, with two pleat lines.
@@ -552,7 +553,7 @@ PB.Renderer = (function () {
         const hx = (hipL.x + hipR.x) / 2, hipHalf = (hipR.x - hipL.x) / 2;
         const waistY = hipY + 0.28, waistHalf = hipHalf + 0.14;
         const g = new Path2D();
-        if (look.long) {
+        if (look.skirt) {
           const hemY = hipY - 0.62, hemHalf = hipHalf + 0.56;
           g.moveTo(X(hx - waistHalf), Y(waistY));
           g.lineTo(X(hx + waistHalf), Y(waistY));
@@ -578,7 +579,7 @@ PB.Renderer = (function () {
         sg.addColorStop(1, tint(kit.shorts, -0.22));
         ctx.fillStyle = sg;
         ctx.fill(g);
-        if (look.long) {
+        if (look.skirt) {
           ctx.strokeStyle = tint(kit.shorts, -0.30);
           ctx.lineWidth = Math.max(1, P.s * 0.035);
           ctx.beginPath();

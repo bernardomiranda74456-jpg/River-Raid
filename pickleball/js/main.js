@@ -108,8 +108,8 @@
     $('lbl-haircolor').textContent = I18n.t('ui.haircolor') + ' · ' + I18n.t('ui.hair.' + cfg.look.hair);
     $('lbl-skin').textContent = I18n.t('ui.skin') + ' · ' + I18n.t('ui.skin.' + cfg.look.skin);
     $('lbl-shirt').textContent = I18n.t('ui.shirt') + ' · ' + I18n.t('ui.shirt.' + cfg.look.shirt);
-    // the garment follows the hair: long hair wears a skirt, short hair shorts
-    const garment = cfg.look.style === 'rabo' ? 'ui.bottomcolor.skirt' : 'ui.bottomcolor.shorts';
+    // the colour label names the garment that was chosen
+    const garment = cfg.look.garment === 'saia' ? 'ui.bottomcolor.skirt' : 'ui.bottomcolor.shorts';
     $('lbl-bottom').textContent = I18n.t(garment) + ' · ' + I18n.t('ui.bottom.' + cfg.look.bottom);
   }
 
