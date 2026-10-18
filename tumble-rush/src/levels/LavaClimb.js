@@ -80,7 +80,7 @@ export class LavaClimb extends LevelBase {
     crate(-44, 0, -29.5, 1.4, 0.3, M.wood); crate(-42.6, 0, -29.8, 1.1, 0.9, M.wood); crate(-43.5, 1.4, -29.6, 1.0, 0.5, this.paintOrange);
     crate(-41, 0, -14.2, 1.3, 0.2, M.wood); crate(-39.6, 0, -13.9, 1.3, 1.1, this.paintBlue);
     for (const [x, z] of [[-46, -27], [-46, -25.4], [-46.4, -18.6], [-45.5, -17]]) { this.cylinder(0.55, 1.3, [x, 0.65, z], [0, 0, 0], this.paintYellow, { segments: 16 }); this.cylinder(0.57, 0.08, [x, 1.0, z], [0, 0, 0], M.darkMetal, { noCollider: true, segments: 16 }); this.cylinder(0.57, 0.08, [x, 0.3, z], [0, 0, 0], M.darkMetal, { noCollider: true, segments: 16 }); }
-    const banner = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.2, 12), new THREE.MeshPhysicalMaterial({ color: 0xffffff, emissive: 0xff6b35, emissiveIntensity: 1.1, roughness: 0.5 })); banner.position.set(-19.4, 4.4, -22); this.deco(banner);
+    const banner = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.2, 12), new THREE.MeshPhysicalMaterial({ color: 0x5a1a08, emissive: 0xff6b35, emissiveIntensity: 0.45, roughness: 0.5 })); banner.position.set(-19.4, 4.4, -22); this.deco(banner);
     for (const [x, z] of [[-46, -31.5], [-46, -12.5], [-33, -31.5], [-33, -12.5]]) { this.cylinder(0.12, 4, [x, 2, z], [0, 0, 0], M.darkMetal, { noCollider: true, segments: 8 }); const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), new THREE.MeshPhysicalMaterial({ color: 0xffe0a0, emissive: 0xffb050, emissiveIntensity: 2.5, roughness: 0.3 })); lamp.position.set(x, 4.1, z); this.deco(lamp); }
     // pillars under plaza
     for (const [x, z] of [[-44, -30], [-44, -14], [-22, -30], [-22, -14]]) this.cylinder(0.8, 60, [x, -30, z], [0, 0, 0], M.darkMetal, { noCollider: true, segments: 10 });

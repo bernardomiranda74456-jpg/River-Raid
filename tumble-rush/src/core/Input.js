@@ -10,7 +10,7 @@ export class Input {
     this.look = { x: 0, y: 0 };      // accumulated mouse delta since last read
     this.jump = false; this.jumpPressed = false;
     this.dive = false; this.divePressed = false;
-    this.pausePressed = false;
+    this.pausePressed = false; this.camPressed = false;
     this.anyPressed = false;
     this.pointerLocked = false;
     this.touch = { active: false, x: 0, y: 0, jump: false, dive: false, lookId: -1, lastX: 0, lastY: 0 };
@@ -26,6 +26,7 @@ export class Input {
       if (e.code === 'Space') { this.jumpPressed = true; e.preventDefault(); }
       if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyE') this.divePressed = true;
       if (e.code === 'Escape') this.pausePressed = true;
+      if (e.code === 'KeyV' || e.code === 'KeyC') this.camPressed = true;
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
@@ -91,6 +92,7 @@ export class Input {
       if (b(0)) { jump = true; if (!prev[0]) this.jumpPressed = true; }
       if (b(2) || b(1)) { dive = true; if (!prev[2] && !prev[1]) this.divePressed = true; }
       if (b(9) && !prev[9]) this.pausePressed = true;
+      if (b(3) && !prev[3]) this.camPressed = true;
       if (b(0) || b(9)) this.anyPressed = true;
       this._prevButtons = pad.buttons.map((bt) => bt.pressed);
     }
@@ -108,9 +110,9 @@ export class Input {
     this.jump = jump; this.dive = dive;
     const out = {
       move: this.move, jump, dive, jumpPressed: this.jumpPressed, divePressed: this.divePressed,
-      pausePressed: this.pausePressed, lookX: this.look.x * this.sensitivity, lookY: this.look.y * this.sensitivity, anyPressed: this.anyPressed,
+      pausePressed: this.pausePressed, camPressed: this.camPressed, lookX: this.look.x * this.sensitivity, lookY: this.look.y * this.sensitivity, anyPressed: this.anyPressed,
     };
-    this.jumpPressed = false; this.divePressed = false; this.pausePressed = false; this.anyPressed = false;
+    this.jumpPressed = false; this.divePressed = false; this.pausePressed = false; this.camPressed = false; this.anyPressed = false;
     this.look.x = 0; this.look.y = 0;
     return out;
   }

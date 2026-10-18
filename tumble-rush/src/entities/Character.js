@@ -129,7 +129,8 @@ export class Character {
     this.lastVy = this.vel.y;
 
     // facing
-    if (c.mag > 0.05 && control > 0 && this.state !== STATE.DIVE) this.targetYaw = Math.atan2(c.x, c.z);
+    if (c.faceYaw != null && control > 0 && this.state !== STATE.DIVE) this.targetYaw = c.faceYaw; // steered heading (player camera modes)
+    else if (c.mag > 0.05 && control > 0 && this.state !== STATE.DIVE) this.targetYaw = Math.atan2(c.x, c.z);
     let dy = this.targetYaw - this.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
     this.yaw += dy * Math.min(1, dt * 14);
 
@@ -465,6 +466,7 @@ export class CharacterSystem {
       const dist = ch.renderPos.distanceTo(cameraPos);
       ch.lod = dist > 60 ? 2 : dist > 30 ? 1 : 0;
       const pose = this.computePose(ch, alpha);
+      (ch.eyePos || (ch.eyePos = new THREE.Vector3())).set(0, DIM.eyeY - DIM.headY + 0.04, 0).applyQuaternion(pose.head.q).add(pose.head.p);
       B.setMatrixAt(i, _m.compose(pose.body.p, pose.body.q, pose.body.s));
       H.setMatrixAt(i, _m.compose(pose.head.p, pose.head.q, pose.head.s));
       A.setMatrixAt(i * 2, _m.compose(pose.armL.p, pose.armL.q, pose.armL.s)); A.setMatrixAt(i * 2 + 1, _m.compose(pose.armR.p, pose.armR.q, pose.armR.s));
@@ -498,6 +500,8 @@ export class CharacterSystem {
         else this.acc[k].setMatrixAt(i, _m.makeScale(0, 0, 0));
       }
     }
+    // first person: hide the player's own head, face and hat so they don't block the view
+    for (const ch of this.chars) if (ch.hideHead && ch.visible) { const i = ch.index; _m.makeScale(0, 0, 0); H.setMatrixAt(i, _m); Mo.setMatrixAt(i, _m); E.setMatrixAt(i * 2, _m); E.setMatrixAt(i * 2 + 1, _m); A.setMatrixAt(i * 2, _m); A.setMatrixAt(i * 2 + 1, _m); for (const k in this.acc) this.acc[k].setMatrixAt(i, _m); }
     for (const im of this.allMeshes()) im.instanceMatrix.needsUpdate = true;
   }
 

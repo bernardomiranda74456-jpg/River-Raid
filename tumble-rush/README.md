@@ -32,11 +32,21 @@ node tools/build-single.mjs   # escreve ../wobble-rush.html
 
 | Ação | Teclado / mouse | Gamepad | Celular |
 | --- | --- | --- | --- |
-| Mover | WASD / setas | Analógico esquerdo | Joystick virtual |
+| Andar | W / S ou ↑ / ↓ (frente e trás) | Analógico esquerdo para cima/baixo | Joystick para cima/baixo |
+| Virar | A / D ou ← / → · mouse | Analógico esquerdo para os lados | Joystick para os lados · arrastar na metade direita |
 | Pular | Espaço | A | Botão PULAR |
 | Mergulho | Shift (ou E) | X / B | Botão MERGULHO |
-| Câmera | Mouse (clique para travar o cursor) | Analógico direito | Arrastar na metade direita da tela |
+| Olhar para cima/baixo | Mouse (clique para travar o cursor) | Analógico direito | Arrastar na metade direita da tela |
+| Trocar câmera | V | Y | Botão 👁 |
 | Pausar | Esc | Start | Botão II |
+
+### Câmeras
+
+- **Segue boneco** (padrão): terceira pessoa, sempre atrás do boneco. Quando ele vira, a câmera vira junto e a tela mostra o que está à frente dele.
+- **1ª pessoa**: a câmera fica nos olhos do boneco; cabeça e braços do próprio boneco ficam ocultos. Durante o ragdoll a câmera volta temporariamente para trás do boneco.
+- **Livre**: o comportamento clássico, em que a câmera só gira com o mouse e o movimento é relativo à câmera.
+
+O modo fica salvo nas configurações e pode ser trocado durante a partida com V.
 
 ## Estrutura da partida
 

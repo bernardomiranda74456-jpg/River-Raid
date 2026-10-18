@@ -104,6 +104,7 @@ h2 { font-size: 28px; letter-spacing: 1px; text-transform: uppercase; margin-bot
 .touch-buttons { position: absolute; right: 30px; bottom: 36px; display: flex; gap: 16px; align-items: flex-end; pointer-events: auto; }
 .touch-buttons button { width: 86px; height: 86px; border-radius: 50%; border: 2px solid rgba(255,255,255,.3); color: #fff; font-weight: 900; font-size: 13px; background: rgba(255,107,53,.5); }
 #touch-dive { width: 70px; height: 70px; background: rgba(63,167,255,.5); }
+#touch-cam { position: absolute; top: 16px; right: 70px; width: 44px; height: 44px; border-radius: 12px; pointer-events: auto; border: 1px solid rgba(255,255,255,.3); color: #fff; background: rgba(8,12,28,.6); font-size: 20px; }
 #touch-pause { position: absolute; top: 16px; right: 16px; width: 44px; height: 44px; border-radius: 12px; pointer-events: auto; border: 1px solid rgba(255,255,255,.3); color: #fff; background: rgba(8,12,28,.6); font-weight: 900; }
 @media (max-height: 520px) {
   .hud-top { top: 10px; gap: 8px; }

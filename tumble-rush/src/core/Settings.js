@@ -18,6 +18,7 @@ export class Settings {
     this.sensitivity = 1.0;
     this.volume = 0.7;
     this.showFps = false;
+    this.camMode = 'follow'; // 'follow' | 'first' | 'free'
     this.skin = 0;
     this.listeners = new Set();
     this.load();
@@ -40,7 +41,7 @@ export class Settings {
   emit() { for (const fn of this.listeners) fn(this); }
   save() {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ preset: this.preset, values: this.values, sensitivity: this.sensitivity, volume: this.volume, showFps: this.showFps, skin: this.skin }));
+      localStorage.setItem(KEY, JSON.stringify({ preset: this.preset, values: this.values, sensitivity: this.sensitivity, volume: this.volume, showFps: this.showFps, skin: this.skin, camMode: this.camMode }));
     } catch (e) { /* storage may be unavailable */ }
   }
   load() {
@@ -53,6 +54,7 @@ export class Settings {
       if (typeof d.sensitivity === 'number') this.sensitivity = d.sensitivity;
       if (typeof d.volume === 'number') this.volume = d.volume;
       if (typeof d.showFps === 'boolean') this.showFps = d.showFps;
+      if (['follow', 'first', 'free'].includes(d.camMode)) this.camMode = d.camMode;
       if (typeof d.skin === 'number') this.skin = d.skin;
       return true;
     } catch (e) { return false; }

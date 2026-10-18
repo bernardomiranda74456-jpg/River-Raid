@@ -75,6 +75,10 @@
           <button data-v="off">Off</button><button data-v="1024">1K</button><button data-v="2048">2K</button><button data-v="4096">4K</button>
         </div>
         <label>Escala de renderização</label><input type="range" id="opt-scale" min="0.5" max="1.5" step="0.05">
+        <label>Câmera</label>
+        <div class="seg" id="cam-seg">
+          <button data-v="follow">Segue boneco</button><button data-v="first">1ª pessoa</button><button data-v="free">Livre</button>
+        </div>
         <label>Sensibilidade do mouse</label><input type="range" id="opt-sens" min="0.2" max="2" step="0.05">
         <label>Volume</label><input type="range" id="opt-volume" min="0" max="1" step="0.05">
         <label>Mostrar FPS</label><input type="checkbox" id="opt-fps">
@@ -90,12 +94,14 @@
     <div class="menu-panel">
       <h2>Controles</h2>
       <table class="controls-table">
-        <tr><td>Mover</td><td>WASD / Setas / Analógico esquerdo</td></tr>
+        <tr><td>Andar</td><td>W / S ou ↑ / ↓ (frente e trás)</td></tr>
+        <tr><td>Virar</td><td>A / D ou ← / → · mouse · analógico esquerdo</td></tr>
         <tr><td>Pular</td><td>Espaço / A (gamepad)</td></tr>
         <tr><td>Mergulho</td><td>Shift / X (gamepad)</td></tr>
-        <tr><td>Câmera</td><td>Mouse (clique para travar) / Analógico direito</td></tr>
+        <tr><td>Olhar</td><td>Mouse (clique para travar) / Analógico direito</td></tr>
+        <tr><td>Trocar câmera</td><td>V · Y (gamepad) · botão 👁 (celular): segue boneco / 1ª pessoa / livre</td></tr>
         <tr><td>Pausar</td><td>Esc / Start</td></tr>
-        <tr><td>Celular</td><td>Joystick virtual + botões na tela</td></tr>
+        <tr><td>Celular</td><td>Joystick: para cima anda, para os lados vira · arrastar à direita olha</td></tr>
       </table>
       <div class="menu-buttons row">
         <button id="btn-controls-back">VOLTAR</button>
@@ -142,7 +148,7 @@
     <div id="hud-center"></div>
     <div id="hud-countdown"></div>
     <div id="hud-fps"></div>
-    <div id="hud-hint">Clique para controlar a câmera</div>
+    <div id="hud-hint">Clique para usar o mouse · V troca a câmera</div>
   </div>
 
   <!-- Touch controls -->
@@ -153,6 +159,7 @@
       <button id="touch-jump">PULAR</button>
     </div>
     <button id="touch-pause">II</button>
+    <button id="touch-cam">👁</button>
   </div>
 
   <script type="module" src="./src/main.js"></script>

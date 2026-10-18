@@ -40,6 +40,7 @@ export class Game {
     this.state = GS.MENU; this.round = 0; this.roundTime = 0; this.countdown = 0; this.qualified = []; this.roster = []; this.paused = false;
     this.acc = 0; this.last = performance.now(); this.fps = 0; this._fpsAcc = 0; this._fpsN = 0; this.running = false; this.frame = 0;
     this.winner = null; this.resultsPending = 0; this.endTimer = 0;
+    this.heading = 0; // player's steered facing direction (follow / first-person camera modes)
     settings.onChange(() => this.applySettings());
     window.addEventListener('resize', () => this.renderer.resize());
     this.renderer.resize();
@@ -115,7 +116,7 @@ export class Game {
       if (!r.isPlayer) { const b = new Bot(ch, this.level, r.seed * 31 + this.round); this.bots.push(b); ch.bot = b; }
       else this.player = ch;
     });
-    this.tpc.reset(this.player.pos, this.level.spawnYaw ?? 0);
+    this.tpc.reset(this.player.pos, this.level.spawnYaw ?? 0); this.heading = this.level.spawnYaw ?? 0;
     if (this.level.introCam) this.tpc.startIntro(this.level.introCam.from, this.level.introCam.look, 5.5);
     this.roundTime = 0; this.countdown = 4.0; this.state = GS.LOBBY; this.lobbyTime = 2.5; this.endTimer = 0;
     this.ui.showHud(true); this.ui.setRound(this.round + 1, def.name, this.level.kind === 'survival' ? null : def.to, alive.length);
@@ -189,6 +190,7 @@ export class Game {
     this._fpsAcc += dt; this._fpsN++; if (this._fpsAcc >= 0.5) { this.fps = this._fpsN / this._fpsAcc; this._fpsAcc = 0; this._fpsN = 0; this.ui.setFps(this.fps, this.renderer.r.info.render.calls); }
     const inp = this.input.poll();
     if (inp.pausePressed && this.state !== GS.MENU && this.state !== GS.RESULTS) this.pause(!this.paused);
+    if (inp.camPressed && this.state !== GS.MENU && this.state !== GS.RESULTS && !this.paused) this.cycleCamera();
     if (this.state === GS.MENU) { if (this.level && this.level.kind === 'menu') this._menuTick(dt); return; }
     if (this.state === GS.RESULTS || !this.level) { if (this.level && !this.skipRender) this.renderer.render(); this.frame++; return; }
     if (this.paused) { this.renderer.render(); return; }
@@ -207,8 +209,8 @@ export class Game {
       else { const active = this.chars.chars.filter((c) => !c.eliminated && !c.finished); if (active.length === 0) this.endRound(); }
     } else if (this.state === GS.ROUND_END) { this.endTimer += dt; if (this.endTimer > 4.0) { this.advance(); return; } }
 
-    // ----- player control (camera-relative) -----
-    this._applyPlayerInput(inp);
+    // ----- player control -----
+    this._applyPlayerInput(inp, dt);
     // ----- fixed-step simulation -----
     this.acc += dt; let steps = 0;
     while (this.acc >= FIXED_DT && steps < 4) {
@@ -217,14 +219,21 @@ export class Game {
     if (steps === 4) this.acc = 0;
     const alpha = this.acc / FIXED_DT;
     // ----- per-frame visuals -----
+    let p = this.player; let spectating = false;
+    if ((p.eliminated || p.finished) && this.state === GS.RACING) { const s = this._spectateTarget(); if (s) { if (s !== this._spec) { this._spec = s; this.ui.message(`Espectando ${s.name}`, '', 1.5); } p = s; spectating = true; } }
+    else this._spec = null;
+    // camera mode: follow (behind the heading), first person (eyes), free (mouse orbit)
+    const mode = this.settings.camMode;
+    const fpState = p.state === STATE.GROUND || p.state === STATE.AIR || p.state === STATE.DIVE;
+    const firstPerson = mode === 'first' && !spectating && fpState && this.tpc.intro <= 0;
+    this.player.hideHead = firstPerson;
     this.chars.advance(dt);
     this.chars.render(alpha, this.camera.position);
-    let p = this.player;
-    if ((p.eliminated || p.finished) && this.state === GS.RACING) { const s = this._spectateTarget(); if (s) { if (s !== this._spec) { this._spec = s; this.ui.message(`Espectando ${s.name}`, '', 1.5); } p = s; } }
-    else this._spec = null;
+    let followYaw = null;
+    if (mode !== 'free') followYaw = spectating || this.__botActive || this.state === GS.ROUND_END ? p.yaw : this.heading;
     const pv = p.vel;
     const speedFactor = THREE.MathUtils.clamp((Math.hypot(pv.x, pv.z) - 4) / 8, 0, 1) + (p.state === STATE.DIVE ? 0.4 : 0);
-    this.tpc.update(dt, p.renderPos, pv, inp.lookX, inp.lookY, speedFactor);
+    this.tpc.update(dt, p.renderPos, pv, inp.lookX, inp.lookY, speedFactor, { followYaw, eye: firstPerson ? p.eyePos : null });
     this.level.update(dt, this.clock.time, this.camera.position, p.renderPos);
     this.particles.update(dt);
     this._handleEvents();
@@ -241,13 +250,45 @@ export class Game {
     for (const c of this.chars.chars) { if (c.eliminated || c.finished || c === this.player) continue; const pr = this.level.kind === 'survival' ? -c.pos.distanceTo(this.player.pos) : c.progress; if (pr > bp) { bp = pr; best = c; } }
     return best;
   }
-  _applyPlayerInput(inp) {
+  /** Cycles the camera mode (V key / gamepad Y / touch button) and remembers the choice. */
+  cycleCamera() {
+    const order = ['follow', 'first', 'free']; const names = { follow: 'Câmera: segue o boneco', first: 'Câmera: 1ª pessoa', free: 'Câmera: livre (mouse)' };
+    const cur = this.settings.camMode; const next = order[(order.indexOf(cur) + 1) % order.length];
+    if (cur === 'free') this.heading = this.player ? this.player.yaw : this.heading; // keep looking the same way
+    this.settings.camMode = next; this.settings.save(); this.ui.syncCamMode(next); this.ui.message(names[next], '', 1.4);
+  }
+
+  /**
+   * Player control.
+   * follow / first person: the player steers a heading. W/S (stick up/down) move forward/back along it,
+   *   A/D (stick left/right) turn it, the mouse / touch-drag turns it too. The camera stays behind it,
+   *   so the screen always shows what is in front of the character.
+   * free: the old camera-relative control; the camera only turns with the mouse.
+   */
+  _applyPlayerInput(inp, dt) {
     const p = this.player; const c = p.ctrl;
-    if (this.__botActive) return; // automated test driver controls the player
-    if (this.state !== GS.RACING || this.player.finished) { c.x = c.z = 0; c.mag = 0; c.jump = c.dive = false; return; }
-    const yaw = this.tpc.yaw; // camera yaw: forward is the direction from camera to target
-    const fx = -Math.sin(yaw), fz = -Math.cos(yaw); const rx = Math.cos(yaw), rz = -Math.sin(yaw);
-    c.x = fx * inp.move.y + rx * inp.move.x; c.z = fz * inp.move.y + rz * inp.move.x; c.mag = Math.hypot(c.x, c.z);
+    if (this.__botActive) { c.faceYaw = null; return; } // automated test driver controls the player
+    const mode = this.settings.camMode;
+    const canMove = this.state === GS.RACING && !p.finished && !p.eliminated;
+    if (mode !== 'free') {
+      if (!p.finished && !p.eliminated) {
+        const turn = THREE.MathUtils.clamp(inp.move.x, -1, 1);
+        this.heading -= turn * 2.9 * dt + inp.lookX * 0.0022;
+        this.heading = Math.atan2(Math.sin(this.heading), Math.cos(this.heading));
+      }
+      const fwd = canMove ? inp.move.y : 0;
+      c.x = Math.sin(this.heading) * fwd; c.z = Math.cos(this.heading) * fwd; c.mag = Math.abs(fwd);
+      c.faceYaw = p.finished || p.eliminated ? null : this.heading;
+    } else {
+      c.faceYaw = null;
+      if (!canMove) { c.x = c.z = 0; c.mag = 0; }
+      else {
+        const yaw = this.tpc.yaw; // camera yaw: forward is the direction from camera to target
+        const fx = -Math.sin(yaw), fz = -Math.cos(yaw); const rx = Math.cos(yaw), rz = -Math.sin(yaw);
+        c.x = fx * inp.move.y + rx * inp.move.x; c.z = fz * inp.move.y + rz * inp.move.x; c.mag = Math.hypot(c.x, c.z);
+      }
+    }
+    if (!canMove) { c.jump = c.dive = false; return; }
     if (inp.jumpPressed) c.jump = true; if (inp.divePressed) c.dive = true;
   }
 
@@ -282,7 +323,7 @@ export class Game {
           case 'lava': P.lavaBurst(ch.renderPos); if (near) A.sizzle(); if (ch.isPlayer) { this.tpc.addShake(0.8); if (this.state === GS.RACING) { this.ui.message('ELIMINADO', 'bad', 3); A.eliminated(); } } break;
           case 'eliminated': if (ch.isPlayer && this.state === GS.RACING) { this.ui.message('ELIMINADO', 'bad', 3); A.eliminated(); } break;
           case 'finish': break;
-          case 'respawn': P.dust(ch.renderPos, 1); if (ch.isPlayer) { this.tpc.addShake(0.3); A.whoosh(); } break;
+          case 'respawn': P.dust(ch.renderPos, 1); if (ch.isPlayer) { this.tpc.addShake(0.3); A.whoosh(); this.heading = ch.yaw; } break;
           case 'getup': break;
           default: break;
         }

@@ -41,6 +41,7 @@ export class UI {
     $('btn-again').onclick = () => { this.show(null); this.game.startMatch(); };
     $('btn-results-menu').onclick = () => this.game.quitToMenu();
     document.querySelectorAll('#preset-seg button').forEach((b) => b.onclick = () => { this.settings.applyPreset(b.dataset.v); this._syncSettings(); });
+    document.querySelectorAll('#cam-seg button').forEach((b) => b.onclick = () => { this.settings.camMode = b.dataset.v; this.settings.save(); this.syncCamMode(b.dataset.v); });
     document.querySelectorAll('#shadow-seg button').forEach((b) => b.onclick = () => { this.settings.set('shadow', b.dataset.v === 'off' ? 'off' : Number(b.dataset.v)); this._syncSettings(); });
     for (const k of ['ao', 'bloom', 'smaa', 'grade', 'dof', 'mblur']) $('opt-' + k).onchange = (e) => { this.settings.set(k, e.target.checked); this._syncSettings(); };
     $('opt-scale').onchange = (e) => { this.settings.set('scale', Number(e.target.value)); };
@@ -54,6 +55,7 @@ export class UI {
     document.querySelectorAll('#preset-seg button').forEach((b) => b.classList.toggle('active', b.dataset.v === s.preset));
     document.querySelectorAll('#shadow-seg button').forEach((b) => b.classList.toggle('active', String(v.shadow) === b.dataset.v));
     for (const k of ['ao', 'bloom', 'smaa', 'grade', 'dof', 'mblur']) $('opt-' + k).checked = !!v[k];
+    this.syncCamMode(s.camMode);
     $('opt-scale').value = v.scale; $('opt-sens').value = s.sensitivity; $('opt-volume').value = s.volume; $('opt-fps').checked = s.showFps;
   }
 
@@ -67,6 +69,8 @@ export class UI {
       grid.appendChild(card);
     });
   }
+
+  syncCamMode(m) { document.querySelectorAll('#cam-seg button').forEach((b) => b.classList.toggle('active', b.dataset.v === m)); }
 
   // ---------- HUD ----------
   setRound(n, name, target, total) { $('hud-round').textContent = `RODADA ${n} · ${name.toUpperCase()}`; this._target = target; this._total = total; this.setQualified(0, target); }
@@ -172,5 +176,6 @@ class TouchControls {
     };
     btn($('touch-jump'), 'jump'); btn($('touch-dive'), 'dive');
     $('touch-pause').addEventListener('touchstart', (e) => { e.preventDefault(); if (ui.game) ui.game.pause(true); }, { passive: false });
+    $('touch-cam').addEventListener('touchstart', (e) => { e.preventDefault(); if (ui.game) ui.game.cycleCamera(); }, { passive: false });
   }
 }
