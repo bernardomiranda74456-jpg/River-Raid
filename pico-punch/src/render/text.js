@@ -23,7 +23,7 @@ export function fontTexture(ch) { if (!fontAtlas) buildFont(); const c = ch.toUp
 /** Linha de texto bitmap com pool de glifos. */
 export class BitmapLine extends Container {
   constructor(text = '', opts = {}) {
-    super(); this.glyphs = []; this.tint = opts.tint ?? 0xffffff; this.shadow = opts.shadow ?? false; this.spacing = opts.spacing ?? 8; this.scaleF = opts.scale ?? 1;
+    super(); this.glyphs = []; this.color = opts.tint ?? 0xffffff; this.shadow = opts.shadow ?? false; this.spacing = opts.spacing ?? 8; this.scaleF = opts.scale ?? 1;
     this.shadowGlyphs = []; this.align = opts.align || 'left'; this._text = null; this.setText(text);
   }
   setText(text) {
@@ -37,11 +37,11 @@ export class BitmapLine extends Container {
     for (let i = 0; i < this.glyphs.length; i++) {
       const g = this.glyphs[i]; const sh = this.shadowGlyphs[i];
       if (i < chars.length) {
-        g.visible = true; g.texture = fontTexture(chars[i]); g.tint = this.tint; g.x = x0 + i * this.spacing * this.scaleF; g.y = 0; g.scale.set(this.scaleF);
+        g.visible = true; g.texture = fontTexture(chars[i]); g.tint = this.color; g.x = x0 + i * this.spacing * this.scaleF; g.y = 0; g.scale.set(this.scaleF);
         if (sh) { sh.visible = true; sh.texture = g.texture; sh.x = g.x + this.scaleF; sh.y = this.scaleF; sh.scale.set(this.scaleF); }
       } else { g.visible = false; if (sh) sh.visible = false; }
     }
     this.textWidth = total;
   }
-  setTint(t) { this.tint = t; for (const g of this.glyphs) g.tint = t; }
+  setTint(t) { this.color = t; for (const g of this.glyphs) g.tint = t; }
 }

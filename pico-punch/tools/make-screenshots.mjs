@@ -14,18 +14,19 @@ async function shot(name, query, prep) {
 // util: anda com o herói por N ms de jogo usando o toque virtual
 const walk = (ms, extra = '') => `new Promise(res => { const g = window.__game; g.input.touch.right = true; setTimeout(() => { g.input.touch.right = false; ${extra} res(1); }, ${ms}); })`;
 for (const mode of ['retro', 'hd']) {
+  const F = mode === 'hd' ? 10 : 2; // HD em software GL é lento: acelera o tempo de jogo para as cenas de ação
   await shot(`title-${mode}`, `?mode=${mode}`);
-  await shot(`l1-monte-agulha-${mode}`, `?level=1&mode=${mode}`, walk(900));
-  await shot(`l3-lago-espelho-agua-${mode}`, `?level=3&mode=${mode}&fast=2`, walk(4200));
-  await shot(`l6-estrada-moto-${mode}`, `?level=6&mode=${mode}&fast=2`, walk(2500));
-  await shot(`l7-ceu-helicoptero-${mode}`, `?level=7&mode=${mode}&fast=2`, `new Promise(res => { const g = window.__game; g.input.touch.right = true; g.input.touch.jump = true; setTimeout(() => { g.input.touch.right = false; g.input.touch.jump = false; res(1); }, 1800); })`);
-  await shot(`l4-vila-loja-${mode}`, `?level=4&mode=${mode}`, `new Promise(res => { const g = window.__game; g.level.money = 320; g.input.touch.right = true; setTimeout(() => { g.input.touch.right = false; g.input.touch.up = true; setTimeout(() => { g.input.touch.up = false; res(1); }, 400); }, 1500); })`);
+  await shot(`l1-monte-agulha-${mode}`, `?level=1&mode=${mode}&fast=${F}`, walk(900));
+  await shot(`l3-lago-espelho-agua-${mode}`, `?level=3&mode=${mode}&fast=${F}`, walk(4200));
+  await shot(`l6-estrada-moto-${mode}`, `?level=6&mode=${mode}&fast=${F}`, walk(2500));
+  await shot(`l7-ceu-helicoptero-${mode}`, `?level=7&mode=${mode}&fast=${F}`, `new Promise(res => { const g = window.__game; g.input.touch.right = true; g.input.touch.jump = true; setTimeout(() => { g.input.touch.right = false; g.input.touch.jump = false; res(1); }, 1800); })`);
+  await shot(`l4-vila-loja-${mode}`, `?level=4&mode=${mode}&fast=${F}`, `new Promise(res => { const g = window.__game; g.level.money = 320; g.input.touch.right = true; const iv = setInterval(() => { const d = g.level.entities.find(e => e.type === 'shop'); if (d && g.level.hero.overlaps(d)) { clearInterval(iv); g.input.touch.right = false; g.input.touch.up = true; setTimeout(() => { g.input.touch.up = false; res(1); }, 600); } }, 100); setTimeout(() => res(1), 20000); })`);
   await shot(`l2-duelo-${mode}`, `?level=2&mode=${mode}&bot=1&fast=5`, `new Promise(res => { const g = window.__game; const iv = setInterval(() => { if (g.state === 'duel') { clearInterval(iv); g.bot = null; for (const k in g.input.touch) g.input.touch[k] = false; g.loop.timeScale = 1; setTimeout(res, 1400); } }, 200); setTimeout(() => res(1), 120000); })`);
   await shot(`l2-chefe-ra-rei-${mode}`, `?level=2&mode=${mode}&bot=1&fast=5&autoduel=1`, `new Promise(res => { const g = window.__game; const iv = setInterval(() => { if (g.level && g.level.state === 'boss') { clearInterval(iv); g.bot = null; for (const k in g.input.touch) g.input.touch[k] = false; g.loop.timeScale = 1; g.level.hero.invuln = 99; setTimeout(res, 1500); } }, 200); setTimeout(() => res(1), 150000); })`);
-  await shot(`l8-caverna-lava-${mode}`, `?level=8&mode=${mode}&fast=2`, walk(2000));
-  await shot(`l9-cidade-noite-${mode}`, `?level=9&mode=${mode}&fast=2`, walk(2000));
-  await shot(`l10-castelo-${mode}`, `?level=10&mode=${mode}&fast=2`, walk(1500));
-  await shot(`l5-ruinas-por-do-sol-${mode}`, `?level=5&mode=${mode}&fast=2`, walk(2000));
+  await shot(`l8-caverna-lava-${mode}`, `?level=8&mode=${mode}&fast=${F}`, walk(2000));
+  await shot(`l9-cidade-noite-${mode}`, `?level=9&mode=${mode}&fast=${F}`, walk(2000));
+  await shot(`l10-castelo-${mode}`, `?level=10&mode=${mode}&fast=${F}`, walk(1500));
+  await shot(`l5-ruinas-por-do-sol-${mode}`, `?level=5&mode=${mode}&fast=${F}`, walk(2000));
 }
 await shot('l1-retro-crt', '?level=1&mode=retro&crt=1', walk(900));
 await shot('l1-hd-crt', '?level=1&mode=hd&crt=1', walk(900));
