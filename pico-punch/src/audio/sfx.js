@@ -1,0 +1,53 @@
+// Efeitos sonoros no estilo PSG, definidos como sequências de frames a 60 Hz:
+// tom: [freqHz, att] por frame; ruído: [white, rate, att]. Tudo sintetizado.
+const semis = (base, s) => base * Math.pow(2, s / 12);
+const sweep = (f0, f1, n, a0 = 0, a1 = 8) => { const out = []; for (let i = 0; i < n; i++) { const k = i / Math.max(1, n - 1); out.push([f0 * Math.pow(f1 / f0, k), Math.round(a0 + (a1 - a0) * k)]); } return out; };
+const arp = (base, steps, frameEach, att = 1, decay = 0) => { const out = []; steps.forEach((s, i) => { for (let j = 0; j < frameEach; j++) out.push([semis(base, s), Math.min(15, att + i * decay)]); }); return out; };
+const noiseEnv = (white, rate, levels) => levels.map((l) => [white, rate, 15 - l]);
+
+export const SFX = {
+  jump: { tone: sweep(300, 900, 9, 2, 6) },
+  land: { noise: noiseEnv(true, 1, [7, 4, 1]) },
+  punch: { tone: sweep(220, 90, 5, 1, 9), noise: noiseEnv(true, 0, [8, 4, 0]) },
+  break: { noise: noiseEnv(true, 1, [14, 13, 11, 9, 7, 5, 3, 1]), tone: sweep(400, 120, 6, 2, 12) },
+  reveal: { tone: arp(523, [0, 4, 7, 12], 2, 3) },
+  clank: { tone: sweep(1800, 1200, 4, 3, 10), noise: noiseEnv(true, 0, [10, 5, 0]) },
+  money: { tone: [...arp(880, [0, 0], 1, 2), ...arp(1320, [0, 0, 0, 0], 1, 1, 1), ...sweep(1320, 1320, 6, 4, 14)] },
+  item: { tone: arp(660, [0, 4, 7, 12, 7, 12, 16, 19], 3, 2) },
+  itemPop: { tone: sweep(500, 1000, 5, 4, 8) },
+  oneUp: { tone: arp(523, [0, 4, 7, 12, 7, 12, 16, 12, 16, 19, 24], 3, 1) },
+  hit: { tone: sweep(600, 200, 6, 0, 8), noise: noiseEnv(true, 1, [10, 6, 2]) },
+  enemyDie: { tone: [...sweep(500, 1400, 4, 2, 4), ...sweep(1400, 200, 10, 4, 15)], noise: noiseEnv(true, 1, [8, 10, 6, 3, 0]) },
+  hop: { tone: sweep(200, 420, 5, 6, 12) },
+  death: { tone: [...arp(440, [0, -1, -2, -3, -4, -5, -6, -7, -8, -10, -12, -14, -17, -20], 3, 1)] },
+  hazard: { noise: noiseEnv(true, 1, [15, 14, 12, 10, 8, 6, 4, 2, 0]) },
+  splash: { noise: noiseEnv(true, 0, [12, 10, 8, 6, 4, 2, 0]), tone: sweep(900, 300, 6, 4, 14) },
+  swim: { noise: noiseEnv(true, 0, [6, 4, 2, 0]), tone: sweep(400, 700, 4, 6, 12) },
+  bubble: { tone: sweep(700, 1600, 5, 5, 12) },
+  checkpoint: { tone: arp(784, [0, 5, 9, 12], 4, 1) },
+  door: { noise: noiseEnv(true, 2, [9, 7, 5, 3, 1]) },
+  shop: { tone: arp(659, [0, 7, 12, 19], 3, 2) },
+  buy: { tone: [...arp(880, [0, 4], 3, 2), ...arp(1175, [0, 0, 0, 0, 0, 0], 1, 1, 2)] },
+  noMoney: { tone: arp(300, [0, -3, 0, -3], 4, 2) },
+  menu: { tone: sweep(1200, 1500, 3, 3, 9) },
+  confirm: { tone: arp(880, [0, 12], 3, 1) },
+  back: { tone: sweep(900, 500, 4, 3, 10) },
+  countdown: { tone: [...Array(6).fill([660, 2]), ...Array(6).fill([0, 15])] },
+  reveal3: { tone: [...Array(10).fill([1320, 1]), ...Array(4).fill([0, 15])] },
+  duelWin: { tone: arp(660, [0, 4, 7, 12, 12, 12], 3, 1) },
+  duelLose: { tone: arp(330, [0, -2, -4, -7, -7, -7], 4, 2) },
+  bossHit: { tone: sweep(300, 60, 10, 0, 10), noise: noiseEnv(true, 2, [14, 12, 10, 7, 4, 1]) },
+  bossRoar: { tone: [...sweep(120, 70, 20, 2, 2), ...sweep(70, 50, 10, 2, 12)], noise: noiseEnv(false, 3, [10, 10, 9, 9, 8, 8, 7, 6, 5, 3, 1]) },
+  zap: { tone: sweep(2000, 400, 8, 2, 10) },
+  shoot: { tone: sweep(1500, 700, 6, 2, 8) },
+  flap: { noise: noiseEnv(true, 0, [5, 7, 4, 2, 0]) },
+  ghost: { tone: [...sweep(300, 600, 12, 4, 3), ...sweep(600, 250, 16, 3, 12)] },
+  vehicleGet: { tone: arp(440, [0, 7, 12, 16, 19, 24], 3, 1) },
+  crash: { noise: noiseEnv(true, 1, [15, 14, 13, 11, 9, 7, 5, 3, 1]), tone: sweep(200, 50, 12, 2, 12) },
+  rev: { tone: sweep(80, 220, 10, 6, 3) },
+  eat: { noise: noiseEnv(false, 1, [8, 4, 8, 4, 0]) },
+  pause: { tone: arp(660, [0, 0, 12], 3, 2) },
+  tick: { tone: [[1760, 4], [1760, 8], [0, 15]] },
+  thud: { noise: noiseEnv(false, 2, [12, 9, 6, 3, 0]), tone: sweep(90, 50, 6, 2, 12) },
+  glide: { noise: noiseEnv(true, 0, [4, 4, 3, 3, 2, 2, 1, 1, 0]) },
+};

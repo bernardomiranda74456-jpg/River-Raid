@@ -1,0 +1,63 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>render</title>
+<script type="importmap">{ "imports": { "pixi.js": "../vendor/pixi.min.mjs" } }</script></head><body>
+<script type="module">
+import { Sequencer, PsgBackend, compileSong, loopSeconds } from '../src/audio/sequencer.js';
+import { PsgNode } from '../src/audio/psg.js';
+import { HDSynth } from '../src/audio/hdsynth.js';
+import { SONGS } from '../src/audio/music/index.js';
+import { SFX } from '../src/audio/sfx.js';
+import { freqToPeriod } from '../src/audio/psg.js';
+const q = new URLSearchParams(location.search);
+const name = q.get('song') || 'mountain'; const mode = q.get('mode') || 'retro'; const loops = +(q.get('loops') || 1); const sr = +(q.get('sr') || 22050);
+window.renderSfx = async () => { // todos os efeitos em sequência (0,6 s cada) no PSG
+  const names = Object.keys(SFX); const gap = 0.6; const ctx = new OfflineAudioContext(2, Math.ceil((names.length * gap + 1) * sr), sr);
+  const master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination);
+  const psg = await PsgNode.create(ctx, master, new URL('../src/audio/psg-worklet.js', location.href).href); psg.setGain(0.3);
+  const ev = []; const dt = 1 / 60; names.forEach((nm, i) => { const def = SFX[nm]; const t0 = 0.05 + i * gap; let ch = i % 2;
+    if (def.tone) { def.tone.forEach((fr, k) => { const t = t0 + k * dt; if (fr[0] > 0) ev.push({ type: 'tone', ch, n: freqToPeriod(fr[0]), t }); ev.push({ type: 'vol', ch, att: fr[0] > 0 ? fr[1] : 15, t }); }); ev.push({ type: 'vol', ch, att: 15, t: t0 + def.tone.length * dt }); }
+    if (def.noise) { def.noise.forEach((fr, k) => { const t = t0 + k * dt; ev.push({ type: 'noise', white: fr[0], rate: fr[1], t }); ev.push({ type: 'vol', ch: 3, att: fr[2], t }); }); ev.push({ type: 'vol', ch: 3, att: 15, t: t0 + def.noise.length * dt }); } });
+  psg.send(ev); await psg.sync(); const buf = await ctx.startRendering(); const L = buf.getChannelData(0);
+  const silent = names.filter((nm, i) => { let m = 0; const a = Math.floor((0.05 + i * gap) * sr), b = Math.floor((0.05 + i * gap + 0.5) * sr); for (let k = a; k < b; k++) m = Math.max(m, Math.abs(L[k])); return m < 0.01; });
+  const n = L.length; const out = new DataView(new ArrayBuffer(44 + n * 2)); const ws = (o, s2) => { for (let i = 0; i < s2.length; i++) out.setUint8(o + i, s2.charCodeAt(i)); };
+  ws(0, 'RIFF'); out.setUint32(4, 36 + n * 2, true); ws(8, 'WAVE'); ws(12, 'fmt '); out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, 1, true); out.setUint32(24, sr, true); out.setUint32(28, sr * 2, true); out.setUint16(32, 2, true); out.setUint16(34, 16, true); ws(36, 'data'); out.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) out.setInt16(44 + i * 2, Math.max(-1, Math.min(1, L[i])) * 32767, true);
+  const bytes = new Uint8Array(out.buffer); let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return { count: names.length, silent, names, wav: btoa(bin) };
+};
+window.renderSong = async () => {
+  const song = compileSong(SONGS[name]); const loopS = loopSeconds(song);
+  const seconds = song.loop ? loopS * loops + 1.0 : loopS + 2.0;
+  const ctx = new OfflineAudioContext(2, Math.ceil(seconds * sr), sr);
+  const master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination);
+  let backend, psgNode = null;
+  if (mode === 'retro') { const psg = await PsgNode.create(ctx, master, new URL('../src/audio/psg-worklet.js', location.href).href); backend = new PsgBackend(psg); psgNode = psg; }
+  else { const hd = new HDSynth(ctx, master); hd.setTempoDelay(3600 / (song.speed[0] * (song.rpb || 4))); backend = hd; }
+  const seq = new Sequencer(ctx, backend); seq.renderAll(song, seconds, { once: !song.loop });
+  if (psgNode) await psgNode.sync();
+  const buf = await ctx.startRendering();
+  const L = buf.getChannelData(0), R = buf.getChannelData(1);
+  // análise
+  let peak = 0, sum = 0; const win = Math.floor(sr * 0.05); const silences = []; let silStart = -1;
+  for (let i = 0; i < L.length; i++) { const v = Math.max(Math.abs(L[i]), Math.abs(R[i])); if (v > peak) peak = v; sum += v * v; }
+  for (let w = 0; w < L.length; w += win) { let m = 0; for (let i = w; i < Math.min(L.length, w + win); i++) m = Math.max(m, Math.abs(L[i])); const t = w / sr; if (m < 0.004) { if (silStart < 0) silStart = t; } else if (silStart >= 0) { if (t - silStart >= 0.4) silences.push([silStart.toFixed(2), t.toFixed(2)]); silStart = -1; } }
+  if (silStart >= 0 && (L.length / sr) - silStart >= 0.4) silences.push([silStart.toFixed(2), (L.length / sr).toFixed(2)]);
+  // emenda do loop: energia 100 ms antes e depois do ponto de loop
+  const lp = Math.floor((0.02 + loopS) * sr); const e = (a, b) => { let s = 0; for (let i = a; i < b; i++) s += L[i] * L[i]; return Math.sqrt(s / (b - a)); };
+  const seam = song.loop ? { before: e(lp - sr * 0.1, lp).toFixed(3), after: e(lp, lp + sr * 0.1).toFixed(3) } : null;
+  // WAV 16-bit
+  const n = L.length; const out = new DataView(new ArrayBuffer(44 + n * 4)); const ws = (o, s) => { for (let i = 0; i < s.length; i++) out.setUint8(o + i, s.charCodeAt(i)); };
+  ws(0, 'RIFF'); out.setUint32(4, 36 + n * 4, true); ws(8, 'WAVE'); ws(12, 'fmt '); out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, 2, true); out.setUint32(24, sr, true); out.setUint32(28, sr * 4, true); out.setUint16(32, 4, true); out.setUint16(34, 16, true); ws(36, 'data'); out.setUint32(40, n * 4, true);
+  for (let i = 0; i < n; i++) { out.setInt16(44 + i * 4, Math.max(-1, Math.min(1, L[i])) * 32767, true); out.setInt16(46 + i * 4, Math.max(-1, Math.min(1, R[i])) * 32767, true); }
+  const bytes = new Uint8Array(out.buffer); let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  // desenho: forma de onda (topo) + "piano roll" de energia por banda (base)
+  const cv = document.createElement('canvas'); cv.width = 1600; cv.height = 400; document.body.appendChild(cv); const g = cv.getContext('2d');
+  g.fillStyle = '#111'; g.fillRect(0, 0, 1600, 400); g.fillStyle = '#6cf';
+  const per = Math.floor(n / 1600);
+  for (let x = 0; x < 1600; x++) { let mn = 1, mx = -1; for (let i = x * per; i < (x + 1) * per; i++) { if (L[i] < mn) mn = L[i]; if (L[i] > mx) mx = L[i]; } g.fillRect(x, 100 - mx * 95, 1, Math.max(1, (mx - mn) * 95)); }
+  g.fillStyle = '#f66'; const lx = Math.floor(lp / per); g.fillRect(lx, 0, 1, 200); g.fillStyle = '#fff'; g.font = '14px monospace'; g.fillText(`${name} ${mode} peak=${peak.toFixed(2)} loop=${loopS.toFixed(1)}s`, 8, 16);
+  // espectrograma simples por janelas de 2048 amostras (DFT em 64 bandas log)
+  const W = 2048, cols = 400, bands = 64; const step = Math.floor(n / cols);
+  for (let c = 0; c < cols; c++) { const o = c * step; for (let bI = 0; bI < bands; bI++) { const f = 40 * Math.pow(2, (bI / bands) * 8.5); const k = f / sr; let re = 0, im = 0; for (let i = 0; i < W; i += 2) { const v = L[o + i] || 0; const ph = 2 * Math.PI * k * i; re += v * Math.cos(ph); im -= v * Math.sin(ph); } const mag = Math.min(1, Math.sqrt(re * re + im * im) / (W / 8)); const v = Math.pow(mag, 0.5); g.fillStyle = `rgb(${Math.floor(255 * v)},${Math.floor(140 * v)},${Math.floor(60 * v)})`; g.fillRect(c * 4, 400 - bI * 3, 4, 3); } }
+  return { name, mode, seconds: +(L.length / sr).toFixed(2), loopSeconds: +loopS.toFixed(2), peak: +peak.toFixed(3), rms: +Math.sqrt(sum / L.length).toFixed(3), silences, seam, wav: btoa(bin) };
+};
+</script></body></html>

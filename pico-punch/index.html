@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0a0a14">
+<title>Pico Punch — Punhos de Vantura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  html, body { margin:0; padding:0; background:#0a0a14; width:100%; height:100%; overflow:hidden;
+    -webkit-user-select:none; user-select:none; touch-action:none; font-family: Nunito, "Segoe UI", system-ui, sans-serif; }
+  #game { position:fixed; inset:0; width:100%; height:100%; }
+  canvas { display:block; }
+  #boot { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; color:#ffd36b;
+    font: 700 14px/1.6 ui-monospace, monospace; text-align:center; pointer-events:none; white-space:pre; }
+  #boot.hidden { display:none; }
+  /* Botões virtuais (celular) */
+  #touch { position:fixed; inset:0; pointer-events:none; display:none; }
+  #touch.on { display:block; }
+  .tbtn { position:absolute; pointer-events:auto; width:64px; height:64px; border-radius:50%;
+    background:rgba(255,255,255,.12); border:2px solid rgba(255,255,255,.35); color:#fff; font:900 18px Nunito, sans-serif;
+    display:flex; align-items:center; justify-content:center; touch-action:none; -webkit-tap-highlight-color:transparent; }
+  .tbtn.pressed { background:rgba(255,255,255,.4); }
+  #tpad { left: calc(16px + env(safe-area-inset-left)); bottom: calc(16px + env(safe-area-inset-bottom)); width:150px; height:150px;
+    position:absolute; pointer-events:auto; border-radius:50%; background:rgba(255,255,255,.08); border:2px solid rgba(255,255,255,.25); touch-action:none; }
+  #tpad .knob { position:absolute; left:50%; top:50%; width:56px; height:56px; margin:-28px 0 0 -28px; border-radius:50%;
+    background:rgba(255,255,255,.3); }
+  #tjump { right: calc(20px + env(safe-area-inset-right)); bottom: calc(40px + env(safe-area-inset-bottom)); width:76px; height:76px; }
+  #tpunch { right: calc(104px + env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom)); width:76px; height:76px; }
+  #tpause { right: calc(16px + env(safe-area-inset-right)); top: calc(12px + env(safe-area-inset-top)); width:44px; height:44px; font-size:14px; }
+  #tmode { right: calc(70px + env(safe-area-inset-right)); top: calc(12px + env(safe-area-inset-top)); width:44px; height:44px; font-size:11px; }
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="boot">PICO PUNCH
+carregando…</div>
+<div id="touch">
+  <div id="tpad"><div class="knob"></div></div>
+  <div id="tjump" class="tbtn" data-k="jump">PULO</div>
+  <div id="tpunch" class="tbtn" data-k="punch">SOCO</div>
+  <div id="tpause" class="tbtn" data-k="pause">II</div>
+  <div id="tmode" class="tbtn" data-k="mode">HD/8b</div>
+</div>
+<script type="importmap">
+{ "imports": { "pixi.js": "./vendor/pixi.min.mjs" } }
+</script>
+<!-- Para usar o CDN em vez da cópia local, troque o importmap por:
+     "pixi.js": "https://cdn.jsdelivr.net/npm/pixi.js@8.22.0/dist/pixi.min.mjs" -->
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

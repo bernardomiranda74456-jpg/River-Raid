@@ -1,0 +1,22 @@
+// Instrumentos compartilhados entre as faixas (macros PSG + timbre HD).
+export const INST = {
+  lead: { env: 'lead', vib: { delay: 10, rate: 5.5, depth: 0.22 }, hd: { wave: 'pulse25', cutoff: 4200, detune: 8, reverb: 0.26, delay: 0.2, level: 0.62 } },
+  leadSoft: { env: 'soft', vib: { delay: 8, rate: 5, depth: 0.3 }, hd: { wave: 'tri', cutoff: 2600, detune: 5, reverb: 0.35, delay: 0.22, level: 0.7 } },
+  leadBright: { env: 'lead', vib: { delay: 6, rate: 6, depth: 0.2 }, hd: { wave: 'bright', cutoff: 5200, detune: 10, reverb: 0.2, delay: 0.16, level: 0.6 } },
+  pluck: { env: 'pluck', hd: { wave: 'pulse12', cutoff: 3600, detune: 6, reverb: 0.2, delay: 0.14, level: 0.55 } },
+  bell: { env: 'bell', hd: { wave: 'sine', cutoff: 6000, detune: 4, reverb: 0.45, delay: 0.25, level: 1.2 } },
+  arpMaj: { env: 'arp', arp: [0, 4, 7], hd: { wave: 'square', cutoff: 2800, detune: 6, level: 0.42, reverb: 0.2, delay: 0.1 } },
+  arpMin: { env: 'arp', arp: [0, 3, 7], hd: { wave: 'square', cutoff: 2800, detune: 6, level: 0.42, reverb: 0.2, delay: 0.1 } },
+  arpSus: { env: 'arp', arp: [0, 5, 7], hd: { wave: 'square', cutoff: 2800, detune: 6, level: 0.42, reverb: 0.2, delay: 0.1 } },
+  arpMaj7: { env: 'arp', arp: [0, 4, 7, 11], hd: { wave: 'square', cutoff: 2800, detune: 6, level: 0.42, reverb: 0.2, delay: 0.1 } },
+  arpDom: { env: 'arp', arp: [0, 4, 7, 10], hd: { wave: 'square', cutoff: 2800, detune: 6, level: 0.42, reverb: 0.2, delay: 0.1 } },
+  arpDim: { env: 'arp', arp: [0, 3, 6], hd: { wave: 'square', cutoff: 2600, detune: 6, level: 0.42, reverb: 0.2, delay: 0.1 } },
+  padMaj: { env: 'pad', arp: [0, 4, 7, 12], arpSpeed: 2, hd: { wave: 'organ', cutoff: 2200, detune: 9, level: 0.4, reverb: 0.45, delay: 0.15 } },
+  padMin: { env: 'pad', arp: [0, 3, 7, 12], arpSpeed: 2, hd: { wave: 'organ', cutoff: 2200, detune: 9, level: 0.4, reverb: 0.45, delay: 0.15 } },
+  organ: { env: 'organ', hd: { wave: 'organ', cutoff: 3000, detune: 7, level: 0.45, reverb: 0.3, delay: 0.1 } },
+  bass: { env: 'bass', hd: { wave: 'saw', cutoff: 760, sub: true, level: 0.95, reverb: 0.05, delay: 0 } },
+  bassShort: { env: 'bassShort', hd: { wave: 'saw', cutoff: 900, sub: true, level: 0.95, reverb: 0.05, delay: 0 } },
+  bassSoft: { env: 'bass', hd: { wave: 'tri', cutoff: 500, sub: true, level: 1, reverb: 0.1, delay: 0 } },
+  stab: { env: 'stab', hd: { wave: 'saw', cutoff: 3000, detune: 12, level: 0.5, reverb: 0.3, delay: 0.1 } },
+  echo: { env: 'echo', hd: { wave: 'pulse25', cutoff: 3000, detune: 8, level: 0.4, reverb: 0.4, delay: 0.3 } },
+};
