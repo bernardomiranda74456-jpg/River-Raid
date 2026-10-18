@@ -39,7 +39,7 @@ const gradeFrag = `precision highp float; in vec2 vTextureCoord; out vec4 finalC
 uniform vec3 uLift; uniform vec3 uGain; uniform float uGamma; uniform float uSat; uniform float uVignette; uniform float uAberr; uniform float uHeat; uniform float uTime; uniform float uFlash; uniform vec3 uFlashColor; uniform float uUnderwater;
 void main(){
   vec2 uv = vTextureCoord; vec2 frameUv = uv * uInputSize.xy / (uInputClamp.zw * uInputSize.xy);
-  if (uHeat > 0.0) { float y = frameUv.y; float amp = uHeat * smoothstep(0.35, 1.0, y) * 1.6; uv.x += sin(y * 90.0 + uTime * 3.0) * amp * uInputSize.z; uv.y += cos(frameUv.x * 60.0 + uTime * 2.2) * amp * 0.5 * uInputSize.w; }
+  if (uHeat > 0.0) { float y = frameUv.y; float amp = uHeat * smoothstep(0.3, 1.0, y) * 3.2; uv.x += sin(y * 90.0 + uTime * 3.0) * amp * uInputSize.z; uv.y += cos(frameUv.x * 60.0 + uTime * 2.2) * amp * 0.5 * uInputSize.w; }
   if (uUnderwater > 0.0) { uv.x += sin(frameUv.y * 18.0 + uTime * 1.5) * 2.0 * uInputSize.z * uUnderwater; uv.y += cos(frameUv.x * 14.0 + uTime * 1.2) * 1.5 * uInputSize.w * uUnderwater; }
   uv = clamp(uv, uInputClamp.xy, uInputClamp.zw);
   vec2 d = (frameUv - 0.5) * uAberr * uInputSize.zw * 6.0;

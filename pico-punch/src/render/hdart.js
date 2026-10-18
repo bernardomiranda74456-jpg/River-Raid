@@ -82,6 +82,7 @@ export function spriteHD(rows, pal, { outline = true, pillow = 1, emissive = nul
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const i = y * w + x; if (data[i * 4 + 3] === 0) continue;
     const k = colorKeyAt(x, y); const mat = MATERIAL[k] || { shine: 0.35, bump: 0.6 };
+    if (emissive && emissive.has(k)) emis[i] = 1;
     if (smooth) { height[i] = 0.5; continue; }
     const d = dist[i]; const pil = Math.sqrt(Math.min(1, d / 14)) * pillow * mat.bump; // altura "almofada"
     height[i] = pil * 0.75 + 0.1;
@@ -108,7 +109,7 @@ const THEME_LOOK = {
   desert: { rock: ['#d9b26a', '#b58d4a', '#f0d08c'], grass: ['#e8c87a', '#c4a052', '#fde6a8'], dirt: ['#d9b26a', '#b58d4a'], kind: 'sand' },
   road: { rock: ['#8a8a8a', '#666666', '#aaaaaa'], grass: ['#8c8c8c', '#5e5e5e', '#b8b8b8'], dirt: ['#7a6a5a', '#54483c'], kind: 'rock' },
   sky: { rock: ['#9a9aa8', '#70707f', '#c0c0cc'], grass: ['#62c04c', '#3f8a30', '#9ae878'], dirt: ['#7a6a5a', '#54483c'], kind: 'rock' },
-  cave: { rock: ['#5a4a58', '#3a2e3a', '#7c6a7a'], grass: ['#ff7a3c', '#c0421e', '#ffb070'], dirt: ['#4a3a48', '#2e2230'], kind: 'rock' },
+  cave: { rock: ['#5a4a58', '#3a2e3a', '#7c6a7a'], grass: ['#b4442a', '#6e2416', '#e07a40'], dirt: ['#4a3a48', '#2e2230'], kind: 'rock' },
   city: { rock: ['#5a6474', '#3c4452', '#7a8696'], grass: ['#8a94a4', '#5a6474', '#aab4c4'], dirt: ['#3c4452', '#262c36'], kind: 'metal' },
   castle: { rock: ['#7a7a88', '#55555f', '#9c9cac'], grass: ['#9898a8', '#6a6a78', '#c0c0d0'], dirt: ['#4a4a58', '#333340'], kind: 'brick' },
 };
@@ -167,11 +168,27 @@ export function groundHD(theme, mask, alt, variant = 0) {
   if (up && left) for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (Math.hypot(8 - x, 8 - y) > 8) d[(y * w + x) * 4 + 3] = 0;
   if (up && right) for (let y = 0; y < 8; y++) for (let x = w - 8; x < w; x++) if (Math.hypot(x - (w - 9), 8 - y) > 8) d[(y * w + x) * 4 + 3] = 0;
   ctx.putImageData(id, 0, 0);
-  const nrm = heightToNormal(height, w, h, 3.0, (x, y) => ({ cov: d[(y * w + x) * 4 + 3] !== 0, emis: theme === 'cave' && up && y < 14 ? 0.5 : 0 }));
+  const nrm = heightToNormal(height, w, h, 3.0, (x, y) => ({ cov: d[(y * w + x) * 4 + 3] !== 0, emis: theme === 'cave' && up && y < 10 ? 0.18 : 0 }));
   const nc = makeCanvas(w, h); const nctx = nc.getContext('2d'); const nid = nctx.createImageData(w, h); nid.data.set(nrm); nctx.putImageData(nid, 0, 0);
   return { diffuse: c, normal: nc };
 }
 
+/** Lava HD procedural (96×96): base escura com veios brilhantes; emissivo forte nos veios. */
+export function lavaHD(frame = 0) {
+  const w = 16 * S, h = 16 * S; const c = makeCanvas(w, h); const ctx = c.getContext('2d'); const id = ctx.createImageData(w, h); const d = id.data;
+  const n = noise2(new Rng(9001)), n2 = noise2(new Rng(9002)); const nrm = new Uint8ClampedArray(w * h * 4); const ph = frame * 0.35;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    // periódico no tile: usa coordenadas em torno de um círculo para repetir sem emenda
+    const u = x / w, v = y / h; const px = Math.cos(u * Math.PI * 2) * 1.2, py = Math.sin(u * Math.PI * 2) * 1.2, pz = Math.cos(v * Math.PI * 2) * 1.2, pw = Math.sin(v * Math.PI * 2) * 1.2;
+    const a = n(px * 2 + pz + ph, py * 2 + pw), b = n2(pz * 3 + px + ph * 2, pw * 3 + py);
+    const ridge = 1 - Math.abs((a + b) - 1); const vein = Math.pow(Math.max(0, ridge - 0.78) / 0.22, 1.4); const glow = Math.pow(Math.max(0, ridge - 0.5) / 0.5, 3) * 0.5;
+    const base = [95 + a * 50 + glow * 90, 14 + a * 18 + glow * 50, 8]; const hot = [255, 170 + b * 50, 50];
+    const i = (y * w + x) * 4; d[i] = base[0] + (hot[0] - base[0]) * vein; d[i + 1] = base[1] + (hot[1] - base[1]) * vein; d[i + 2] = base[2] + (hot[2] - base[2]) * vein; d[i + 3] = 255;
+    nrm[i] = 128; nrm[i + 1] = 128; nrm[i + 2] = Math.round(255 * Math.min(1, 0.15 + glow * 0.5 + vein * 0.85)); nrm[i + 3] = 255;
+  }
+  ctx.putImageData(id, 0, 0); const nc = makeCanvas(w, h); const nid = nc.getContext('2d').createImageData(w, h); nid.data.set(nrm); nc.getContext('2d').putImageData(nid, 0, 0);
+  return { diffuse: c, normal: nc };
+}
 // ----- Banco HD ------------------------------------------------------------------------------------
 const EMISSIVE_TILES = { lava0: new Set(['r', 'o', 'y']), lava1: new Set(['r', 'o', 'y']), crystal: new Set(['c', 'w']), torchWall: new Set(['y', 'o', 'r']), window: new Set(['y', 'w']) };
 const EMISSIVE_SPRITES = { bolt: new Set(['w', 'b']), capsule: new Set(['b', 'w']), star: new Set(['y']), jelly: new Set(['p']), slug: new Set(['o', 'y']), drone: new Set(['r']) };
@@ -192,6 +209,7 @@ export class HDArt {
     if (!e) {
       let r;
       if (key[0] === 'g' || key[0] === 'a') { const parts = key.slice(1).split('v'); const mask = +parts[0]; const variant = +(parts[1] || 0); if (!Number.isNaN(mask)) r = groundHD(theme, mask, key[0] === 'a', variant); }
+      if (!r && key.startsWith('lava')) r = lavaHD(key === 'lava1' ? 1 : 0);
       if (!r) { const rows = TILE_ART[key]; if (!rows) return null; const pal = TILE_PALS[theme] || TILE_PALS.mountain; const water = key === 'water' || key.startsWith('waterTop'); const lava = key.startsWith('lava'); r = spriteHD(rows, pal, { emissive: EMISSIVE_TILES[key] || null, pillow: water || lava ? 0 : 1, outline: !(water || lava), alpha: water ? 0.55 : 1, smooth: water || lava ? 1 : 0 }); }
       e = this.tiles[k] = { d: this._tex(r.diffuse), n: this._tex(r.normal) };
     }

@@ -49,8 +49,9 @@ void main() {
   vec2 wp = uCam + spx / uScalePx;
   vec4 tile = tileAt(wp);
   if (uDebug > 0.5) { vec4 nn = texture(uNormalTex, uvN); if (uDebug > 2.5) { float ss = sunShadow(wp, tile.r > 0.5); finalColor = vec4(vec3(ss), 1.0); return; } finalColor = uDebug > 1.5 ? vec4(nn.rgb, 1.0) : vec4(tile.r, tile.g, nn.a, 1.0); return; }
-  bool inWater = tile.g > 0.5;
+  bool inWater = tile.g > 0.5; bool inLava = tile.b > 0.5;
   vec2 uv = vTextureCoord;
+  if (inLava) { vec2 off = vec2(sin(wp.y * 0.25 + uTime * 0.9) * 1.2, sin(wp.x * 0.2 - uTime * 0.7) * 0.8) * uScalePx / uInputSize.xy; uv = clamp(vTextureCoord + off, uInputClamp.xy, uInputClamp.zw); }
   if (inWater) { // refração
     float w1 = sin(wp.y * 0.21 + uTime * 2.1) + sin(wp.x * 0.13 - uTime * 1.3);
     float w2 = sin(wp.x * 0.33 + uTime * 1.7 + wp.y * 0.1);
@@ -94,6 +95,7 @@ void main() {
     vec3 h = normalize(sd + vec3(0.0, 0.0, 1.0)); float spec = pow(max(0.0, dot(n, h)), 24.0) * 0.18 * (1.0 - sh);
     color = base.rgb * light + spec * uSunColor + base.rgb * emis * 1.6 + vec3(emis * 0.25);
   }
+  if (inLava) { float pulse = 0.55 + 0.45 * sin(uTime * 2.5 + wp.x * 0.08 + wp.y * 0.05); float veins = pow(max(0.0, sin(wp.x * 0.3 + uTime) * sin(wp.y * 0.27 - uTime * 0.8)), 2.0); color = color * (0.9 + pulse * 0.4) + vec3(0.9, 0.35, 0.05) * (0.25 * pulse + veins * 0.5); }
   if (inWater) {
     float c1 = sin(wp.x * 0.35 + uTime * 1.5 + sin(wp.y * 0.3 + uTime)) ; float c2 = sin(wp.y * 0.41 - uTime * 1.1 + sin(wp.x * 0.27 - uTime * 0.7));
     float caust = pow(max(0.0, c1 * c2), 3.0) * 0.5;
@@ -142,7 +144,7 @@ export const LIGHT_PRESETS = {
   day: { ambient: [0.5, 0.5, 0.55], sunDir: [-0.2, 0.85, 0.5], sun: [1.0, 0.98, 0.9], shadow: 0.9, bg: [1, 1, 1], water: [0.45, 0.8, 1.0] },
   sunset: { ambient: [0.45, 0.36, 0.42], sunDir: [0.75, 0.35, 0.5], sun: [1.0, 0.68, 0.42], shadow: 1.0, bg: [1, 0.95, 0.9], water: [0.8, 0.6, 0.7] },
   night: { ambient: [0.22, 0.25, 0.4], sunDir: [0.3, 0.8, 0.55], sun: [0.45, 0.55, 0.85], shadow: 0.7, bg: [0.85, 0.9, 1], water: [0.3, 0.5, 0.9] },
-  cave: { ambient: [0.13, 0.11, 0.16], sunDir: [0.0, 0.9, 0.45], sun: [0.25, 0.2, 0.28], shadow: 0.4, bg: [0.8, 0.8, 0.9], water: [0.4, 0.7, 0.9] },
+  cave: { ambient: [0.2, 0.17, 0.25], sunDir: [0.0, 0.9, 0.45], sun: [0.3, 0.24, 0.34], shadow: 0.4, bg: [0.85, 0.85, 0.95], water: [0.4, 0.7, 0.9] },
   underwater: { ambient: [0.3, 0.42, 0.55], sunDir: [-0.1, 0.9, 0.45], sun: [0.6, 0.85, 1.0], shadow: 0.6, bg: [1, 1, 1], water: [0.5, 0.85, 1.0] },
   castle: { ambient: [0.25, 0.22, 0.3], sunDir: [-0.3, 0.8, 0.5], sun: [0.5, 0.45, 0.6], shadow: 0.8, bg: [0.9, 0.9, 1], water: [0.4, 0.7, 0.9] },
 };

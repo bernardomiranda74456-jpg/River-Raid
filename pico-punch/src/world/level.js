@@ -105,7 +105,7 @@ export class Level {
     // reinicia inimigos próximos ao ponto de respawn? mantemos o estado, mas removemos fantasmas
     for (const e of this.entities) if (e instanceof Ghost || e.type === 'ghostbuddy') e.remove = true;
     this.applyInventory();
-    this.state = 'play'; this.camera.snapTo(this.hero, this.map.pixelW, this.map.pixelH); this.game.audio?.music.play(this.json.music, { restart: true });
+    this.state = 'play'; this.camera.snapTo(this.hero, this.map.pixelW, this.map.pixelH); this.game.audio?.music.play(this.json.music, { restart: true }); this.game.iris = { t: 0, dir: 1, dur: 0.6 };
   }
   // ----- Passo fixo -----------------------------------------------------------------------------
   update(dt) {

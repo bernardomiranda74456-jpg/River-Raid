@@ -21,7 +21,7 @@ export class Game {
     this.input = new Input(); this.save = new Save(); this.bank = new ArtBank(); this.particles = new Particles(); this.fx = this.particles;
     this.mode = 'retro'; this.viewW = RETRO_W; this.viewH = RETRO_H; this.level = null; this.state = 'boot'; this.stateT = 0; this.audio = null; this.vehicles = null;
     this.input.loadBindings(this.save.settings.keys); this.levelIndex = 0; this.hooks = {}; this.debug = new URLSearchParams(location.search);
-    this.spriteLimiter = new SpriteLimiter();
+    this.spriteLimiter = new SpriteLimiter(); this.iris = { t: 1, dir: 1, dur: 0.7 }; // t: 0 fechado → 1 aberto
     this.bot = this.debug.get('bot') ? new Bot(this) : null; this.timeScale = +(this.debug.get('fast') || 1);
     if (this.bot) { this.save.progress.lives = 30; this.save.save = () => {}; } // modo de teste: não persiste
   }
@@ -84,7 +84,7 @@ export class Game {
     this.levelIndex = index; const def = LEVELS[index] || (this.debug.get('file') ? { file: this.debug.get('file') } : null); if (!def) { this.setState('title'); return; }
     const json = await loadLevel(this.debug.get('file') && index === 99 ? this.debug.get('file') : def.file); this.level = new Level(json, this, opts); this.level.camera.setView(this.viewW, this.viewH);
     this.scene.setLevel(this.level); this.buildParallax(); this.hud.showMessage('');
-    this.setState('play'); this.audio?.music.play(json.music, { restart: true });
+    this.setState('play'); this.audio?.music.play(json.music, { restart: true }); this.iris = { t: 0, dir: 1, dur: 0.8 };
     this.hooks.levelStarted?.(this.level);
   }
   onLevelClear(level) { this.audio?.music.play('clear', { once: true, duck: true }); this.hooks.levelClear?.(level); }
@@ -102,7 +102,8 @@ export class Game {
         const lv = this.level;
         if (this.input.pressed.pause && lv.state === 'play') { this.setState('pause'); this.audio?.music.pause(); break; }
         lv.update(dt); this.particles.update(dt);
-        if (lv.state === 'goal' && lv.stateT > 3.2) { this.finishLevel(); }
+        if (lv.state === 'goal' && lv.stateT > 2.6 && this.iris.dir !== -1) { this.iris = { t: 1, dir: -1, dur: 0.6 }; }
+        if (lv.state === 'goal' && lv.stateT > 3.4) { this.finishLevel(); this.iris = { t: 0, dir: 1, dur: 0.5 }; }
         break;
       }
       case 'pause': if (this.input.pressed.pause || this.input.pressed.confirm) { this.setState('play'); this.audio?.music.resume(); } break;
@@ -124,6 +125,8 @@ export class Game {
       this.parallax?.update(this.scene.camX, this.scene.camY, performance.now() / 1000, retro);
       this.hud.update(this.level, this.save); this.hud.root.visible = this.state !== 'title' && this.state !== 'story';
       const fl = this.scene.flashG; fl.clear(); if (this.level.flashA > 0) { fl.rect(0, 0, this.viewW, this.viewH).fill({ color: 0xffffff, alpha: this.level.flashA }); }
+      const ir = this.iris; if (ir.dir !== 0) { ir.t += (ir.dir / ir.dur) * dt; if (ir.t >= 1) { ir.t = 1; ir.dir = 0; } if (ir.t <= 0) { ir.t = 0; ir.dir = 0; } }
+      if (ir.t < 1) { const h = this.level.hero; const cx = h.cx - this.scene.camX, cy = h.cy - this.scene.camY; const R = Math.hypot(this.viewW, this.viewH) * Math.pow(ir.t, 1.6); const T = Math.hypot(this.viewW, this.viewH) * 2.2; if (R < 0.5) fl.rect(0, 0, this.viewW, this.viewH).fill(0x000000); else fl.circle(cx, cy, (retro ? Math.round(R) : R) + T / 2).stroke({ width: T, color: 0x000000 }); }
       this.hooks.render?.(alpha, dt);
     }
     if (retro) {

@@ -53,16 +53,16 @@ torches(12, (83,)); torches(9, (86,))
 
 # ---- D. Ameias (90–150) sobre a masmorra (teto na 7, pés na 13) -----------------------------------------
 fill(90, 150, 6, 7, '#')                                     # piso das ameias (pés na 5)
-for x in (95, 103, 111, 120, 128, 137, 145): put(x, 5, '#')  # merlões (degraus de 1 tile)
+for x in (95, 103, 111, 128, 146): put(x, 5, '#')            # merlões (degraus de 1 tile), fora dos arcos de salto
 fill(99, 100, 6, 7, '.')                                     # buraco 1: cai na masmorra
 fill(115, 117, 6, 7, '.'); lava(115, 117)                    # buraco 2: lava no fundo
 fill(132, 133, 6, 7, '.')                                    # buraco 3: cai na masmorra
-fill(121, 126, 0, 2, '#'); put(123, 3, 't')                  # galeria suspensa com morcego
-fill(139, 144, 0, 2, '#'); put(141, 3, 't')
+hrow(0, 121, 126, '#'); put(123, 1, 't')                     # galeria suspensa com morcego (4 linhas acima da cabeça)
+hrow(0, 139, 144, '#'); put(140, 1, 't')
 put(107, 3, '?'); put(109, 3, '?')                           # fantasma × coração (fora dos arcos dos merlões)
 hrow(3, 142, 143, 'S')
-put(112, 5, 'C')                                             # checkpoint 2
-put(98, 5, '$'); put(131, 5, '$'); put(119, 5, '*')
+put(119, 5, 'C')                                             # checkpoint 2 (sem sólido à esquerda: o renascimento usa x-8)
+put(98, 5, '$'); put(131, 5, '$'); put(113, 5, '*')
 # masmorra (rota alternativa, para quem cai pelos buracos 1 e 3): guardas, espinhos, tochas
 for x in (105, 125, 140): put(x, 13, 'n')
 put(110, 13, '^'); put(130, 13, '^')

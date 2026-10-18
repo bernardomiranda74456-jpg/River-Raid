@@ -20,7 +20,7 @@ export class Hero extends Entity {
     this.items = { cape: false, bracelet: 0, ghostbuddy: false, eye: false, capsule: 0 }; this.gliding = false;
     this.lastGroundX = x; this.lastGroundY = y; this.eatT = 0; this.punchCount = 0; this.shadow = true;
     this.vehicle = null; this.fist = { x: 0, y: 0, w: 0, h: 0, active: false };
-    this.light = { r: 1, g: 0.9, b: 0.7, radius: 40, intensity: 0.25 };
+    this.light = { r: 1, g: 0.9, b: 0.7, radius: 64, intensity: 0.35 };
   }
   get standing() { return this.state === 'normal' && this.onGround; }
   hurt(level, cause = 'enemy') {

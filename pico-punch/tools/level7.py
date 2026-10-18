@@ -55,7 +55,7 @@ block(185, 186, 0, 11)                                       # pilar suspenso
 # ---- Torre T2 (subida de 3) → ilha J (checkpoint 3, drone) ---------------------------------
 island(191, 198, 11); row(193, 194, 10, '$'); dec(196, 10, 'F'); dec(197, 10, 'F')
 row(202, 203, 8, '$')                                        # arco do salto sobre 199–203
-island(204, 218, 12); col(205, 9, 11, 'R'); put(208, 11, 'C'); put(211, 9, 'K'); put(214, 11, 'r'); dec(210, 11, 'f'); dec(217, 11, 'b')
+island(204, 218, 12); col(205, 9, 11, 'R'); put(208, 11, 'C'); put(211, 9, 'K'); put(214, 10, 'r'); dec(210, 11, 'f'); dec(217, 11, 'b')
 # ---- Ilha K (lombada + 1 abaixo) e ilha L (bandeira) ---------------------------------------
 island(222, 224, 11); island(225, 236, 13); row(228, 231, 12, 'S'); put(234, 12, 'e'); dec(226, 12, 't'); dec(235, 12, 'f')
 row(228, 232, 7, '#'); put(230, 6, '&'); put(229, 4, 'e')    # ilhota alta opcional

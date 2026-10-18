@@ -6,6 +6,7 @@ const page = await b.newPage(); page.on('pageerror', (e) => console.log('PAGEERR
 await page.goto('http://localhost:8787/tools/render.html'); 
 const all = await page.evaluate(async () => { const m = await import('../src/audio/music/index.js'); return Object.keys(m.SONGS); });
 const songs = songsArg ? songsArg.split(',') : all; fs.mkdirSync('audio-preview', { recursive: true });
+if (songsArg === 'sfx') { await page.goto('http://localhost:8787/tools/render.html'); const r = await page.evaluate(() => window.renderSfx()); fs.writeFileSync('audio-preview/sfx-all.wav', Buffer.from(r.wav, 'base64')); console.log('audio-preview/sfx-all.wav', r.count, 'efeitos; mudos:', JSON.stringify(r.silent)); await b.close(); process.exit(0); }
 for (const s of songs) for (const mode of modesArg.split(',')) {
   await page.goto(`http://localhost:8787/tools/render.html?song=${s}&mode=${mode}&loops=${loopsArg}`);
   const r = await page.evaluate(() => window.renderSong());

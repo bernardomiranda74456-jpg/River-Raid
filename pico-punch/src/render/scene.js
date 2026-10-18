@@ -107,6 +107,8 @@ export class Scene {
     s.visible = e.visible && !(e.invuln > 0 && e.state !== 'dead' && Math.floor(e.invuln * 16) % 2 === 1);
     if (e.hitFlash > 0) s.tint = 0xffffff; // (tint branco = sem efeito; flash real via filtro no HD)
     s.tint = e.hitFlash > 0 ? 0xff8080 : 0xffffff; s.entity = e;
+    // movimento secundário no HD: inclinação com a velocidade e leve "arrasto" do cabelo/roupa ao mudar de direção
+    if (!retro && e.type === 'hero') { const lean = e.onGround && e.state === 'normal' ? -e.vx * 0.0012 * (e.flip ? -1 : 1) : 0; v.lean = v.lean === undefined ? 0 : v.lean + (lean - v.lean) * 0.2; s.skew.x = v.lean * (e.flip ? -1 : 1); } else s.skew.x = 0;
     if (v.shadow) {
       const sh = v.shadow; sh.visible = s.visible && !retro;
       if (sh.visible) { // sombra no chão abaixo da entidade
