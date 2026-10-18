@@ -235,7 +235,7 @@ export class Effects {
     }
   }
   coinSparkle(x, y, z) {
-    this.glow.emit(x + (Math.random() - 0.5) * 0.6, y + (Math.random() - 0.5) * 0.6, z, 0, 0.6, 0, 0.5, 0.2 + Math.random() * 0.15, 1, 0.9, 0.5);
+    this.glow.emit(x + (Math.random() - 0.5) * 0.6, y + (Math.random() - 0.5) * 0.6, z, 0, 0.6, 0, 0.45, 0.1 + Math.random() * 0.08, 1, 0.9, 0.5);
   }
   powerBurst(x, y, z, r, g, b) {
     for (let i = 0; i < 40; i++) {

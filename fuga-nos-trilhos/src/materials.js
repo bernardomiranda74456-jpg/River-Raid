@@ -192,7 +192,7 @@ export async function buildMaterials(preset, onProgress) {
     M.trainRoof = std({ map: tex(roof.map, { srgb: true, repeat: [4, 1] }), roughnessMap: tex(roof.rough, { repeat: [4, 1] }), metalness: 0.4, roughness: 1 });
     M.trainUnder = std({ color: 0x1a1a1c, roughness: 0.95, metalness: 0.3 });
     M.glass = phys({ color: 0x0b1420, metalness: 0, roughness: 0.05, clearcoat: 1, transparent: true, opacity: 0.85 });
-    M.headlight = std({ color: 0xffffff, emissive: 0xfff2d0, emissiveIntensity: 6 });
+    M.headlight = std({ color: 0xffffff, emissive: 0xfff2d0, emissiveIntensity: 3.2 });
     M.taillight = std({ color: 0x550000, emissive: 0xff1a1a, emissiveIntensity: 4 });
   }]);
   steps.push(['Prédios e cidade', () => {

@@ -69,11 +69,18 @@ O swipe é reconhecido no `pointermove` assim que o dedo anda 24 px, sem esperar
 
 A pista é uma fila de 8 chunks de 60 m. Cada chunk recebe linhas de obstáculos espaçadas
 de 23 m (início) a 13 m (dificuldade máxima, a 4,5 km). Um "caminho dourado" percorre as
-pistas e só muda de pista com intervalo mínimo de 14 m; nas células do caminho dourado só
-entram obstáculos passáveis (pular/rolar) ou nada. Trens parados nunca ocupam o caminho
-dourado; trens em movimento só entram em pistas que estavam livres no chunk anterior e
-que o caminho dourado não usa. O piloto automático (`src/autopilot.js`) joga o modo demo do
-menu e as screenshots usando apenas as informações dos registros de obstáculos.
+pistas e só muda de pista (sempre para a vizinha) com intervalo mínimo de 14 m; nas células
+do caminho dourado só entram obstáculos passáveis (pular/rolar) ou nada. Trens parados nunca
+invadem o *corredor* dourado (a pista dourada entre duas linhas, com 12 m de margem em cada
+ponta para a troca de pista, incluindo a continuidade entre chunks); trens em movimento só
+entram em pistas que estavam livres no chunk anterior e que o caminho dourado não usa.
+
+O piloto automático (`src/autopilot.js`) joga o modo demo do menu e as screenshots usando
+apenas os registros de obstáculos: uma programação dinâmica sobre (pista × nível chão/topo
+de trem × 40 células de 2 m) escolhe a troca de pista, e pulo/rolamento são reativos por
+distância. Ele serve de teste de "rota possível": em `tools/` o script de screenshots e o
+teste de sobrevivência usado no desenvolvimento rodaram 6 sementes por 120 s (≈2,9 km, até
+32 m/s) sem nenhuma batida ou tropeço.
 
 ## Arquitetura
 
@@ -99,18 +106,26 @@ menu e as screenshots usando apenas as informações dos registros de obstáculo
 | `src/input.js`, `src/ui.js`, `src/save.js`, `src/skins.js`, `src/missions.js`, `src/autopilot.js` | Entrada, interface, persistência, skins, missões, piloto automático. |
 
 **Sem alocação no loop**: pools de chunks, props, obstáculos, registros, partículas e
-power-ups são pré-aquecidos no carregamento; vetores temporários são reutilizados; moedas e
-prédios são instanciados. **Rebase**: a cada 2000 m o mundo inteiro é deslocado para
-manter a precisão de float (sombras estáveis).
+power-ups são pré-aquecidos no carregamento (todos os shaders são compilados antes do menu);
+vetores temporários são reutilizados; moedas (slots compactos, `mesh.count` = ativas) e
+prédios são instanciados; cada prop tem suas malhas mescladas por material. Medido no preset
+Alto: ~150–200 k triângulos e ~250–350 objetos por passe (3 passes: sombra, GTAO e cor).
+**Rebase**: a cada 2000 m o mundo inteiro é deslocado para manter a precisão de float
+(sombras estáveis).
 
 ## Presets gráficos
 
-| Preset | Pixel ratio | Sombras | GTAO | Bloom | AA | Motion blur / aberração | Partículas |
+| Preset | Pixel ratio | Sombras (PCF Vogel, raio) | GTAO | Bloom | AA | Motion blur / aberração | Partículas |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Baixo | 1 | 1024 PCF | não | não | não | não | 35 % |
-| Médio | ≤1.5 | 2048 PCFSoft | não | sim | SMAA | blur sim / aberração não | 70 % |
-| Alto | ≤2 | 2048 PCFSoft | sim | sim | SMAA | sim | 100 % |
-| Ultra | ≤2 | 4096 PCFSoft | sim (16 amostras) | sim | MSAA 4x + SMAA | sim | 140 % |
+| Baixo | 1 | 1024, raio 1 | não | não | não | não | 35 % |
+| Médio | ≤1.5 | 2048, raio 2 | não | sim | SMAA | blur sim / aberração não | 70 % |
+| Alto | ≤2 | 2048, raio 3 | sim | sim | SMAA | sim | 100 % |
+| Ultra | ≤2 | 4096, raio 4 | sim (16 amostras) | sim | MSAA 4x + SMAA | sim | 140 % |
+
+As sombras usam o `PCFShadowMap` do Three r186 (comparação por hardware com 5 amostras em
+disco de Vogel e ruído por pixel; `PCFSoftShadowMap` foi removido nessa versão), com
+`normalBias` para evitar acne e a câmera de sombra encaixada no grid de texels para não
+tremer.
 
 O preset é escolhido pelo nome da GPU (`WEBGL_debug_renderer_info`) e tipo de dispositivo;
 nos primeiros 6 s de corrida, se a média ficar abaixo de 42 fps, o jogo baixa um preset,
@@ -134,7 +149,9 @@ Parâmetros de URL úteis: `tod=18.2` (hora), `rain=1`, `speed=28`, `seed=7`, `a
 - **Altura do jato = 4,6 m**: acima dos trens (3,3 m) e abaixo da fiação (6,6 m); a
   cobertura das estações (8 m) e os pórticos (9 m) foram elevados para o voo passar.
 - **Chuva na GPU**: 2600 gotas animadas só no vertex shader; respingos e chão molhado
-  (`uWet` reduz roughness e escurece difuso) completam o efeito.
+  (`uWet` reduz roughness e escurece difuso) completam o efeito. Sem reflexos em espaço de
+  tela (caros demais para celular): as "poças de luz" sob postes, luminárias e no túnel são
+  decais aditivos cuja opacidade segue a noite e a chuva.
 - **Música procedural**: tom e progressão (i–VI–III–VII ou i–VII–VI–VII) sorteados por
   corrida, sequenciador de 16 passos agendado com antecedência de 200 ms.
 

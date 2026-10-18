@@ -63,7 +63,7 @@ const FinalShader = {
       }
       // aberração cromática nas bordas
       if (uChroma > 0.001) {
-        float ca = uChroma * r * r;
+        float ca = uChroma * smoothstep(0.45, 1.0, r);
         col.r = texture2D(tDiffuse, uv - d * ca).r;
         col.b = texture2D(tDiffuse, uv + d * ca).b;
       }
@@ -158,7 +158,7 @@ export class PostFX {
     const s = this.settings;
     const blur = s.motionBlur ? speedT * speedT * 0.045 * (dead ? 0.1 : 1) : 0;
     u.uBlur.value = blur;
-    u.uChroma.value = s.chroma ? speedT * speedT * 0.0035 + (dead ? 0.003 : 0) : 0;
+    u.uChroma.value = s.chroma ? Math.max(0, speedT - 0.4) * 0.0022 + (dead ? 0.0015 : 0) : 0;
     u.uFlash.value = flash;
     u.uTime.value += dt;
     u.uSunPos.value.copy(sunScreen);

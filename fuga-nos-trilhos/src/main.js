@@ -65,7 +65,7 @@ class Game {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
     renderer.shadowMap.enabled = this.save.data.settings.shadows;
-    renderer.shadowMap.type = this.preset.shadowType === 'pcf' ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap; // r186: PCF por hardware com disco de Vogel; suavidade via shadow.radius
     this.scene = new THREE.Scene();
     this.ui.loading(0, 'Gerando texturas…');
     this.M = await buildMaterials(this.preset, (p, label) => this.ui.loading(p * 0.7, label));
@@ -274,10 +274,7 @@ class Game {
     d.keys -= cost; this.continues++;
     this.save.write();
     const p = this.player;
-    // limpa obstáculos à frente
-    const clearNear = (c) => { for (let i = c.obstacles.length - 1; i >= 0; i--) { const r = c.obstacles[i]; if (r.z1 > p.z - 6 && r.z0 < p.z + 70) { this.track.releaseObstacle(r); c.obstacles.splice(i, 1); } } };
-    const c = this.track.chunkAt(p.z); if (c) { clearNear(c); const n = this.track.chunkAfter(c); if (n) clearNear(n); }
-    for (let i = this.track.moving.length - 1; i >= 0; i--) this.track.releaseMoving(this.track.moving[i]);
+    this.clearAhead(70);
     p.state = PS.RUN; p.ragdoll = null; p.y = Math.max(0, p.groundY); p.vy = 0; p.grounded = true; p.invuln = 3; p.speedScale = 1; p.lane = p.targetLane; p.x = (p.lane - 1) * LANE_W; p.laneT = 1;
     p.resetPose(); p.model.rotation.set(0, 0, 0);
     this.chaser.reset(); this.chaser.visible = false; this.chaser.timer = 0; this.chaseActive = false;
@@ -287,6 +284,14 @@ class Game {
     this.audio.play('continue');
     this.audio.setMusic(true, this.seed + this.continues * 7);
     this.last = performance.now();
+  }
+
+  /** Remove obstáculos entre 6 m atrás e `ahead` m à frente do jogador (continuar / depuração). */
+  clearAhead(ahead) {
+    const p = this.player;
+    const clearNear = (c) => { for (let i = c.obstacles.length - 1; i >= 0; i--) { const r = c.obstacles[i]; if (r.z1 > p.z - 6 && r.z0 < p.z + ahead) { this.track.releaseObstacle(r); c.obstacles.splice(i, 1); } } };
+    const c = this.track.chunkAt(p.z); if (c) { clearNear(c); const n = this.track.chunkAfter(c); if (n) clearNear(n); }
+    for (let i = this.track.moving.length - 1; i >= 0; i--) this.track.releaseMoving(this.track.moving[i]);
   }
 
   /* ---------------------------------------------------- power-ups */
@@ -539,6 +544,7 @@ class Game {
         this.player.prevZ = this.player.z; this.player.y = 0; this.player.vy = 0; this.player.x = 0; this.player.lane = this.player.targetLane = 1; this.player.laneT = 1;
         this.camera.pos.set(0, 3.4, this.player.z - 6.5); this.camera.look.set(0, 1.2, this.player.z + 10);
         this.track.update(0.016, this.player.z, this.player.x, this);
+        this.clearAhead(50);
       },
       zoneAt: () => this.track.chunks.map((c) => c.zone + '@' + c.z).join(','),
       pools: () => { const out = {}; for (const [k, p] of Object.entries(this.track.props.pools)) out[k] = p.created + '/' + p.free.length; out.yardTrain = this.track.props.yardTrains.created; for (const k of ['low', 'high', 'cone', 'hoarding', 'ramp', 'arch']) out[k] = this.obPools[k].created + '/' + this.obPools[k].free.length; out.trains = this.obPools.trains.slice(1).map((ps) => ps.map((p) => p.created).join('+')).join(' | '); out.records = this.track.recPool.created; return out; },

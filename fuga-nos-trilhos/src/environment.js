@@ -128,7 +128,7 @@ export class Environment {
     const ext = 38;
     sm.camera.left = -ext; sm.camera.right = ext; sm.camera.top = ext; sm.camera.bottom = -ext;
     sm.bias = -0.0004; sm.normalBias = 0.035;
-    sm.radius = 2;
+    sm.radius = preset.shadowRadius || 2;
     scene.add(this.sun); scene.add(this.sun.target);
 
     this.hemi = new THREE.HemisphereLight(0x8fb4ff, 0x30281e, 0.5);
@@ -285,7 +285,7 @@ export class Environment {
     const l = idx === 0 ? this.headlight : this.headlight2;
     if (!active || this.nightLights < 0.05) { l.visible = false; l.intensity = 0; return; }
     l.visible = true;
-    l.intensity = 260 * this.nightLights;
+    l.intensity = 110 * this.nightLights;
     l.position.copy(pos);
     l.target.position.copy(pos).addScaledVector(dir, 30);
     l.target.updateMatrixWorld();
