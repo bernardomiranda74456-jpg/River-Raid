@@ -8,7 +8,7 @@ export class RetroRenderer {
     this.resize();
   }
   resize() {
-    const w = this.app.renderer.width / this.app.renderer.resolution, h = this.app.renderer.height / this.app.renderer.resolution;
+    const w = this.app.renderer.width, h = this.app.renderer.height; // Pixi 8: dimensões lógicas (CSS)
     const dpr = this.app.renderer.resolution;
     // escala inteira em pixels físicos, convertida para unidades CSS
     const physScale = Math.max(1, Math.floor(Math.min((w * dpr) / RETRO_W, (h * dpr) / RETRO_H)));

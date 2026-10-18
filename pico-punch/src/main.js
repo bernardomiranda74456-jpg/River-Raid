@@ -48,7 +48,7 @@ export class Game {
   onResize() {
     this.retro.resize(); if (this.hdRenderer) this.hdRenderer.resize();
     if (this.mode === 'retro') { this.viewW = RETRO_W; this.viewH = RETRO_H; }
-    else { const w = this.app.renderer.width / this.app.renderer.resolution, h = this.app.renderer.height / this.app.renderer.resolution; this.hdScale = h / RETRO_H; this.viewW = w / this.hdScale; this.viewH = RETRO_H; }
+    else { const w = this.app.renderer.width, h = this.app.renderer.height; this.hdScale = h / RETRO_H; this.viewW = w / this.hdScale; this.viewH = RETRO_H; }
     this.hud.layout(this.viewW, this.viewH);
     if (this.level) { this.level.camera.setView(this.viewW, this.viewH); this.parallax?.resize(this.viewW, this.viewH); }
     this.hooks.resize?.();

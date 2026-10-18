@@ -64,7 +64,7 @@ export class Level {
   setCheckpoint(x, y) { this.checkpoint = { x, y }; }
   onEnemyDefeated(e) { this.defeated++; }
   onBossDefeated(boss) {
-    this.boss = null; this.state = 'play'; this.camera.zones = this.json.cameraZones || []; this.game.hud.showBoss(null);
+    this.boss = null; this.bossSpawn = null; this.bossDone = true; this.state = 'play'; this.camera.zones = this.json.cameraZones || []; this.game.hud.showBoss(null);
     if (this.gateTiles) { for (const [tx, ty] of this.gateTiles) this.map.set(tx, ty, T.EMPTY); this.gateTiles = null; }
     this.game.audio?.music.play(this.json.music, { restart: true }); this.floatText(this.bossDef?.name ? 'DERROTADO!' : 'VITÓRIA!', boss.cx, boss.y);
     if (this.json.final) this.game.hooks.finalVictory?.(this); else this.game.audio?.music.play('item', { once: true, duck: true });

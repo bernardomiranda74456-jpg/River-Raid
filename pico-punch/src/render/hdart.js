@@ -69,19 +69,20 @@ const MATERIAL = { y: { shine: 0.9, bump: 1.0 }, a: { shine: 1.0, bump: 0.8 }, A
  * Sprite HD: devolve { diffuse: canvas, normal: canvas } (w*S × h*S).
  * emissiveColors: conjunto de códigos de cor que brilham (lava, cristais...).
  */
-export function spriteHD(rows, pal, { outline = true, pillow = 1, emissive = null, flatTop = false } = {}) {
+export function spriteHD(rows, pal, { outline = true, pillow = 1, emissive = null, flatTop = false, alpha = 1, smooth = 0 } = {}) {
   const base = matrixToRGBA(rows, pal); const up = epx(epx(base)); // ×4
   const w = base.w * S, h = base.h * S; const c = makeCanvas(w, h); const ctx = c.getContext('2d');
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(toCanvas(up), 0, 0, w, h);
   const id = ctx.getImageData(0, 0, w, h); const data = id.data;
   // limiar de alpha para bordas limpas
-  for (let i = 3; i < data.length; i += 4) data[i] = data[i] > 110 ? 255 : 0;
+  for (let i = 3; i < data.length; i += 4) data[i] = data[i] > 110 ? Math.round(255 * alpha) : 0;
   const dist = insideDistance(data, w, h, 16);
   const height = new Float32Array(w * h); const emis = new Float32Array(w * h);
   const colorKeyAt = (x, y) => rows[Math.min(rows.length - 1, Math.floor(y / S))][Math.min(rows[0].length - 1, Math.floor(x / S))];
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const i = y * w + x; if (data[i * 4 + 3] === 0) continue;
     const k = colorKeyAt(x, y); const mat = MATERIAL[k] || { shine: 0.35, bump: 0.6 };
+    if (smooth) { height[i] = 0.5; continue; }
     const d = dist[i]; const pil = Math.sqrt(Math.min(1, d / 14)) * pillow * mat.bump; // altura "almofada"
     height[i] = pil * 0.75 + 0.1;
     // sombreamento de volume: realce no topo-esquerda, sombra na base-direita + contorno escuro
@@ -191,7 +192,7 @@ export class HDArt {
     if (!e) {
       let r;
       if (key[0] === 'g' || key[0] === 'a') { const parts = key.slice(1).split('v'); const mask = +parts[0]; const variant = +(parts[1] || 0); if (!Number.isNaN(mask)) r = groundHD(theme, mask, key[0] === 'a', variant); }
-      if (!r) { const rows = TILE_ART[key]; if (!rows) return null; const pal = TILE_PALS[theme] || TILE_PALS.mountain; r = spriteHD(rows, pal, { emissive: EMISSIVE_TILES[key] || null, pillow: key === 'water' || key.startsWith('waterTop') ? 0 : 1 }); }
+      if (!r) { const rows = TILE_ART[key]; if (!rows) return null; const pal = TILE_PALS[theme] || TILE_PALS.mountain; const water = key === 'water' || key.startsWith('waterTop'); const lava = key.startsWith('lava'); r = spriteHD(rows, pal, { emissive: EMISSIVE_TILES[key] || null, pillow: water || lava ? 0 : 1, outline: !(water || lava), alpha: water ? 0.55 : 1, smooth: water || lava ? 1 : 0 }); }
       e = this.tiles[k] = { d: this._tex(r.diffuse), n: this._tex(r.normal) };
     }
     return e.d;

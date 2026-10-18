@@ -41,6 +41,7 @@ export function installDuel(game) {
       const beat = Math.min(4, Math.floor(d.t / 0.55));
       if (beat !== d.beat) { d.beat = beat; if (beat < 3) { ui.msg.setText(['PEDRA...', 'PAPEL...', 'TESOURA...'][beat]); game.audio?.sfx('countdown'); } }
       if (inp.held.left) d.heroPick = 0; else if (inp.held.up) d.heroPick = 1; else if (inp.held.right) d.heroPick = 2;
+      if (game.debug.get('autoduel')) d.heroPick = (d.bossPick + 1) % 3; // teste: escolhe sempre a mão vencedora
       ui.sel.forEach((s, i) => { s.alpha = i === d.heroPick ? 1 : 0.4; s.y = i === d.heroPick ? 102 : 104; });
       // tell sutil no 2º tempo: deslocamento do sprite + leve variação de tempo da animação
       const tellOff = [-1.5, 0, 1.5][d.bossPick]; ui.bossS.x = Math.round(game.viewW / 2) + 80 + (beat >= 1 && beat < 3 ? tellOff : 0); ui.bossS.y = 100 + (beat === 1 && d.bossPick === 1 ? -1 : 0);

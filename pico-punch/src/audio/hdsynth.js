@@ -61,7 +61,7 @@ class Voice {
   }
   tone(t, freq, att, inst, onset) {
     if (inst && inst !== this.inst) this.setInst(inst, t);
-    const g = attToGain(att) * this.level * 0.28;
+    const g = attToGain(att) * this.level * 0.36;
     if (att >= 15) { this.gain.gain.setTargetAtTime(0, t, 0.012); return; }
     if (onset) {
       this.osc1.frequency.setValueAtTime(freq, t); this.osc2.frequency.setValueAtTime(freq, t); this.sub.frequency.setValueAtTime(freq / 2, t);
@@ -85,7 +85,7 @@ export class HDSynth {
     del.connect(delay); delay.connect(dlp); dlp.connect(fb); fb.connect(delay); dlp.connect(this.out);
     this.bus = { dry, rev, del }; this.delayNode = delay;
     this.voices = [new Voice(ctx, this.bus, 0), new Voice(ctx, this.bus, 1), new Voice(ctx, this.bus, 2)];
-    this.drumGain = ctx.createGain(); this.drumGain.gain.value = 0.9; this.drumGain.connect(dry); this.drumGain.connect(rev);
+    this.drumGain = ctx.createGain(); this.drumGain.gain.value = 0.7; this.drumGain.connect(dry); this.drumGain.connect(rev);
     this.noiseBuf = noiseBuffer(ctx);
   }
   setTempoDelay(bpm) { this.delayNode.delayTime.setTargetAtTime(60 / bpm * 0.75, this.ctx.currentTime, 0.1); }

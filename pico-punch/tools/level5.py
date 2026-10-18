@@ -28,19 +28,20 @@ ground(15, 18, 10); ground(19, 24, 9); ground(25, 28, 10); ground(29, 32, 11)
 dec(17, 9, 'p'); dec(21, 8, 'k'); dec(23, 8, 't'); dec(27, 9, 's')
 pit(33, 34)
 ground(35, 46, 11)
-put(42, 10, 'c')                    # primeiro inimigo (escorpião), >6 tiles do início
+put(40, 10, 'c'); put(44, 7, 'e')   # primeiros inimigos (escorpião + abelhão), >6 tiles do início
 for x in (38, 39, 40): put(x, 8, 'S')   # fileira sobre a cabeça: pular + soco para cima
 put(44, 10, '$'); dec(36, 10, 's'); dec(45, 10, 'k')
 pit(47, 48)
-ground(49, 58, 11); put(56, 8, 'e'); put(52, 10, '$'); dec(50, 10, 't'); dec(54, 10, 'p')
-ground(59, 60, 10); ground(61, 66, 9); put(65, 8, 'c'); dec(63, 8, 'k')
+ground(49, 58, 11); put(52, 10, '$'); dec(50, 10, 't'); dec(54, 10, 'p')
+ground(59, 60, 10); ground(61, 66, 9); dec(63, 8, 'k')
 
 # ---- Seção B: Templo 1 (67–90) ------------------------------------------------------------
 ground(67, 90, 9)
 for x in range(68, 85): put(x, 5, '#')          # teto
+put(68, 4, '#'); put(84, 4, '#')                  # parapeitos nas pontas do teto
 for x in (68, 72, 76, 80, 84): pillar(x, 6, 8)   # pilares
 put(70, 7, 'S'); put(71, 7, 'S')                  # muro de blocos na altura do peito
-put(74, 6, '?')                                   # bloco ? sobre a cabeça (saco)
+put(74, 6, '?'); put(74, 8, 'c')                  # bloco ? sobre a cabeça (saco) + escorpião guardião
 put(77, 7, 'S'); put(77, 6, 'S')                  # coluna de 2
 put(79, 8, '$'); put(83, 7, 'S')
 dec(73, 8, 's'); dec(86, 8, 't')
@@ -51,14 +52,14 @@ pit(97, 98)
 # ---- Seção C: dunas das gralhas (99–154) --------------------------------------------------
 ground(99, 110, 11); put(101, 10, '$'); put(102, 10, '$'); dec(107, 10, 'k'); dec(100, 10, 'p')
 pit(111, 112)
-ground(113, 122, 11); put(119, 4, 'v'); dec(116, 10, 't'); dec(121, 10, 's')
+ground(113, 122, 11); dec(116, 10, 't'); dec(121, 10, 's')
 ground(123, 124, 10); ground(125, 128, 9); ground(129, 132, 8); put(131, 7, '&'); dec(126, 8, 'k'); dec(130, 7, 't')
-ground(133, 136, 9); put(136, 7, 'e'); ground(137, 140, 10); ground(141, 150, 11)
-put(144, 10, 'c'); put(148, 9, 'S'); put(149, 8, 'S'); dec(135, 8, 'p'); dec(143, 10, 'k'); dec(139, 9, 's')
+ground(133, 136, 9); put(138, 7, 'e'); ground(137, 140, 10); ground(141, 150, 11)
+put(148, 9, 'S'); put(149, 8, 'S'); dec(135, 8, 'p'); dec(143, 10, 'k'); dec(139, 9, 's')
 ground(151, 154, 10); dec(152, 9, 't')
 
 # ---- Seção D: Templo 2 (155–196) ----------------------------------------------------------
-ground(155, 196, 9); put(157, 8, 'C')             # checkpoint 2
+ground(155, 196, 9); put(157, 8, 'C'); put(161, 8, 'c')   # checkpoint 2 + escorpião
 for x in range(160, 191): put(x, 4, '#')          # teto alto
 for x in range(168, 176): put(x, 2, '#')          # cúpula sobre o estrado
 put(168, 3, '#'); put(175, 3, '#')
@@ -68,12 +69,13 @@ put(163, 7, 'S'); put(164, 7, 'S')
 put(167, 6, 'S'); put(168, 6, 'S')
 ground(170, 173, 7)                               # estrado (2 degraus)
 put(172, 4, '?')                                  # coração escondido sob a cúpula (soco para cima, no estrado)
-put(193, 8, 'c'); put(181, 7, 'S'); put(182, 6, 'S'); put(185, 6, '?'); put(188, 6, 'e')
+put(193, 8, 'c'); put(181, 7, 'S'); put(182, 6, 'S'); put(185, 6, '?'); put(190, 3, '#')
 dec(162, 8, 's'); dec(175, 8, 's'); dec(189, 8, 's'); dec(172, 6, 'p'); dec(194, 8, 'k')
 ground(197, 198, 10)
 
 # ---- Seção E: arena do chefe (199–228) -----------------------------------------------------
 ground(199, 219, 11)
+put(196, 4, 'v')                                  # gralha: o teto do templo 2 (linha 4) a mantém à direita de 190
 put(204, 10, 'G')                                 # portão (≥11 tiles antes de B: duelo dispara a 140 px)
 put(216, 10, 'B')
 pillar(206, 10, 10); pillar(218, 10, 10); dec(209, 10, 's'); dec(213, 10, 's'); dec(201, 10, 'p')

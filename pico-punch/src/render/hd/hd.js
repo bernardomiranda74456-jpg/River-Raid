@@ -20,12 +20,12 @@ export class HDRenderer {
     this.lights = []; this.time = 0; this.aberr = 0; this.lastShake = 0; this.resize();
   }
   resize() {
-    const r = this.app.renderer; const w = r.width / r.resolution, h = r.height / r.resolution;
+    const r = this.app.renderer; const w = r.width, h = r.height; // lógicas (CSS)
     if (this.rtDiffuse) { this.rtDiffuse.destroy(true); this.rtNormal.destroy(true); }
     this.rtDiffuse = RenderTexture.create({ width: w, height: h, resolution: r.resolution, antialias: false, scaleMode: 'linear' });
     this.rtNormal = RenderTexture.create({ width: w, height: h, resolution: r.resolution, antialias: false, scaleMode: 'linear' });
     this.litSprite.texture = this.rtDiffuse; this.litSprite.width = w; this.litSprite.height = h; this.lighting.setNormal(this.rtNormal);
-    this.lighting.u.uScreen[0] = r.width; this.lighting.u.uScreen[1] = r.height; this.cssW = w; this.cssH = h; this.crt.resize(r.width, r.height); this.crt.setLines(RETRO_H);
+    this.lighting.u.uScreen[0] = w; this.lighting.u.uScreen[1] = h; // uInputSize do Pixi é lógico this.cssW = w; this.cssH = h; this.crt.resize(w * r.resolution, h * r.resolution); this.crt.setLines(RETRO_H);
     this.updateFilters();
   }
   updateFilters() {
@@ -69,7 +69,7 @@ export class HDRenderer {
     const hs = g.hdScale; this.worldRoot.scale.set(hs); if (scene.bg.parent !== this.worldRoot) this.worldRoot.addChild(scene.bg, scene.world);
     this.foliage(scene, level, dt);
     // uniformes de câmera e preset de luz
-    const cam = level.camera; const u = this.lighting.u; u.uCam[0] = scene.camX; u.uCam[1] = scene.camY; u.uScalePx = r.resolution * hs * cam.zoom; u.uTime = this.time;
+    const cam = level.camera; const u = this.lighting.u; u.uCam[0] = scene.camX; u.uCam[1] = scene.camY; u.uScalePx = hs * cam.zoom; u.uTime = this.time;
     const tkey = this.timeFor(level.theme, level.json.time); const lp = this.debugLight || LIGHT_PRESETS[tkey] || LIGHT_PRESETS.day; u.uAmbient.set(lp.ambient); u.uSunDir.set(lp.sunDir); u.uSunColor.set(lp.sun); u.uShadow = lp.shadow; u.uBgTint.set(lp.bg); u.uWaterTint.set(lp.water);
     this.lighting.updateTileInfo(level.map); this.collectLights(scene, level);
     const gp = GRADE_PRESETS[level.theme === 'desert' ? 'desert' : tkey] || GRADE_PRESETS.day; this.grade.setPreset(gp); const gu = this.grade.u; gu.uTime = this.time;

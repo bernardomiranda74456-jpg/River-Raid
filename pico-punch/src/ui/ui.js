@@ -35,7 +35,7 @@ export function installUI(game) {
   game.setState = ((orig) => function (st) { orig.call(game, st); })(game.setState);
   const ui = { menu: null, panel: null, t: 0 }; game.ui = ui;
   const center = () => Math.round(game.viewW / 2);
-  const panel = (w, h, alpha = 0.75) => { const g = new Graphics(); g.roundRect(0, 0, w, h, 4).fill({ color: 0x0a0a1a, alpha }); g.roundRect(0, 0, w, h, 4).stroke({ color: 0x3a3a6a, width: 1 }); return g; };
+  const panel = (w, h, alpha = 0.88) => { const g = new Graphics(); g.roundRect(0, 0, w, h, 4).fill({ color: 0x0a0a1a, alpha }); g.roundRect(0, 0, w, h, 4).stroke({ color: 0x5a5a9a, width: 1 }); return g; };
   const line = (text, x, y, tint = COL.text, align = 'center') => { const l = new BitmapLine(text, { tint, shadow: true, align }); l.x = x; l.y = y; return l; };
 
   // ----- Título ---------------------------------------------------------------------------------
@@ -120,7 +120,7 @@ export function installUI(game) {
   // ----- Resultados -----------------------------------------------------------------------------
   function showResults(lv) {
     const L = game.menuLayer; L.removeChildren();
-    const g = panel(176, 110); g.x = center() - 88; g.y = 36; L.addChild(g);
+    const g = panel(208, 110); g.x = center() - 104; g.y = 36; L.addChild(g);
     L.addChild(line('FASE COMPLETA!', center(), 44, COL.title));
     L.addChild(line(lv.name.toUpperCase(), center(), 58, COL.dim));
     const t = Math.floor(lv.time); const best = game.save.progress.bestTimes[lv.id];
@@ -130,7 +130,7 @@ export function installUI(game) {
     L.addChild(line(`INIMIGOS ${lv.defeated}   MORTES ${lv.deaths}`, center(), 112, COL.dim));
     L.addChild(line(game.levelIndex + 1 < LEVELS.length ? 'PULO: PRÓXIMA FASE' : 'PULO: CONTINUAR', center(), 130, COL.ok));
   }
-  function showGameOver() { const L = game.menuLayer; L.removeChildren(); const g = panel(150, 60); g.x = center() - 75; g.y = 64; L.addChild(g); L.addChild(line('FIM DE JOGO', center(), 76, COL.bad)); L.addChild(line('PULO: CONTINUAR (3 VIDAS)', center(), 96, COL.dim)); L.addChild(line('DINHEIRO MANTIDO', center(), 108, COL.dim)); }
+  function showGameOver() { const L = game.menuLayer; L.removeChildren(); const g = panel(216, 64, 0.9); g.x = center() - 108; g.y = 62; L.addChild(g); L.addChild(line('FIM DE JOGO', center(), 72, COL.bad)); const a = new BitmapLine('PULO: CONTINUAR (3 VIDAS)', { tint: COL.text, shadow: true, align: 'center', spacing: 7 }); a.x = center(); a.y = 94; const b = new BitmapLine('DINHEIRO MANTIDO', { tint: COL.dim, shadow: true, align: 'center', spacing: 7 }); b.x = center(); b.y = 108; L.addChild(a, b); }
 
   // ----- Hooks no Game --------------------------------------------------------------------------
   game.hooks.stateChanged = (s) => { if (s === 'title') buildTitle(); if (s === 'pause') { buildPause(); game.audio?.sfx('pause'); } if (s === 'gameover') showGameOver(); };
