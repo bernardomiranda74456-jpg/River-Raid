@@ -78,5 +78,10 @@ imediatamente acima do chão.
 * Checkpoint a cada ~1/3 da fase; o primeiro inimigo nunca a menos de 6 tiles do início.
 * Rolões devem rolar numa superfície delimitada por paredes ou visivelmente em direção ao jogador.
 * Arena de chefe: o duelo dispara quando o herói chega a 140 px (≈9 tiles) do marcador `B`; coloque o portão `G` pelo menos 10 tiles antes de `B` e piso plano até ~10 tiles depois de `B` (o Vizir teleporta até lá). Arena efetiva ≈ 20 tiles.
+* Lições dos playtests com o bot: coloque um waypoint até 2 tiles depois de cada checkpoint (o bot retoma
+  do waypoint visitado mais próximo ao renascer); o waypoint do topo de uma escada fica 2 linhas acima da
+  cornija; poços de perigo precisam de 2 linhas de profundidade para o bot enxergar; guardas de escudo
+  e fantasmas de mapa ficam fora do caminho do bot (ele não os enfrenta); janelas e outras decorações
+  são desenhadas atrás dos tiles sólidos (use-as em fachadas vazias).
 * `botPath`: waypoints a cada mudança de direção/altura; o bot anda, pula buracos/degraus, escala escadas
   quando o próximo ponto está acima e soca inimigos/blocos. Teste com `node test/e2e.mjs <n> retro 4`.

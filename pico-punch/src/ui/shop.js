@@ -42,7 +42,7 @@ export function installShop(game) {
       game.save.save(); level.applyInventory(); refresh();
     } }));
     const menu = new Menu(game, items, { gap: 11, onBack: () => close() }); menu.root.x = cx + 20; menu.root.y = y0 + 22; L.addChild(menu.root);
-    const refresh = () => { money.setText(level.money + '$'); menu.refresh(); const it = SHOP_ITEMS[menu.index]; icon.texture = game.bank.sprite(it.icon, 'f0'); const words = it.desc.split(' '); let a = '', b = ''; for (const w of words) { if (a.length + w.length < 30) a += (a ? ' ' : '') + w; else b += (b ? ' ' : '') + w; } desc.setText(a); desc2.setText(b); };
+    const refresh = () => { money.setText(level.money + '$'); menu.refresh(); const it = SHOP_ITEMS[menu.index]; icon.texture = game.bank.sprite(it.icon, 'f0'); const words = it.desc.split(' '); let a = '', b = ''; for (const w of words) { if (a.length + w.length < 28) a += (a ? ' ' : '') + w; else b += (b ? ' ' : '') + w; } desc.setText(a); desc2.setText(b); };
     const close = () => { game.menuLayer.removeChildren(); ui = null; level.state = 'play'; game.setState('play'); level.camera.targetZoom = 1; game.audio?.music.play(level.json.music); game.audio?.sfx('door');
       if (bought.vehicle) level.mountVehicle(bought.vehicle); if (bought.capsule) level.hero.items.capsule = 12; level.hero.invuln = Math.max(level.hero.invuln, 0.5); };
     ui = { menu, refresh }; refresh(); if (game.mode === 'hd') level.camera.targetZoom = 1.1;

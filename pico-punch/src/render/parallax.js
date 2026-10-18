@@ -15,10 +15,10 @@ const tex = (canvas) => new Texture({ source: new CanvasSource({ resource: canva
 export const THEME_BG = {
   mountain: { sky: ['s', 'c'], far: 'q', near: 'R', ground: 'G', time: 'morning' },
   forest: { sky: ['s', 'b'], far: 'G', near: 'g', ground: 'G' },
-  lake: { sky: ['s', 'b'], far: 'q', near: 'G', ground: 'G' },
+  lake: { sky: ['s', 'b'], far: 'c', near: 'G', ground: 'G' },
   village: { sky: ['s', 'c'], far: 'q', near: 'R', ground: 'g' },
   desert: { sky: ['c', 's'], far: 'D', near: 'd', ground: 'd' },
-  road: { sky: ['s', 'c'], far: 'q', near: 'g', ground: 'G' },
+  road: { sky: ['s', 'c'], far: 'q', near: 'G', ground: 'G' },
   sky: { sky: ['s', 'c'], far: 'c', near: 'w', ground: 'c' },
   cave: { sky: ['k', 's'], far: 'q', near: 'R', ground: 'q' },
   city: { sky: ['k', 's'], far: 'D', near: 'q', ground: 'q' },

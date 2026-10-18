@@ -75,6 +75,21 @@ desbloqueadas, dinheiro, vidas, melhores tempos e placares).
 * Fim de fase: Pico devora um pastel (gag original) enquanto toca o jingle; depois, placar com tempo,
   pontos e dinheiro. Checkpoints (sinos), vidas, continue e salvamento automático.
 
+### As dez fases
+
+| # | Fase | Tema / hora | Tamanho | Destaques |
+|---|---|---|---|---|
+| 1 | Monte Agulha | montanha, manhã | 48×44 | escalada vertical com escadas, neve no cume, rolões |
+| 2 | Bosque Sussurro | floresta, dia | 224×14 | dois andares, pontes, trepadeiras; chefe Rã-Rei Bufo |
+| 3 | Lago Espelho | lago, dia | 200×16 | natação, caverna submersa, gruta de águas-vivas, barco opcional |
+| 4 | Vila Caramelo | vila, entardecer | 180×12 | loja, casas de passagem, cofre de pedra (moto) |
+| 5 | Ruínas de Areia | deserto, entardecer | 230×14 | templos, calor tremulando (HD); chefe Escorpião Dunar |
+| 6 | Estrada do Trovão | estrada, dia | 320×12 | moto em auto-corrida, fileiras de blocos de pedra, buracos |
+| 7 | Céu de Vantura | céu, dia | 260×16 | Helipé entre ilhas flutuantes, drones, torres de blocos |
+| 8 | Caverna Brasa | caverna | 220×16 | lava, morcegos, cristais luminosos; chefe Morcegão Brasa |
+| 9 | Cidade Lanterna | cidade, noite | 240×14 | prédios em corte, escadas, guardas com escudo, drones |
+| 10 | Castelo Kazmar | castelo | 260×16 | ameias, masmorra, fantasmas, lava; chefe final Vizir Kazmar |
+
 ## Arquitetura
 
 ```
@@ -156,9 +171,27 @@ velocidade. Jingles tocam numa terceira instância com *ducking* da música.
 ```bash
 node tools/serve.mjs "$PWD" 8787 &
 node test/e2e.mjs 1 retro 5          # bot atravessa a fase 1; PASS exige meta + 0 violações + console limpo
-node tools/shot.mjs "?level=1&mode=hd" screenshots/x.png "w:1500"
-node tools/render-audio.mjs          # todas as faixas
+node test/run-all.mjs 5              # as 10 fases em sequência (fases de chefe: chegar ao duelo conta)
+node tools/make-screenshots.mjs      # conjunto final em screenshots/
+node tools/render-audio.mjs          # todas as faixas → audio-preview/ (WAV 22 kHz + PNG de análise)
+node tools/render-audio.mjs sfx      # todos os efeitos num único WAV
+node tools/lint-level.mjs levels/l2-bosque-sussurro.json
+node tools/colorcount.mjs screenshots/l1-monte-agulha-retro.png   # cores distintas (≤ 32 no retrô)
 ```
+
+Resultado da última suíte (Chromium headless, `fast=5`): as 10 fases concluídas pelo bot com 0 violações
+de colisão e console limpo; fases 2, 5, 8 e 10 terminam no duelo (o bot não joga pedra-papel-tesoura).
+O bot é um jogador heurístico — o número de mortes dele não mede a dificuldade para humanos.
+
+O ambiente de desenvolvimento só tem Chromium (software GL); o jogo usa apenas WebGL2, Web Audio e
+AudioWorklet padrão, com fallback para `OscillatorNode` onde o worklet não existir.
+
+## Propriedade intelectual
+
+Tudo neste diretório foi criado do zero para este projeto: personagens (Pico, Vizir Kazmar, Rã-Rei Bufo,
+Escorpião Dunar, Morcegão Brasa), mundo (Vantura), nomes de itens e veículos, pixel art, texturas,
+fases e as 19 composições/efeitos sintetizados. Nenhum sprite, texto, mapa ou melodia de terceiros foi
+reproduzido; apenas as *mecânicas* clássicas do gênero serviram de inspiração. Biblioteca: Pixi.js (MIT).
 
 ## Decisões de design registradas
 
@@ -171,4 +204,10 @@ node tools/render-audio.mjs          # todas as faixas
 * **HD mostra mais largura** (16:9) com a mesma altura de 12 tiles; as fases são desenhadas pensando
   nos dois enquadramentos.
 * **Arte HD derivada da pixel art** (EPX + sombreamento + normal maps) para manter identidade entre
-  os modos; solo, fundos e efeitos são procedurais.
+  os modos; solo (Worley periódico), lava, fundos e efeitos são procedurais. As texturas HD de uma
+  fase são pré-geradas na abertura (íris) para não engasgar na primeira aparição de cada sprite.
+* **Perder o duelo** custa uma vida e recomeça da entrada da arena; morrer na luta reabre o portão e
+  o duelo se repete.
+* **Chefes têm tells aprendíveis** e tendem a jogar a mão que vence a sua última escolha.
+* **Fundos retrô** usam 2–3 camadas (o hardware original não tinha parallax de verdade; é a liberdade
+  que o "modo remaster" não precisa, mas o retrô ainda mantém 32 cores e 256×192).
