@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1020">
+  <title>Wobble Rush</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='36' r='22' fill='%23ff6b35'/><circle cx='24' cy='32' r='5' fill='white'/><circle cx='40' cy='32' r='5' fill='white'/><circle cx='25' cy='33' r='2.5'/><circle cx='41' cy='33' r='2.5'/></svg>">
+  <link rel="stylesheet" href="./src/ui/ui.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/three.module.js",
+      "three/addons/": "./vendor/three/addons/",
+      "@dimforge/rapier3d-compat": "./vendor/rapier/rapier.mjs"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- Loading -->
+  <div id="loading" class="overlay visible">
+    <div class="loading-box">
+      <div class="logo">WOBBLE<span>RUSH</span></div>
+      <div class="bar"><div id="loading-bar"></div></div>
+      <div id="loading-text">Carregando física…</div>
+    </div>
+  </div>
+
+  <!-- Main menu -->
+  <div id="menu" class="overlay">
+    <div class="menu-panel">
+      <div class="logo big">WOBBLE<span>RUSH</span></div>
+      <div class="tagline">32 bonecos. 3 rodadas. Só um fica de pé.</div>
+      <div class="menu-buttons">
+        <button id="btn-play" class="primary">JOGAR</button>
+        <button id="btn-skins">PERSONAGEM</button>
+        <button id="btn-settings">CONFIGURAÇÕES</button>
+        <button id="btn-controls">CONTROLES</button>
+      </div>
+      <div class="menu-footer" id="gpu-info"></div>
+    </div>
+  </div>
+
+  <!-- Skin picker -->
+  <div id="skins" class="overlay">
+    <div class="menu-panel wide">
+      <h2>Escolha seu boneco</h2>
+      <div id="skin-grid" class="skin-grid"></div>
+      <div class="menu-buttons row">
+        <button id="btn-skins-back">VOLTAR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div id="settings" class="overlay">
+    <div class="menu-panel wide">
+      <h2>Configurações</h2>
+      <div class="settings-grid">
+        <label>Preset gráfico</label>
+        <div class="seg" id="preset-seg">
+          <button data-v="low">Baixa</button><button data-v="medium">Média</button><button data-v="high">Alta</button><button data-v="ultra">Ultra</button>
+        </div>
+        <label>Oclusão ambiente (GTAO)</label><input type="checkbox" id="opt-ao">
+        <label>Bloom</label><input type="checkbox" id="opt-bloom">
+        <label>Anti-aliasing (SMAA)</label><input type="checkbox" id="opt-smaa">
+        <label>Vinheta + color grading</label><input type="checkbox" id="opt-grade">
+        <label>Profundidade de campo</label><input type="checkbox" id="opt-dof">
+        <label>Motion blur</label><input type="checkbox" id="opt-mblur">
+        <label>Sombras</label>
+        <div class="seg" id="shadow-seg">
+          <button data-v="off">Off</button><button data-v="1024">1K</button><button data-v="2048">2K</button><button data-v="4096">4K</button>
+        </div>
+        <label>Escala de renderização</label><input type="range" id="opt-scale" min="0.5" max="1.5" step="0.05">
+        <label>Sensibilidade do mouse</label><input type="range" id="opt-sens" min="0.2" max="2" step="0.05">
+        <label>Volume</label><input type="range" id="opt-volume" min="0" max="1" step="0.05">
+        <label>Mostrar FPS</label><input type="checkbox" id="opt-fps">
+      </div>
+      <div class="menu-buttons row">
+        <button id="btn-settings-back">VOLTAR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div id="controls" class="overlay">
+    <div class="menu-panel">
+      <h2>Controles</h2>
+      <table class="controls-table">
+        <tr><td>Mover</td><td>WASD / Setas / Analógico esquerdo</td></tr>
+        <tr><td>Pular</td><td>Espaço / A (gamepad)</td></tr>
+        <tr><td>Mergulho</td><td>Shift / X (gamepad)</td></tr>
+        <tr><td>Câmera</td><td>Mouse (clique para travar) / Analógico direito</td></tr>
+        <tr><td>Pausar</td><td>Esc / Start</td></tr>
+        <tr><td>Celular</td><td>Joystick virtual + botões na tela</td></tr>
+      </table>
+      <div class="menu-buttons row">
+        <button id="btn-controls-back">VOLTAR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <div id="pause" class="overlay">
+    <div class="menu-panel">
+      <h2>Pausado</h2>
+      <div class="menu-buttons">
+        <button id="btn-resume" class="primary">CONTINUAR</button>
+        <button id="btn-pause-settings">CONFIGURAÇÕES</button>
+        <button id="btn-quit">SAIR PARA O MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="results" class="overlay">
+    <div class="menu-panel wide">
+      <h2 id="results-title">Resultado</h2>
+      <div id="podium" class="podium"></div>
+      <div id="results-text"></div>
+      <div class="menu-buttons">
+        <button id="btn-again" class="primary">JOGAR DE NOVO</button>
+        <button id="btn-results-menu">MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="hud-top">
+      <div class="hud-pill" id="hud-round">RODADA 1</div>
+      <div class="hud-pill big" id="hud-timer">0:00</div>
+      <div class="hud-pill" id="hud-qualified">0 / 16</div>
+    </div>
+    <div class="hud-left">
+      <div class="hud-pill" id="hud-position">#32</div>
+      <div id="hud-lava" class="lava-meter"><div class="lava-fill"></div><div class="lava-you"></div></div>
+    </div>
+    <div id="hud-center"></div>
+    <div id="hud-countdown"></div>
+    <div id="hud-fps"></div>
+    <div id="hud-hint">Clique para controlar a câmera</div>
+  </div>
+
+  <!-- Touch controls -->
+  <div id="touch">
+    <div id="joystick"><div id="joystick-knob"></div></div>
+    <div class="touch-buttons">
+      <button id="touch-dive">MERGULHO</button>
+      <button id="touch-jump">PULAR</button>
+    </div>
+    <button id="touch-pause">II</button>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
