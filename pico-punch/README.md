@@ -172,7 +172,7 @@ velocidade. Jingles tocam numa terceira instância com *ducking* da música.
 node tools/serve.mjs "$PWD" 8787 &
 node test/e2e.mjs 1 retro 5          # bot atravessa a fase 1; PASS exige meta + 0 violações + console limpo
 node test/run-all.mjs 5              # as 10 fases em sequência (fases de chefe: chegar ao duelo conta)
-node tools/make-screenshots.mjs      # conjunto final em screenshots/
+node tools/make-screenshots.mjs      # conjunto final em screenshots/ (aceita um regex: "hd|chefe")
 node tools/render-audio.mjs          # todas as faixas → audio-preview/ (WAV 22 kHz + PNG de análise)
 node tools/render-audio.mjs sfx      # todos os efeitos num único WAV
 node tools/lint-level.mjs levels/l2-bosque-sussurro.json
@@ -182,6 +182,9 @@ node tools/colorcount.mjs screenshots/l1-monte-agulha-retro.png   # cores distin
 Resultado da última suíte (Chromium headless, `fast=5`): as 10 fases concluídas pelo bot com 0 violações
 de colisão e console limpo; fases 2, 5, 8 e 10 terminam no duelo (o bot não joga pedra-papel-tesoura).
 O bot é um jogador heurístico — o número de mortes dele não mede a dificuldade para humanos.
+
+As capturas finais são jogadas em retrô (rápido mesmo com GL por software) e, para as versões HD, o modo é
+trocado no instante da foto — o mesmo TAB que o jogador tem; isso prova que a troca preserva a cena inteira.
 
 O ambiente de desenvolvimento só tem Chromium (software GL); o jogo usa apenas WebGL2, Web Audio e
 AudioWorklet padrão, com fallback para `OscillatorNode` onde o worklet não existir.
@@ -209,5 +212,8 @@ reproduzido; apenas as *mecânicas* clássicas do gênero serviram de inspiraç�
 * **Perder o duelo** custa uma vida e recomeça da entrada da arena; morrer na luta reabre o portão e
   o duelo se repete.
 * **Chefes têm tells aprendíveis** e tendem a jogar a mão que vence a sua última escolha.
+* **Menus retrô sem alpha**: o SMS não mistura cores, então painéis são opacos em cor da paleta, o véu do
+  título é malha xadrez de 1 px e "esmaecer" vira cintilação (`src/ui/panelfx.js`); partículas não usam
+  blend aditivo no retrô. Toda captura retrô de `screenshots/` tem ≤ 20 cores, todas da paleta de 64.
 * **Fundos retrô** usam 2–3 camadas (o hardware original não tinha parallax de verdade; é a liberdade
   que o "modo remaster" não precisa, mas o retrô ainda mantém 32 cores e 256×192).

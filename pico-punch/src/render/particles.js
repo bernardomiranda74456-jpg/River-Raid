@@ -35,7 +35,7 @@ export class Particles {
     if (!this.pool.length) return null;
     const p = this.pool.pop(); p.x = x; p.y = y; p.px = x; p.py = y; p.vx = vx; p.vy = vy; p.life = life; p.maxLife = life; p.g = opts.g ?? 0; p.kind = opts.kind || 'square';
     p.size = opts.size ?? 1; p.rot = opts.rot ?? 0; p.vr = opts.vr ?? 0; p.fade = opts.fade ?? true; p.shrink = opts.shrink ?? false; p.color = color; p.drag = opts.drag ?? 0; p.blend = opts.blend || 'normal';
-    const s = p.s; s.visible = true; s.tint = this.mode === 'retro' ? quantizeHex(color) : color; s.alpha = 1; s.rotation = p.rot; s.blendMode = p.blend;
+    const s = p.s; s.visible = true; s.tint = this.mode === 'retro' ? quantizeHex(color) : color; s.alpha = 1; s.rotation = p.rot; s.blendMode = this.mode === 'retro' ? 'normal' : p.blend; // SMS não soma cores
     const hd = this.mode === 'hd';
     s.texture = hd ? (this.tex[p.kind] || this.tex.soft) : this.tex.square;
     const base = hd ? (p.kind === 'square' ? 0.12 : 0.1) : 0.5;
@@ -57,7 +57,7 @@ export class Particles {
       const s = p.s; const t = p.life / p.maxLife;
       let x = p.px + (p.x - p.px) * alpha, y = p.py + (p.y - p.py) * alpha; if (retro) { x = Math.round(x); y = Math.round(y); }
       s.x = x; s.y = y; s.rotation = retro ? 0 : p.rot;
-      if (p.fade) s.alpha = retro ? (t < 0.3 ? 0.999 : 1) : Math.min(1, t * 2);
+      if (p.fade) s.alpha = retro ? 1 : Math.min(1, t * 2); // retrô: sem alpha — cintila no fim da vida (abaixo)
       if (p.shrink) { const base = (this.mode === 'hd' ? (p.kind === 'square' ? 0.12 : 0.1) : 0.5) * p.size; s.scale.set(base * (0.3 + 0.7 * t)); }
       if (retro && p.fade && t < 0.3 && Math.floor(p.life * 30) % 2) s.visible = false; else s.visible = true;
     }

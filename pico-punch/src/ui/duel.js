@@ -4,6 +4,7 @@ import { BitmapLine } from '../render/text.js';
 import { Boss, BOSS_DEFS } from '../world/entities/boss.js';
 import { T, TILE } from '../world/tilemap.js';
 import { rng } from '../core/math.js';
+import { panelRect, fadeSprite } from './panelfx.js';
 
 const HANDS = ['handRock', 'handPaper', 'handScissors']; const NAMES = ['PEDRA', 'PAPEL', 'TESOURA'];
 const beats = (a, b) => (a === 0 && b === 2) || (a === 1 && b === 0) || (a === 2 && b === 1);
@@ -18,14 +19,14 @@ export function installDuel(game) {
     if (level.hero.onGround) level.setCheckpoint(level.hero.x - 24, level.hero.y); // perder o duelo repete daqui
     game.audio?.music.play('duel');
     const L = game.menuLayer; L.removeChildren(); const cx = Math.round(game.viewW / 2);
-    const g = new Graphics(); g.roundRect(cx - 120, 8, 240, 112, 4).fill({ color: 0x120c22, alpha: 0.92 }).stroke({ color: 0xffaa00, width: 1 }); L.addChild(g);
+    const g = panelRect(game, new Graphics(), cx - 120, 8, 240, 112, { color: 0x120c22, alpha: 0.92, stroke: 0xffaa00 }); L.addChild(g);
     const title = line('DUELO DE MÃOS', cx, 14, 0xffaa00); const sub = line(bd.name + ' - MELHOR DE 3', cx, 26, 0xaaaaff, 'center', 7); L.addChild(title, sub);
     const heroS = new Sprite(game.bank.sprite('hero', 'idle0')); heroS.anchor.set(0.5, 1); heroS.x = cx - 80; heroS.y = 96; heroS.scale.set(game.bank.invScale); L.addChild(heroS);
     const bossS = new Sprite(game.bank.sprite(def.type, 'f0')); bossS.anchor.set(0.5, 1); bossS.x = cx + 80; bossS.y = 100; bossS.scale.set(-game.bank.invScale, game.bank.invScale); L.addChild(bossS);
     const heroHand = new Sprite(); heroHand.anchor.set(0.5); heroHand.x = cx - 40; heroHand.y = 70; heroHand.scale.set(game.bank.invScale); heroHand.visible = false; L.addChild(heroHand);
     const bossHand = new Sprite(); bossHand.anchor.set(0.5); bossHand.x = cx + 40; bossHand.y = 70; bossHand.scale.set(-game.bank.invScale, game.bank.invScale); bossHand.visible = false; L.addChild(bossHand);
     const score = line('0 × 0', cx, 42, 0xffffff); const msg = line('', cx, 56, 0xffff55); const hint = line('← PEDRA   ↑ PAPEL   → TESOURA', cx, 108, 0xaaaaff, 'center', 7); L.addChild(score, msg, hint);
-    const sel = [0, 1, 2].map((i) => { const s = new Sprite(game.bank.sprite(HANDS[i], 'f0')); s.anchor.set(0.5, 1); s.x = cx - 24 + i * 24; s.y = 104; s.scale.set(game.bank.invScale * 0.6); s.alpha = 0.45; L.addChild(s); return s; });
+    const sel = [0, 1, 2].map((i) => { const s = new Sprite(game.bank.sprite(HANDS[i], 'f0')); s.anchor.set(0.5, 1); s.x = cx - 24 + i * 24; s.y = 104; s.scale.set(game.bank.invScale * 0.6); fadeSprite(game, s, 0.45, 0); L.addChild(s); return s; });
     D = { level, def, bd, t: 0, phase: 'count', beat: 0, wins: 0, losses: 0, heroPick: 1, bossPick: 0, ui: { heroS, bossS, heroHand, bossHand, score, msg, sel, title }, eye: level.hero.items.eye, tellShown: false, history: [] };
     D.bossPick = choose(D); D.t = 0;
     level.game.hooks.duelActive = true;
@@ -43,12 +44,13 @@ export function installDuel(game) {
       if (beat !== d.beat) { d.beat = beat; if (beat < 3) { ui.msg.setText(['PEDRA...', 'PAPEL...', 'TESOURA...'][beat]); game.audio?.sfx('countdown'); } }
       if (inp.held.left) d.heroPick = 0; else if (inp.held.up) d.heroPick = 1; else if (inp.held.right) d.heroPick = 2;
       if (game.debug.get('autoduel')) d.heroPick = (d.bossPick + 1) % 3; // teste: escolhe sempre a mão vencedora
-      ui.sel.forEach((s, i) => { s.alpha = i === d.heroPick ? 1 : 0.4; s.y = i === d.heroPick ? 102 : 104; });
+      ui.sel.forEach((s, i) => { fadeSprite(game, s, i === d.heroPick ? 1 : 0.4, d.t); s.y = i === d.heroPick ? 102 : 104; });
       // tell sutil no 2º tempo: deslocamento do sprite + leve variação de tempo da animação
       const tellOff = [-1.5, 0, 1.5][d.bossPick]; ui.bossS.x = Math.round(game.viewW / 2) + 80 + (beat >= 1 && beat < 3 ? tellOff : 0); ui.bossS.y = 100 + (beat === 1 && d.bossPick === 1 ? -1 : 0);
       ui.bossS.texture = game.bank.sprite(d.def.type, beat >= 1 && d.bossPick === 2 && Math.floor(d.t * 12) % 2 ? 'f1' : 'f0');
-      if (d.eye && !d.tellShown) { d.tellShown = true; ui.bossHand.visible = true; ui.bossHand.texture = game.bank.sprite(HANDS[d.bossPick], 'f0'); ui.bossHand.alpha = 0.6; }
-      if (beat >= 3) { d.phase = 'reveal'; d.t = 0; ui.msg.setText('JÁ!'); game.audio?.sfx('reveal3'); ui.heroHand.visible = ui.bossHand.visible = true; ui.heroHand.texture = game.bank.sprite(HANDS[d.heroPick], 'f0'); ui.bossHand.texture = game.bank.sprite(HANDS[d.bossPick], 'f0'); ui.bossHand.alpha = 1; d.history.push(d.heroPick); d.lastBoss = d.bossPick; if (d.eye) { d.eye = false; game.save.progress.items.eye = false; d.level.applyInventory(); }
+      if (d.eye && !d.tellShown) { d.tellShown = true; ui.bossHand.visible = true; ui.bossHand.texture = game.bank.sprite(HANDS[d.bossPick], 'f0'); }
+      if (d.tellShown && d.phase === 'count') fadeSprite(game, ui.bossHand, 0.6, d.t);
+      if (beat >= 3) { d.phase = 'reveal'; d.t = 0; ui.msg.setText('JÁ!'); game.audio?.sfx('reveal3'); ui.heroHand.visible = ui.bossHand.visible = true; ui.heroHand.texture = game.bank.sprite(HANDS[d.heroPick], 'f0'); ui.bossHand.texture = game.bank.sprite(HANDS[d.bossPick], 'f0'); ui.bossHand.alpha = 1; ui.bossHand.visible = true; d.history.push(d.heroPick); d.lastBoss = d.bossPick; if (d.eye) { d.eye = false; game.save.progress.items.eye = false; d.level.applyInventory(); }
         const win = beats(d.heroPick, d.bossPick), lose = beats(d.bossPick, d.heroPick); d.result = win ? 'win' : lose ? 'lose' : 'draw'; if (win) d.wins++; if (lose) d.losses++; }
     } else if (d.phase === 'reveal') {
       ui.heroHand.y = 70 + Math.sin(d.t * 30) * (d.t < 0.2 ? 3 : 0); ui.bossHand.y = ui.heroHand.y;

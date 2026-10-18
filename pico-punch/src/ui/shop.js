@@ -2,6 +2,7 @@
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { BitmapLine } from '../render/text.js';
 import { Menu } from './ui.js';
+import { panelRect } from './panelfx.js';
 
 export const SHOP_ITEMS = [
   { id: 'moto', name: 'MOTOCA TROVÃO', price: 150, icon: 'moto', desc: 'Corre sozinha, pula pedras e quebra blocos. Um golpe a destrói.' },
@@ -19,7 +20,7 @@ export function installShop(game) {
   let ui = null;
   const build = (level, door) => {
     const L = game.menuLayer; L.removeChildren(); const cx = Math.round(game.viewW / 2); const W = 232, H = 170; const x0 = cx - W / 2, y0 = 10;
-    const g = new Graphics(); g.roundRect(x0, y0, W, H, 4).fill({ color: 0x14102a, alpha: 0.94 }).stroke({ color: 0xffaa00, width: 1 }); L.addChild(g);
+    const g = panelRect(game, new Graphics(), x0, y0, W, H, { color: 0x14102a, alpha: 0.94, stroke: 0xffaa00 }); L.addChild(g);
     const title = new BitmapLine('LOJA DA VILA', { tint: 0xffaa00, shadow: true, align: 'center' }); title.x = cx; title.y = y0 + 6; L.addChild(title);
     const money = new BitmapLine('', { tint: 0xffff55, shadow: true, align: 'right' }); money.x = x0 + W - 8; money.y = y0 + 6; L.addChild(money);
     const desc = new BitmapLine('', { tint: 0xaaaaff, shadow: true, align: 'center', spacing: 7 }); desc.x = cx; desc.y = y0 + H - 30; L.addChild(desc);

@@ -2,6 +2,7 @@
 // (loja e duelo em módulos próprios). Tudo desenhado na cena (fonte bitmap), nos dois modos.
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { BitmapLine } from '../render/text.js';
+import { panelRect, dimRect, smsColor } from './panelfx.js';
 import { LEVELS } from '../levels.js';
 import { installShop } from './shop.js';
 import { installDuel } from './duel.js';
@@ -35,13 +36,13 @@ export function installUI(game) {
   game.setState = ((orig) => function (st) { orig.call(game, st); })(game.setState);
   const ui = { menu: null, panel: null, t: 0 }; game.ui = ui;
   const center = () => Math.round(game.viewW / 2);
-  const panel = (w, h, alpha = 0.88) => { const g = new Graphics(); g.roundRect(0, 0, w, h, 4).fill({ color: 0x0a0a1a, alpha }); g.roundRect(0, 0, w, h, 4).stroke({ color: 0x5a5a9a, width: 1 }); return g; };
+  const panel = (w, h, alpha = 0.88) => panelRect(game, new Graphics(), 0, 0, w, h, { alpha });
   const line = (text, x, y, tint = COL.text, align = 'center') => { const l = new BitmapLine(text, { tint, shadow: true, align }); l.x = x; l.y = y; return l; };
 
   // ----- Título ---------------------------------------------------------------------------------
   function buildTitle() {
     const L = game.menuLayer; L.removeChildren(); ui.menu = null;
-    const bg = new Graphics(); L.addChild(bg); ui.titleBg = bg;
+    const bg = new Graphics(); L.addChild(bg); ui.titleBg = bg; ui.titleMesh = game.mode === 'retro' ? dimRect(game, 0, 0, 140, 48, { color: 0x000055, alpha: 0.5 }) : null; if (ui.titleMesh) L.addChild(ui.titleMesh);
     ui.titleHero = new Sprite(game.bank.sprite('hero', 'victory')); ui.titleHero.anchor.set(0.5, 1); ui.titleHero.scale.set(game.bank.invScale); L.addChild(ui.titleHero);
     ui.logo1 = new BitmapLine('PICO PUNCH', { tint: COL.title, shadow: true, align: 'center', scale: 2 }); ui.logo1.y = 30; L.addChild(ui.logo1);
     ui.logo2 = line('PUNHOS DE VANTURA', center(), 54, 0xffffff); L.addChild(ui.logo2);
@@ -58,7 +59,7 @@ export function installUI(game) {
   }
   function layoutTitle() {
     if (!ui.titleBg) return; const w = game.viewW, h = game.viewH; ui.titleT = (ui.titleT || 0) + 1 / 60;
-    ui.titleBg.clear().rect(0, 0, w, h).fill({ color: 0x06061a, alpha: 0.18 }).roundRect(center() - 70, 104, 140, 48, 4).fill({ color: 0x06061a, alpha: 0.55 });
+    ui.titleBg.clear(); if (game.mode === 'retro') { if (ui.titleMesh) { ui.titleMesh.x = center() - 70; ui.titleMesh.y = 104; } } else ui.titleBg.rect(0, 0, w, h).fill({ color: 0x06061a, alpha: 0.18 }).roundRect(center() - 70, 104, 140, 48, 4).fill({ color: 0x06061a, alpha: 0.55 });
     ui.logo1.x = center(); ui.logo1.y = 28 + Math.round(Math.sin(ui.titleT * 2) * 1.5); ui.logo2.x = center(); ui.credit.x = center(); ui.menu.root.x = center();
     ui.titleHero.x = center() + 96; ui.titleHero.y = 150 + Math.round(Math.sin(ui.titleT * 3) * 2); ui.titleHero.texture = game.bank.sprite('hero', Math.floor(ui.titleT * 2) % 4 === 3 ? 'punch1' : 'victory');
   }
@@ -76,7 +77,7 @@ export function installUI(game) {
   // ----- Opções ---------------------------------------------------------------------------------
   function buildOptions(onBack) {
     const prev = game.state; game.setState('options'); const L = game.menuLayer; L.removeChildren(); const s = game.save.settings;
-    const bg = new Graphics(); bg.rect(0, 0, game.viewW, game.viewH).fill({ color: 0x0a0a1a, alpha: 0.92 }); L.addChild(bg);
+    L.addChild(dimRect(game, 0, 0, game.viewW, game.viewH, { alpha: 0.92 }));
     L.addChild(line('OPÇÕES', center(), 14, COL.title));
     const vol = (k) => Math.round(s[k] * 10);
     const items = [
@@ -95,7 +96,7 @@ export function installUI(game) {
   }
   function buildControls(onBack) {
     game.setState('controls'); const L = game.menuLayer; L.removeChildren(); const inp = game.input;
-    const bg = new Graphics(); bg.rect(0, 0, game.viewW, game.viewH).fill({ color: 0x0a0a1a, alpha: 0.95 }); L.addChild(bg);
+    L.addChild(dimRect(game, 0, 0, game.viewW, game.viewH, { alpha: 0.95 }));
     L.addChild(line('CONTROLES (ENTER REMAPEIA)', center(), 14, COL.title));
     const names = { left: 'ESQUERDA', right: 'DIREITA', up: 'CIMA', down: 'BAIXO', jump: 'PULO', punch: 'SOCO', pause: 'PAUSA', mode: 'HD/RETRÔ' };
     const items = Object.keys(names).map((a) => ({ label: () => `${names[a]}: ${inp.remapping === a ? '...' : inp.keys[a].map((k) => inp.keyName(k)).join(' / ')}`, action: () => { inp.remapping = a; ui.menu.refresh(); } }));
@@ -107,7 +108,7 @@ export function installUI(game) {
   // ----- Pausa ----------------------------------------------------------------------------------
   function buildPause() {
     const L = game.menuLayer; L.removeChildren();
-    const g = panel(140, 96); g.x = center() - 70; g.y = 46; L.addChild(g);
+    const g = panel(164, 96); g.x = center() - 82; g.y = 46; L.addChild(g);
     L.addChild(line('PAUSA', center(), 54, COL.title));
     ui.menu = new Menu(game, [
       { label: 'CONTINUAR', action: () => { game.setState('play'); game.audio?.music.resume(); } },

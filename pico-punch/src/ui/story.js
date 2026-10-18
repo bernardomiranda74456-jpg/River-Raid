@@ -1,6 +1,7 @@
 // Abertura (história em quadros de texto) e sequência final de vitória com créditos.
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { BitmapLine } from '../render/text.js';
+import { smsColor } from './panelfx.js';
 
 const INTRO = [
   ['NAS ILHAS FLUTUANTES DE VANTURA,', 'O CORAÇÃO DE SOL AQUECIA A TODOS.'],
@@ -31,7 +32,8 @@ export function installStory(game) {
   function draw() { const p = S.pages[S.i]; S.l1.setText(p[0]); S.l2.setText(p[1]); S.t = 0; S.hero.texture = game.bank.sprite('hero', S.kind === 'ending' ? ['eat0', 'eat1', 'eat2'][S.i % 3] : ['idle0', 'punch1', 'eat0', 'victory'][S.i % 4]); }
   function update(dt) {
     S.t += dt; const inp = game.input; const g = S.glow; g.clear(); const r = 30 + Math.sin(S.t * 2) * 4;
-    g.circle(S.cx, 90, r).fill({ color: S.kind === 'ending' ? 0xffaa00 : 0x3a2a6a, alpha: 0.5 }); g.circle(S.cx, 90, r * 0.6).fill({ color: S.kind === 'ending' ? 0xfff3b0 : 0x5a4a9a, alpha: 0.6 });
+    const retro = game.mode === 'retro'; const c1 = S.kind === 'ending' ? 0xffaa00 : 0x3a2a6a, c2 = S.kind === 'ending' ? 0xfff3b0 : 0x5a4a9a;
+    g.circle(S.cx, 90, r).fill({ color: retro ? smsColor(c1) : c1, alpha: retro ? 1 : 0.5 }); g.circle(S.cx, 90, r * 0.6).fill({ color: retro ? smsColor(c2) : c2, alpha: retro ? 1 : 0.6 });
     S.hero.y = 118 + Math.round(Math.sin(S.t * 3) * 1.5);
     if (inp.pressed.jump || inp.pressed.confirm) { inp.consume('jump'); inp.consume('confirm'); game.audio?.sfx('menu'); S.i++; if (S.i >= S.pages.length) finish(); else draw(); }
     if (inp.pressed.back || inp.pressed.punch) { inp.consume('back'); inp.consume('punch'); finish(); }
