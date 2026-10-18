@@ -6,9 +6,11 @@
   "description": "Wobble Rush — 3D obstacle-course battle royale in the browser (Three.js + Rapier)",
   "scripts": {
     "start": "npx serve . -l 8080",
-    "shoot": "node tools/shoot.mjs"
+    "shoot": "node tools/shoot.mjs",
+    "build:single": "node tools/build-single.mjs"
   },
   "devDependencies": {
+    "esbuild": "^0.25.10",
     "playwright": "^1.50.0"
   }
 }

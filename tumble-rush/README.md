@@ -18,6 +18,16 @@ Não há build nem dependências de runtime. As bibliotecas (Three.js 0.186.1 e 
 
 Requisitos: navegador com WebGL2 (Chrome, Edge, Firefox e Safari recentes).
 
+### Versão em arquivo único
+
+`wobble-rush.html`, na raiz do repositório, é o jogo inteiro num só arquivo (~5 MB: código, Three.js, Rapier com o WASM embutido e o CSS). Abre com duplo clique, direto por `file://`, sem servidor e sem internet. Para regerar depois de mudar o código:
+
+```bash
+cd tumble-rush
+npm i -D esbuild
+node tools/build-single.mjs   # escreve ../wobble-rush.html
+```
+
 ## Controles
 
 | Ação | Teclado / mouse | Gamepad | Celular |
