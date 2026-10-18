@@ -21,7 +21,7 @@ export function installStory(game) {
   const line = (t, x, y, tint = 0xffffff, spacing = 8) => { const l = new BitmapLine(t, { tint, shadow: true, align: 'center', spacing }); l.x = x; l.y = y; return l; };
   function show(pages, { onDone, music, kind }) {
     game.setState('story'); const L = game.menuLayer; L.removeChildren(); const cx = Math.round(game.viewW / 2);
-    const bg = new Graphics(); bg.rect(0, 0, game.viewW, game.viewH).fill(0x06061a); L.addChild(bg);
+    const bg = new Graphics(); bg.rect(0, -L.y, game.viewW, game.viewH).fill(0x06061a); L.addChild(bg);
     const hero = new Sprite(game.bank.sprite('hero', kind === 'ending' ? 'eat1' : 'idle0')); hero.anchor.set(0.5, 1); hero.x = cx; hero.y = 118; hero.scale.set(game.bank.invScale * 1); L.addChild(hero);
     const l1 = line('', cx, 136, 0xffffff, 7), l2 = line('', cx, 148, 0xffffff, 7); L.addChild(l1, l2);
     const hint = line('PULO AVANÇA   SOCO PULA TUDO', cx, 178, 0x5555aa, 7); L.addChild(hint);
@@ -42,7 +42,7 @@ export function installStory(game) {
   function finish() { const cb = S.onDone; S = null; game.menuLayer.removeChildren(); cb(); }
   function credits() {
     game.setState('story'); const L = game.menuLayer; L.removeChildren(); const cx = Math.round(game.viewW / 2);
-    const bg = new Graphics(); bg.rect(0, 0, game.viewW, game.viewH).fill(0x06061a); L.addChild(bg);
+    const bg = new Graphics(); bg.rect(0, -L.y, game.viewW, game.viewH).fill(0x06061a); L.addChild(bg);
     const lines = CREDITS.map((t, i) => { const l = line(t, cx, 200 + i * 12, i === 0 ? 0xffaa00 : 0xffffff, 7); L.addChild(l); return l; });
     const hero = new Sprite(game.bank.sprite('hero', 'victory')); hero.anchor.set(0.5, 1); hero.x = cx; hero.y = 200 + CREDITS.length * 12 + 40; hero.scale.set(game.bank.invScale); L.addChild(hero);
     S = { credits: true, t: 0, lines, hero, update: (dt) => { S.t += dt; const off = S.t * 18; lines.forEach((l, i) => { l.y = 200 + i * 12 - off; }); hero.y = 200 + CREDITS.length * 12 + 40 - off; if ((game.input.pressed.jump || game.input.pressed.confirm) && S.t > 2) { game.input.consume('jump'); S = null; game.level = null; game.setState('title'); } return true; } };

@@ -59,7 +59,7 @@ export function installUI(game) {
   }
   function layoutTitle() {
     if (!ui.titleBg) return; const w = game.viewW, h = game.viewH; ui.titleT = (ui.titleT || 0) + 1 / 60;
-    ui.titleBg.clear(); if (game.mode === 'retro') { if (ui.titleMesh) { ui.titleMesh.x = center() - 70; ui.titleMesh.y = 104; } } else ui.titleBg.rect(0, 0, w, h).fill({ color: 0x06061a, alpha: 0.18 }).roundRect(center() - 70, 104, 140, 48, 4).fill({ color: 0x06061a, alpha: 0.55 });
+    ui.titleBg.clear(); if (game.mode === 'retro') { if (ui.titleMesh) { ui.titleMesh.x = center() - 70; ui.titleMesh.y = 104; } } else ui.titleBg.rect(0, -game.menuLayer.y, w, h).fill({ color: 0x06061a, alpha: 0.18 }).roundRect(center() - 70, 104, 140, 48, 4).fill({ color: 0x06061a, alpha: 0.55 });
     ui.logo1.x = center(); ui.logo1.y = 28 + Math.round(Math.sin(ui.titleT * 2) * 1.5); ui.logo2.x = center(); ui.credit.x = center(); ui.menu.root.x = center();
     ui.titleHero.x = center() + 96; ui.titleHero.y = 150 + Math.round(Math.sin(ui.titleT * 3) * 2); ui.titleHero.texture = game.bank.sprite('hero', Math.floor(ui.titleT * 2) % 4 === 3 ? 'punch1' : 'victory');
   }
@@ -77,7 +77,7 @@ export function installUI(game) {
   // ----- Opções ---------------------------------------------------------------------------------
   function buildOptions(onBack) {
     const prev = game.state; game.setState('options'); const L = game.menuLayer; L.removeChildren(); const s = game.save.settings;
-    L.addChild(dimRect(game, 0, 0, game.viewW, game.viewH, { alpha: 0.92 }));
+    L.addChild(dimRect(game, 0, -L.y, game.viewW, game.viewH, { alpha: 0.92 }));
     L.addChild(line('OPÇÕES', center(), 14, COL.title));
     const vol = (k) => Math.round(s[k] * 10);
     const items = [
@@ -96,7 +96,7 @@ export function installUI(game) {
   }
   function buildControls(onBack) {
     game.setState('controls'); const L = game.menuLayer; L.removeChildren(); const inp = game.input;
-    L.addChild(dimRect(game, 0, 0, game.viewW, game.viewH, { alpha: 0.95 }));
+    L.addChild(dimRect(game, 0, -L.y, game.viewW, game.viewH, { alpha: 0.95 }));
     L.addChild(line('CONTROLES (ENTER REMAPEIA)', center(), 14, COL.title));
     const names = { left: 'ESQUERDA', right: 'DIREITA', up: 'CIMA', down: 'BAIXO', jump: 'PULO', punch: 'SOCO', pause: 'PAUSA', mode: 'HD/RETRÔ' };
     const items = Object.keys(names).map((a) => ({ label: () => `${names[a]}: ${inp.remapping === a ? '...' : inp.keys[a].map((k) => inp.keyName(k)).join(' / ')}`, action: () => { inp.remapping = a; ui.menu.refresh(); } }));

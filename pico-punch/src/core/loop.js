@@ -11,6 +11,7 @@ export class GameLoop {
   _frame(now) {
     if (!this.running) return;
     let dt = (now - this.last) / 1000; this.last = now;
+    if (!(dt > 0)) dt = 0; // o 1º timestamp do rAF pode ser anterior ao performance.now() de start(): nunca andar para trás
     if (dt > this.maxFrame) dt = this.maxFrame; // aba em segundo plano: não acumula
     this._fpsAcc += dt; this._fpsN++;
     if (this._fpsAcc >= 0.5) { this.fps = this._fpsN / this._fpsAcc; this._fpsAcc = 0; this._fpsN = 0; }

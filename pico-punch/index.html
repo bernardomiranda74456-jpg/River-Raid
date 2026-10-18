@@ -28,8 +28,11 @@
     background:rgba(255,255,255,.3); }
   #tjump { right: calc(20px + env(safe-area-inset-right)); bottom: calc(40px + env(safe-area-inset-bottom)); width:76px; height:76px; }
   #tpunch { right: calc(104px + env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom)); width:76px; height:76px; }
-  #tpause { right: calc(16px + env(safe-area-inset-right)); top: calc(12px + env(safe-area-inset-top)); width:44px; height:44px; font-size:14px; }
-  #tmode { right: calc(70px + env(safe-area-inset-right)); top: calc(12px + env(safe-area-inset-top)); width:44px; height:44px; font-size:11px; }
+  /* pausa e modo ficam embaixo, no centro (entre o direcional e os botões), para não cobrir o placar */
+  #tpause { left: calc(50% + 6px); bottom: calc(18px + env(safe-area-inset-bottom)); width:44px; height:44px; font-size:14px; }
+  #tmode { left: calc(50% - 50px); bottom: calc(18px + env(safe-area-inset-bottom)); width:44px; height:44px; font-size:11px; }
+  @media (orientation: portrait) { /* em pé não há espaço embaixo: ficam no topo, abaixo do placar */
+    #tpause, #tmode { bottom: auto; top: calc(56px + env(safe-area-inset-top)); } }
 </style>
 </head>
 <body>

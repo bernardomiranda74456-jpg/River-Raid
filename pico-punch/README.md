@@ -213,7 +213,9 @@ reproduzido; apenas as *mecânicas* clássicas do gênero serviram de inspiraç�
 * **Alcance grave do PSG**: o SN76489 não desce de ~109 Hz; notas mais graves sobem uma oitava no
   retrô, enquanto o HD toca a oitava real com sub-oscilador.
 * **HD mostra mais largura** (16:9) com a mesma altura de 12 tiles; as fases são desenhadas pensando
-  nos dois enquadramentos.
+  nos dois enquadramentos. Em janelas estreitas (celular em pé) o HD passa a caber pela largura: a vista
+  nunca tem menos de 256×192 de mundo, mapas mais baixos que a vista ficam centralizados com faixas pretas
+  e os menus são centralizados verticalmente.
 * **Arte HD derivada da pixel art** (EPX + sombreamento + normal maps) para manter identidade entre
   os modos; solo (Worley periódico), lava, fundos e efeitos são procedurais. As texturas HD de uma
   fase são pré-geradas na abertura (íris) para não engasgar na primeira aparição de cada sprite.

@@ -1,6 +1,6 @@
 // Renderizador HD: passes (fundo+mundo difuso → RT; normais do mundo → RT; iluminação; bloom;
 // grading; CRT opcional) e HUD por cima sem iluminação. Também coleta luzes e aplica folhagem/vento.
-import { Container, Sprite, RenderTexture } from 'pixi.js';
+import { Container, Sprite, Graphics, RenderTexture } from 'pixi.js';
 import { HDArt } from '../hdart.js';
 import { LightingFilter, LIGHT_PRESETS } from './lighting.js';
 import { BloomFilter, GradeFilter, GRADE_PRESETS, CrtFilter } from './postfx.js';
@@ -16,7 +16,7 @@ export class HDRenderer {
     this.game = game; this.app = game.app; this.hdArt = new HDArt(); game.bank.hd = this.hdArt;
     this.lighting = new LightingFilter(); this.bloom = new BloomFilter(); this.grade = new GradeFilter(); this.crt = new CrtFilter();
     this.worldRoot = new Container(); this.hudRoot = new Container(); this.stage = new Container();
-    this.litSprite = new Sprite(); this.stage.addChild(this.litSprite, this.hudRoot);
+    this.litSprite = new Sprite(); this.bars = new Graphics(); this.stage.addChild(this.litSprite, this.hudRoot);
     this.lights = []; this.time = 0; this.aberr = 0; this.lastShake = 0; this.resize();
   }
   resize() {
@@ -81,8 +81,18 @@ export class HDRenderer {
     // passe 2: normais (só o mundo)
     scene.bg.visible = false; this._swap(scene, true); r.render({ container: this.worldRoot, target: this.rtNormal, clear: true, clearColor: [0.5, 0.5, 0, 0] }); this._swap(scene, false); scene.bg.visible = true;
     // passe 3: iluminação + pós (filtros no sprite) + HUD
-    this.hudRoot.removeChildren(); this.hudRoot.addChild(scene.hud, scene.overlay, g.menuLayer); this.hudRoot.scale.set(hs);
+    this.hudRoot.removeChildren(); this.hudRoot.addChild(this.bars, scene.hud, scene.overlay, g.menuLayer); this.hudRoot.scale.set(hs);
+    this.letterbox(scene, level, g.viewW, g.viewH);
     r.render({ container: this.stage });
+  }
+  /** Faixas pretas acima/abaixo (ou aos lados) quando o mapa é menor que a vista. */
+  letterbox(scene, level, viewW, viewH) {
+    const b = this.bars; b.clear(); const z = level.camera.zoom; const map = level.map;
+    const top = -scene.camY * z, bottom = (map.pixelH - scene.camY) * z, left = -scene.camX * z, right = (map.pixelW - scene.camX) * z;
+    if (top > 0) b.rect(0, 0, viewW, Math.ceil(top)).fill(0x000000);
+    if (bottom < viewH) b.rect(0, Math.floor(bottom), viewW, viewH - Math.floor(bottom) + 1).fill(0x000000);
+    if (left > 0) b.rect(0, 0, Math.ceil(left), viewH).fill(0x000000);
+    if (right < viewW) b.rect(Math.floor(right), 0, viewW - Math.floor(right) + 1, viewH).fill(0x000000);
   }
   /** Devolve os containers ao grafo retrô. */
   detach(scene) { if (scene.bg.parent === this.worldRoot) { scene.root.addChildAt(scene.bg, 0); scene.root.addChildAt(scene.world, 1); } if (scene.hud.parent === this.hudRoot) { scene.root.addChild(scene.hud, scene.overlay, this.game.menuLayer); } }

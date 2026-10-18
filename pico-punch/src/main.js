@@ -48,7 +48,9 @@ export class Game {
   onResize() {
     this.retro.resize(); if (this.hdRenderer) this.hdRenderer.resize();
     if (this.mode === 'retro') { this.viewW = RETRO_W; this.viewH = RETRO_H; }
-    else { const w = this.app.renderer.width, h = this.app.renderer.height; this.hdScale = h / RETRO_H; this.viewW = w / this.hdScale; this.viewH = RETRO_H; }
+    else { // HD: cabe pela altura (paisagem) ou pela largura (retrato/janelas estreitas); o mundo visível nunca tem menos de 256×192
+      const w = this.app.renderer.width, h = this.app.renderer.height; this.hdScale = Math.min(h / RETRO_H, w / RETRO_W); this.viewW = w / this.hdScale; this.viewH = h / this.hdScale; }
+    this.menuLayer.y = this.mode === 'hd' ? Math.round((this.viewH - RETRO_H) / 2) : 0; // menus foram desenhados para 192 de altura: centraliza
     this.hud.layout(this.viewW, this.viewH);
     if (this.level) { this.level.camera.setView(this.viewW, this.viewH); this.parallax?.resize(this.viewW, this.viewH); }
     this.hooks.resize?.();
@@ -125,7 +127,7 @@ export class Game {
       this.parallax?.update(this.scene.camX, this.scene.camY, performance.now() / 1000, retro);
       this.hud.update(this.level, this.save); this.hud.root.visible = this.state !== 'title' && this.state !== 'story';
       const fl = this.scene.flashG; fl.clear(); if (this.level.flashA > 0) { fl.rect(0, 0, this.viewW, this.viewH).fill({ color: 0xffffff, alpha: this.level.flashA }); }
-      const ir = this.iris; if (ir.dir !== 0) { ir.t += (ir.dir / ir.dur) * dt; if (ir.t >= 1) { ir.t = 1; ir.dir = 0; } if (ir.t <= 0) { ir.t = 0; ir.dir = 0; } }
+      const ir = this.iris; if (ir.dir !== 0) { ir.t += (ir.dir / ir.dur) * dt; if (ir.dir > 0 && ir.t >= 1) { ir.t = 1; ir.dir = 0; } else if (ir.dir < 0 && ir.t <= 0) { ir.t = 0; ir.dir = 0; } ir.t = Math.min(1, Math.max(0, ir.t)); }
       if (ir.t < 1) { const h = this.level.hero; const cx = h.cx - this.scene.camX, cy = h.cy - this.scene.camY; const R = Math.hypot(this.viewW, this.viewH) * Math.pow(ir.t, 1.6); const T = Math.hypot(this.viewW, this.viewH) * 2.2; if (R < 0.5) fl.rect(0, 0, this.viewW, this.viewH).fill(0x000000); else fl.circle(cx, cy, (retro ? Math.round(R) : R) + T / 2).stroke({ width: T, color: 0x000000 }); }
       this.hooks.render?.(alpha, dt);
     }

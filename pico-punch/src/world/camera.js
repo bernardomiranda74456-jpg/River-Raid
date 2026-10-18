@@ -11,7 +11,8 @@ export class Camera {
   shake(amp, time) { this.shakeA = Math.max(this.shakeA, amp); this.shakeT = Math.max(this.shakeT, time); }
   clampToBounds() {
     const b = this.bounds; const vw = this.viewW / this.zoom, vh = this.viewH / this.zoom;
-    this.x = clamp(this.x, b.x, Math.max(b.x, b.x + b.w - vw)); this.y = clamp(this.y, b.y, Math.max(b.y, b.y + b.h - vh));
+    this.x = b.w >= vw ? clamp(this.x, b.x, b.x + b.w - vw) : b.x - (vw - b.w) / 2; // mapa menor que a vista: centraliza
+    this.y = b.h >= vh ? clamp(this.y, b.y, b.y + b.h - vh) : b.y - (vh - b.h) / 2;
   }
   update(dt, target, mapW, mapH) {
     this.px = this.x; this.py = this.y;
