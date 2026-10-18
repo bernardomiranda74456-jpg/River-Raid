@@ -83,6 +83,9 @@ export class Tilemap {
 }
 
 export async function loadLevel(url) {
+  // Build de arquivo único (tools/build-single.mjs): fases embutidas em globalThis.__PP_LEVELS
+  const embedded = globalThis.__PP_LEVELS?.[url] ?? globalThis.__PP_LEVELS?.[url.replace(/^\.\//, '')];
+  if (embedded) return structuredClone(embedded);
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Falha ao carregar fase: ${url}`);
   return res.json();

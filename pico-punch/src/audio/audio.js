@@ -6,7 +6,8 @@ import { HDSynth } from './hdsynth.js';
 import { SFX } from './sfx.js';
 import { SONGS } from './music/index.js';
 
-const WORKLET_URL = new URL('./psg-worklet.js', import.meta.url).href;
+// Build de arquivo único: o worklet vira um Blob URL em globalThis.__PP_WORKLET_URL
+const WORKLET_URL = globalThis.__PP_WORKLET_URL || new URL('./psg-worklet.js', import.meta.url).href;
 
 export class AudioEngine {
   constructor(game) {

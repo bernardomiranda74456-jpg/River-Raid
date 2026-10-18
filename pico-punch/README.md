@@ -19,7 +19,14 @@ Dois modos gráficos, alternáveis a qualquer momento com **TAB**, sem interromp
 
 ## Como rodar
 
-Projeto estático (HTML + ES modules). Qualquer servidor de arquivos serve:
+**Arquivo único (como `enduro.html`)**: abra `pico-punch.html`, na raiz do repositório, com duplo clique —
+não precisa de servidor. Ele é gerado a partir deste diretório por `node tools/build-single.mjs`
+(esbuild empacota `src/` + Pixi; as fases JSON e o AudioWorklet do PSG vão embutidos). Sempre que editar
+`src/` ou `levels/`, rode o build de novo (`npm run build:single`).
+
+**Projeto em módulos** (desenvolvimento):
+
+Projeto estático (HTML + ES modules); qualquer servidor de arquivos serve:
 
 ```bash
 cd pico-punch
@@ -171,6 +178,7 @@ velocidade. Jingles tocam numa terceira instância com *ducking* da música.
 ```bash
 node tools/serve.mjs "$PWD" 8787 &
 node test/e2e.mjs 1 retro 5          # bot atravessa a fase 1; PASS exige meta + 0 violações + console limpo
+PP_URL=file://$PWD/../pico-punch.html node test/e2e.mjs 1 retro 5   # mesmo teste sobre o arquivo único
 node test/run-all.mjs 5              # as 10 fases em sequência (fases de chefe: chegar ao duelo conta)
 node tools/make-screenshots.mjs      # conjunto final em screenshots/ (aceita um regex: "hd|chefe")
 node tools/render-audio.mjs          # todas as faixas → audio-preview/ (WAV 22 kHz + PNG de análise)
