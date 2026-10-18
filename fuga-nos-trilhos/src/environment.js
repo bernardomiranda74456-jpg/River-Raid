@@ -71,6 +71,7 @@ const SKY_FRAG = /* glsl */`
 `;
 
 const _c = new THREE.Color();
+const _c2 = new THREE.Color();
 const _v = new THREE.Vector3();
 
 export class Environment {
@@ -140,22 +141,18 @@ export class Environment {
     this.lampLights = [];
     for (let i = 0; i < preset.lights; i++) {
       const l = new THREE.PointLight(0xffd9a0, 0, 42, 2);
-      l.visible = false;
       scene.add(l); this.lampLights.push(l);
     }
     this.headlight = new THREE.SpotLight(0xfff4d6, 0, 80, 0.5, 0.6, 1.2);
-    this.headlight.visible = false;
     scene.add(this.headlight); scene.add(this.headlight.target);
     this.headlight2 = new THREE.SpotLight(0xfff4d6, 0, 80, 0.5, 0.6, 1.2);
-    this.headlight2.visible = false;
     scene.add(this.headlight2); scene.add(this.headlight2.target);
     this.flashlight = new THREE.SpotLight(0xfff0c0, 0, 30, 0.35, 0.5, 1.5);
-    this.flashlight.visible = false;
     scene.add(this.flashlight); scene.add(this.flashlight.target);
     this.tunnelLights = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 2; i++) {
       const l = new THREE.PointLight(0xdfe8ff, 0, 30, 2);
-      l.visible = false; scene.add(l); this.tunnelLights.push(l);
+      scene.add(l); this.tunnelLights.push(l);
     }
     this.shadowTexel = (ext * 2) / preset.shadowMap;
     this.setTime(this.tod, true);
@@ -213,7 +210,9 @@ export class Environment {
     const sunI = 4.6 * day * lerp(1, 0.25, rain) * (1 - this.tunnel * 0.98);
     this.sun.intensity = sunI;
     this.sun.color.copy(U.uSunColor.value);
-    this.sun.castShadow = sunI > 0.05;
+    // castShadow fica sempre ligado (mudar recompila todos os shaders); à noite o mapa
+    // de sombra só deixa de ser re-renderizado, o que economiza o passe de sombra.
+    this.sun.shadow.autoUpdate = sunI > 0.05;
     this.hemi.color.copy(U.uZenith.value).lerp(U.uHorizon.value, 0.5);
     this.hemi.groundColor.setRGB(0.18, 0.15, 0.12).multiplyScalar(day * 0.8 + 0.2);
     this.hemi.intensity = (lerp(0.28, 0.34, day) * lerp(1, 0.7, rain) + dusk * 0.25) * (1 - this.tunnel * 0.7) + night * 0.2;
@@ -221,7 +220,7 @@ export class Environment {
 
     // neblina
     const fogC = _c.copy(U.uHorizon.value).lerp(U.uZenith.value, 0.25);
-    fogC.lerp(_c.clone().setRGB(0.03, 0.03, 0.05), this.tunnel * 0.9);
+    fogC.lerp(_c2.setRGB(0.03, 0.03, 0.05), this.tunnel * 0.9);
     this.scene.fog.color.copy(fogC);
     const fogNear = lerp(lerp(140, 60, rain), 10, this.tunnel);
     const fogFar = lerp(lerp(560, 260, rain), 110, this.tunnel) * lerp(1, 0.75, night * (1 - this.tunnel));
@@ -254,7 +253,7 @@ export class Environment {
     M.lampGlow.emissiveIntensity = nightLights * 5;
     M.lampPool.opacity = nightLights * (0.28 + rain * 0.3);
     M.ads.forEach((a) => { a.emissiveIntensity = nightLights * 0.9; });
-    M.stationSigns.forEach((a) => { a.emissiveMap = a.map; a.emissiveIntensity = nightLights * 0.8; });
+    M.stationSigns.forEach((a) => { a.emissiveIntensity = nightLights * 0.8; });
     M.neons.forEach((n) => { n.opacity = 0.25 + nightLights * 0.75; });
     M.tunnelLight.emissiveIntensity = 0.4 + this.tunnel * 1.4;
     this.nightLights = nightLights;
@@ -262,7 +261,7 @@ export class Environment {
 
   updateEnv() {
     const old = this.envRT;
-    this.envRT = this.pmrem.fromScene(this.envScene, 0.04, 1, 2000);
+    this.envRT = this.pmrem.fromScene(this.envScene, 0.04, 1, 2000, { size: this.preset.envSize || 128 });
     this.scene.environment = this.envRT.texture;
     if (old) old.dispose();
   }
@@ -276,15 +275,13 @@ export class Environment {
       if (i < n && inten > 0.2) {
         l.position.copy(positions[i]);
         l.intensity = inten * smoothstep(-10, 10, l.position.z - playerZ + 20);
-        l.visible = true;
-      } else l.visible = false;
+      } else l.intensity = 0;
     }
   }
 
   setHeadlight(idx, active, pos, dir) {
     const l = idx === 0 ? this.headlight : this.headlight2;
-    if (!active || this.nightLights < 0.05) { l.visible = false; l.intensity = 0; return; }
-    l.visible = true;
+    if (!active || this.nightLights < 0.05) { l.intensity = 0; return; }
     l.intensity = 110 * this.nightLights;
     l.position.copy(pos);
     l.target.position.copy(pos).addScaledVector(dir, 30);
@@ -293,8 +290,7 @@ export class Environment {
 
   setFlashlight(active, pos, target) {
     const l = this.flashlight;
-    if (!active) { l.visible = false; return; }
-    l.visible = true;
+    if (!active) { l.intensity = 0; return; }
     l.intensity = 40 + this.nightLights * 120;
     l.position.copy(pos); l.target.position.copy(target); l.target.updateMatrixWorld();
   }
@@ -302,7 +298,7 @@ export class Environment {
   setTunnelLights(positions, n) {
     for (let i = 0; i < this.tunnelLights.length; i++) {
       const l = this.tunnelLights[i];
-      if (i < n) { l.visible = true; l.position.copy(positions[i]); l.intensity = 140 * this.tunnel; } else l.visible = false;
+      if (i < n) { l.position.copy(positions[i]); l.intensity = 140 * this.tunnel; } else l.intensity = 0;
     }
   }
 

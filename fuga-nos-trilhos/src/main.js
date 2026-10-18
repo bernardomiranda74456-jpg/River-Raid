@@ -43,7 +43,8 @@ class Game {
     this.stats = this.newStats();
     this.flash = 0;
     this.hudTimer = 0;
-    this.fpsSamples = 0; this.fpsAcc = 0; this.qualityChecked = false;
+    // resolução dinâmica: janelas de 2 s de medição de fps
+    this.dyn = { acc: 0, frames: 0, good: 0, minPR: 0.75, maxPR: 1, steps: 0, aoOff: false };
     this.mobile = isMobile();
     this.audio = new AudioEngine(s);
     this.ui = new UI(this);
@@ -59,7 +60,9 @@ class Game {
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', stencil: false });
     this.renderer = renderer;
     try { const dbg = renderer.getContext().getExtension('WEBGL_debug_renderer_info'); if (dbg) this.gpuName = renderer.getContext().getParameter(dbg.UNMASKED_RENDERER_WEBGL).replace(/ANGLE \(|\)|Direct3D11 vs_5_0 ps_5_0|,? ?D3D11/g, '').slice(0, 48); } catch (e) { /* noop */ }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.preset.pixelRatio));
+    this.dyn.maxPR = Math.min(window.devicePixelRatio || 1, this.preset.pixelRatio);
+    this.dyn.minPR = Math.min(this.dyn.maxPR, 0.75);
+    renderer.setPixelRatio(this.dyn.maxPR);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -103,11 +106,23 @@ class Game {
     this.env.todSpeed = this.params.todspeed ? parseFloat(this.params.todspeed) : 24 / 380;
     this.weather = { rain: 0, timer: 30, target: 0 };
     // pré-compila todos os shaders (objetos em pool ficam visíveis só durante o compile)
+    this.env.updateEnv(); // o envMap precisa existir antes de compilar (faz parte da chave do shader)
+    // props guardados nos pools ficam fora da cena: um exemplar de cada entra só para compilar
+    const samples = [];
+    for (const pool of [...Object.values(this.track.props.pools), this.track.props.yardTrains]) {
+      const g = pool.free[pool.free.length - 1];
+      if (g && !g.parent) { this.scene.add(g); samples.push(g); }
+    }
     const hidden = [];
     this.scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
+    // compila com o mesmo alvo do pós-processamento (sem tone mapping nesta etapa),
+    // senão a chave do shader difere e tudo recompila no primeiro frame
+    this.renderer.setRenderTarget(this.postfx.composer.renderTarget1);
     this.renderer.compile(this.scene, this.camera.cam);
+    this.renderer.setRenderTarget(null);
     for (const o of hidden) o.visible = false;
-    this.env.updateEnv();
+    for (const g of samples) { this.scene.remove(g); g.visible = false; }
+    this.postfx.render(); // compila os shaders do pós-processamento ainda no carregamento
     this.ui.loading(1, 'Pronto');
     this.toMenu();
     if (this.params.auto === '1') { this.startRun(); this.autoMode = true; }
@@ -179,8 +194,9 @@ class Game {
     if (this.state !== 'running' || this.autoMode) return;
     const p = this.player;
     switch (a) {
-      case 'left': p.moveLane(-1, this); break;
-      case 'right': p.moveLane(1, this); break;
+      // a câmera olha para +Z: x positivo (pista de índice maior) fica à ESQUERDA da tela
+      case 'left': p.moveLane(1, this); break;
+      case 'right': p.moveLane(-1, this); break;
       case 'jump': p.jump(this); break;
       case 'roll': p.roll(this); break;
       case 'board': this.useBoard(); break;
@@ -332,23 +348,30 @@ class Game {
     }
     const alpha = clamp(this.acc / FIXED_DT, 0, 1);
     this.render(dt, dtReal, alpha);
-    // qualidade dinâmica (primeiros segundos de corrida)
-    if (this.state === 'running' && !this.qualityChecked && !this.params.quality) {
-      this.fpsAcc += dtReal; this.fpsSamples++;
-      if (this.fpsAcc > 6) {
-        const fps = this.fpsSamples / this.fpsAcc;
-        this.qualityChecked = true;
-        if (fps < 42 && this.presetName !== 'low') {
-          const order = ['low', 'medium', 'high', 'ultra'];
-          const lower = order[Math.max(0, order.indexOf(this.presetName) - 1)];
-          this.save.data.settings.quality = lower; this.save.write();
-          this.renderer.setPixelRatio(Math.min(this.renderer.getPixelRatio(), 1));
-          if (this.postfx.gtao) this.postfx.gtao.enabled = false;
-          this.onResize();
-          this.ui.toast(`Desempenho baixo (${Math.round(fps)} fps): qualidade reduzida para ${PRESETS[lower].label}`);
-        }
-      }
-    }
+    this.dynamicResolution(dtReal);
+  }
+
+  /**
+   * Resolução dinâmica: a cada 2 s de corrida mede o fps médio. Abaixo de 50 fps
+   * reduz o pixel ratio (0,25 por vez, até 0,75) e, se ainda assim não bastar,
+   * desliga o GTAO; acima de 58 fps por 3 janelas seguidas volta a subir.
+   */
+  dynamicResolution(dtReal) {
+    const d = this.dyn;
+    if (this.manual || (this.state !== 'running' && this.state !== 'menu')) { d.acc = 0; d.frames = 0; return; }
+    if (dtReal > 0.25) return;                    // aba em segundo plano / pausa longa
+    d.acc += dtReal; d.frames++;
+    if (d.acc < 2) return;
+    const fps = d.frames / d.acc;
+    d.acc = 0; d.frames = 0;
+    const pr = this.renderer.getPixelRatio();
+    if (fps < 50) {
+      d.good = 0;
+      if (pr > d.minPR + 0.01) { this.renderer.setPixelRatio(Math.max(d.minPR, pr - 0.25)); this.onResize(); }
+      else if (!d.aoOff && this.postfx.gtao && this.postfx.gtao.enabled) { d.aoOff = true; this.postfx.gtao.enabled = false; }
+    } else if (fps > 58) {
+      if (++d.good >= 3 && pr < d.maxPR - 0.01) { d.good = 0; this.renderer.setPixelRatio(Math.min(d.maxPR, pr + 0.25)); this.onResize(); }
+    } else d.good = 0;
   }
 
   step(dt) {
@@ -434,8 +457,9 @@ class Game {
     const magnet = p.magnet > 0;
     const reach = 0.9;
     const c = this.track.chunkAt(pz);
-    const chunks = [c, c ? this.track.chunkAfter(c) : null];
-    for (const ch of chunks) {
+    const c2 = c ? this.track.chunkAfter(c) : null;
+    for (let ci = 0; ci < 2; ci++) {
+      const ch = ci === 0 ? c : c2;
       if (!ch) continue;
       for (let k = 0; k < ch.nCoins; k++) {
         const i = ch.coins[k];

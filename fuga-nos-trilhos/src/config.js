@@ -29,24 +29,24 @@ export const POWERUP_TIME = { magnet: 14, jetpack: 11, sneakers: 14, multiplier:
 /** Presets gráficos. */
 export const PRESETS = {
   low: {
-    label: 'Baixo', pixelRatio: 1, shadowMap: 1024, shadowRadius: 1, ao: false, bloom: false,
+    label: 'Baixo', pixelRatio: 1, envSize: 64, shadowMap: 1024, shadowRadius: 1, ao: false, bloom: false,
     smaa: false, msaa: 0, motionBlur: false, chroma: false, flare: false, particles: 0.35,
     buildings: 0.5, anisotropy: 2, envUpdate: 6, rain: 0.4, lights: 2, textureSize: 512,
   },
   medium: {
-    label: 'Médio', pixelRatio: 1.5, shadowMap: 2048, shadowRadius: 2, ao: false, bloom: true,
+    label: 'Médio', pixelRatio: 1.25, envSize: 128, shadowMap: 2048, shadowRadius: 2, ao: false, bloom: true,
     smaa: true, msaa: 0, motionBlur: true, chroma: false, flare: true, particles: 0.7,
-    buildings: 0.8, anisotropy: 4, envUpdate: 4, rain: 0.7, lights: 4, textureSize: 1024,
+    buildings: 0.8, anisotropy: 4, envUpdate: 5, rain: 0.7, lights: 3, textureSize: 1024,
   },
   high: {
-    label: 'Alto', pixelRatio: 2, shadowMap: 2048, shadowRadius: 3, ao: true, bloom: true,
-    smaa: true, msaa: 0, motionBlur: true, chroma: true, flare: true, particles: 1,
-    buildings: 1, anisotropy: 8, envUpdate: 3, rain: 1, lights: 6, textureSize: 1024,
+    label: 'Alto', pixelRatio: 1.5, envSize: 128, shadowMap: 2048, shadowRadius: 3, ao: true, bloom: true,
+    smaa: true, msaa: 0, motionBlur: true, chroma: true, flare: true, particles: 1, aoScale: 0.5,
+    buildings: 1, anisotropy: 8, envUpdate: 4, rain: 1, lights: 4, textureSize: 1024,
   },
   ultra: {
-    label: 'Ultra', pixelRatio: 2, shadowMap: 4096, shadowRadius: 4, ao: true, bloom: true,
-    smaa: true, msaa: 4, motionBlur: true, chroma: true, flare: true, particles: 1.4,
-    buildings: 1.2, anisotropy: 16, envUpdate: 2, rain: 1.3, lights: 8, textureSize: 2048,
+    label: 'Ultra', pixelRatio: 2, envSize: 256, shadowMap: 4096, shadowRadius: 4, ao: true, bloom: true,
+    smaa: true, msaa: 4, motionBlur: true, chroma: true, flare: true, particles: 1.4, aoScale: 0.75,
+    buildings: 1.2, anisotropy: 16, envUpdate: 3, rain: 1.3, lights: 6, textureSize: 2048,
   },
 };
 
@@ -75,8 +75,7 @@ export function detectPreset() {
     if (/adreno \(tm\) 6[5-9]|mali-g(5|6)/.test(gpu)) return 'medium';
     return 'low';
   }
-  if (/rtx|radeon rx|arc\(tm\) a|arc\(tm\) b|apple m[2-9]|geforce gtx 1[6-9]|geforce gtx 20|radeon pro/.test(gpu)) return 'ultra';
-  if (/geforce|radeon|apple m1|apple gpu|nvidia|amd/.test(gpu)) return 'high';
+    if (/geforce|radeon|apple m1|apple gpu|nvidia|amd/.test(gpu)) return 'high';
   if (/iris|uhd|intel|mesa/.test(gpu)) return 'medium';
   return 'high';
 }
