@@ -32,7 +32,7 @@ export class AudioEngine {
     this.musicBus = ctx.createGain(); this.musicBus.gain.value = this.volumes.music; this.musicBus.connect(this.master);
     this.duckGain = ctx.createGain(); this.duckGain.connect(this.musicBus);
     this.sfxBus = ctx.createGain(); this.sfxBus.gain.value = this.volumes.sfx; this.sfxBus.connect(this.master);
-    this.jingleBus = ctx.createGain(); this.jingleBus.connect(this.musicBus);
+    this.jingleBus = ctx.createGain(); this.jingleBus.gain.value = 1.4; this.jingleBus.connect(this.musicBus);
     this.psgMusic = await PsgNode.create(ctx, this.duckGain, WORKLET_URL);
     this.psgJingle = await PsgNode.create(ctx, this.jingleBus, WORKLET_URL);
     this.psgSfx = await PsgNode.create(ctx, this.sfxBus, WORKLET_URL); this.psgSfx.setGain(0.3);

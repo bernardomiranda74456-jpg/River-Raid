@@ -110,7 +110,7 @@ const THEME_LOOK = {
   village: { rock: ['#c8a376', '#9c7a53', '#e2c49a'], grass: ['#d8d0c0', '#b0a690', '#f0e8d8'], dirt: ['#a08060', '#705840'], kind: 'brick' },
   desert: { rock: ['#d9b26a', '#b58d4a', '#f0d08c'], grass: ['#e8c87a', '#c4a052', '#fde6a8'], dirt: ['#d9b26a', '#b58d4a'], kind: 'sand' },
   road: { rock: ['#8a8a8a', '#666666', '#aaaaaa'], grass: ['#5c5c62', '#3a3a40', '#9a9aa0'], dirt: ['#4a4a50', '#34343a'], kind: 'sand' },
-  sky: { rock: ['#9a9aa8', '#70707f', '#c0c0cc'], grass: ['#62c04c', '#3f8a30', '#9ae878'], dirt: ['#7a6a5a', '#54483c'], kind: 'rock' },
+  sky: { rock: ['#7c7e92', '#52546a', '#a4a6b8'], grass: ['#62c04c', '#3f8a30', '#9ae878'], dirt: ['#6a6478', '#4a4458'], kind: 'rock' },
   cave: { rock: ['#5a4a58', '#3a2e3a', '#7c6a7a'], grass: ['#b4442a', '#6e2416', '#e07a40'], dirt: ['#4a3a48', '#2e2230'], kind: 'rock' },
   city: { rock: ['#5a6474', '#3c4452', '#7a8696'], grass: ['#8a94a4', '#5a6474', '#aab4c4'], dirt: ['#3c4452', '#262c36'], kind: 'metal' },
   castle: { rock: ['#7a7a88', '#55555f', '#9c9cac'], grass: ['#9898a8', '#6a6a78', '#c0c0d0'], dirt: ['#4a4a58', '#333340'], kind: 'brick' },

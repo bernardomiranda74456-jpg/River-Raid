@@ -32,9 +32,10 @@ float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.y
 float sunShadow(vec2 wp, bool selfSolid) {
   vec2 dir = normalize(vec2(uSunDir.x, -uSunDir.y)); vec2 perp = vec2(-dir.y, dir.x);
   float j = hash12(floor(wp * 2.0)) * 0.9;
-  float a = shadowRay(wp + perp * 2.5, dir, selfSolid, j);
-  float b = shadowRay(wp - perp * 2.5, dir, selfSolid, 0.9 - j);
-  return (a + b) * 0.5;
+  float a = shadowRay(wp + perp * 3.0, dir, selfSolid, j);
+  float b = shadowRay(wp - perp * 3.0, dir, selfSolid, 0.9 - j);
+  float c = shadowRay(wp, dir, selfSolid, 0.45 + j * 0.3);
+  return (a + b + c) / 3.0;
 }
 float ao(vec2 wp) {
   float a = 0.0; float r = 9.0;

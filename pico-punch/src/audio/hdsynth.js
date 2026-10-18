@@ -65,7 +65,7 @@ class Voice {
     if (att >= 15) { this.gain.gain.setTargetAtTime(0, t, 0.012); return; }
     if (onset) {
       this.osc1.frequency.setValueAtTime(freq, t); this.osc2.frequency.setValueAtTime(freq, t); this.sub.frequency.setValueAtTime(freq / 2, t);
-      const f = this.filter.frequency; f.cancelScheduledValues(t); f.setValueAtTime(Math.min(16000, this.cutoff * 2.6), t); f.exponentialRampToValueAtTime(Math.max(80, this.cutoff), t + 0.12);
+      const ny = this.ctx.sampleRate / 2 - 200; const f = this.filter.frequency; f.cancelScheduledValues(t); f.setValueAtTime(Math.min(ny, this.cutoff * 2.6), t); f.exponentialRampToValueAtTime(Math.min(ny, Math.max(80, this.cutoff)), t + 0.12);
       this.gain.gain.cancelScheduledValues(t); this.gain.gain.setValueAtTime(this.gain.gain.value, t); this.gain.gain.linearRampToValueAtTime(g, t + 0.006);
     } else {
       if (Math.abs(freq - this.lastF) > 0.01) { this.osc1.frequency.setTargetAtTime(freq, t, 0.004); this.osc2.frequency.setTargetAtTime(freq, t, 0.004); this.sub.frequency.setTargetAtTime(freq / 2, t, 0.004); }
@@ -94,7 +94,7 @@ export class HDSynth {
   drum(t, kind, att) {
     const ctx = this.ctx; const g = attToGain(att) * 0.9; const out = this.drumGain;
     const env = (node, peak, dur, curve = 'exp') => { node.gain.setValueAtTime(0.0001, t); node.gain.linearRampToValueAtTime(peak, t + 0.003); if (curve === 'exp') node.gain.exponentialRampToValueAtTime(0.0001, t + dur); else node.gain.linearRampToValueAtTime(0, t + dur); };
-    const noiseHit = (filterType, freqHz, q, dur, peak) => { const s = ctx.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const f = ctx.createBiquadFilter(); f.type = filterType; f.frequency.value = freqHz; f.Q.value = q; const gg = ctx.createGain(); env(gg, peak, dur); s.connect(f); f.connect(gg); gg.connect(out); s.start(t); s.stop(t + dur + 0.05); };
+    const noiseHit = (filterType, freqHz, q, dur, peak) => { const s = ctx.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const f = ctx.createBiquadFilter(); f.type = filterType; f.frequency.value = Math.min(ctx.sampleRate / 2 - 200, freqHz); f.Q.value = q; const gg = ctx.createGain(); env(gg, peak, dur); s.connect(f); f.connect(gg); gg.connect(out); s.start(t); s.stop(t + dur + 0.05); };
     const sineDrop = (f0, f1, dur, peak) => { const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur * 0.5); const gg = ctx.createGain(); env(gg, peak, dur); o.connect(gg); gg.connect(out); o.start(t); o.stop(t + dur + 0.05); };
     switch (kind) {
       case 'kick': sineDrop(160, 42, 0.28, 0.95 * g); noiseHit('lowpass', 900, 0.7, 0.03, 0.4 * g); break;

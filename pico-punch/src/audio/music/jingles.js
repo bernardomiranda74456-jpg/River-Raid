@@ -23,7 +23,7 @@ export const item = {
 };
 export const oneUp = {
   name: 'Vida extra', speed: 4, rpb: 4, loop: false, instruments: { lead: leadBright, arpMaj },
-  patterns: { p: { A: 'C5:lead . E5 . G5 . C6 . E6 . G6 . C7 . == .', B: 'C4:arpMaj . . . . . . . E4 . . . . . . .', C: '', N: '. . . . . . . . . . . . . . . .' } }, order: ['p'],
+  patterns: { p: { A: 'C5:lead . E5 . G5 . C6 . E6 . G6 . B6 . == .', B: 'C4:arpMaj . . . . . . . E4 . . . . . . .', C: '', N: '. . . . . . . . . . . . . . . .' } }, order: ['p'],
 };
 export const gameover = {
   name: 'Game Over', speed: 8, rpb: 4, loop: false, instruments: { lead: INST.leadSoft, arpMin, bass: INST.bassSoft },

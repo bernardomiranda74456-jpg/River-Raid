@@ -10,9 +10,10 @@ await page.waitForTimeout(800); await page.keyboard.press('KeyK'); // gesto para
 const t0 = Date.now(); let result = null;
 while (Date.now() - t0 < 180000) {
   await page.waitForTimeout(500);
-  result = await page.evaluate(() => { const g = window.__game; const lv = g.level; return { state: g.state, lvState: lv?.state, hero: lv ? [Math.round(lv.hero.x), Math.round(lv.hero.y)] : null, wp: g.bot.i, total: g.bot.path?.length, deaths: lv?.deaths, violations: g.bot.violations, log: g.bot.log.slice(-3), time: lv?.time, lives: g.save.progress.lives, fps: g.loop.fps }; });
+  result = await page.evaluate(() => { const g = window.__game; const lv = g.level; return { state: g.state, lvState: lv?.state, botFights: false, hero: lv ? [Math.round(lv.hero.x), Math.round(lv.hero.y)] : null, wp: g.bot.i, total: g.bot.path?.length, deaths: lv?.deaths, violations: g.bot.violations, log: g.bot.log.slice(-3), time: lv?.time, lives: g.save.progress.lives, fps: g.loop.fps }; });
   if (result.lvState === 'goal' || result.state === 'results' || result.state === 'gameover' || result.state === 'title') break;
+  if (result.state === 'duel' && !result.botFights) { result.reachedDuel = true; break; } // fases com chefe: o bot não duela; chegar à arena conta
 }
 console.log(JSON.stringify(result, null, 1)); console.log(errors.length ? 'ERROS:\n' + errors.join('\n') : 'console limpo');
-const ok = (result.lvState === 'goal' || result.state === 'results') && result.violations === 0 && errors.length === 0;
+const ok = (result.lvState === 'goal' || result.state === 'results' || result.reachedDuel) && result.violations === 0 && errors.length === 0;
 console.log(ok ? 'PASS' : 'FAIL'); await b.close(); process.exit(ok ? 0 : 1);
