@@ -18,7 +18,7 @@ const _q = new THREE.Quaternion(), _e = new THREE.Euler();
 export class LavaClimb extends LevelBase {
   constructor(game) {
     super(game); this.name = 'Corrida da Lava'; this.kind = 'race'; this.qualify = 16; this.duration = 150; this.killY = -60;
-    this.lavaStart = -9; this.lavaY = this.lavaStart; this.lavaSpeed = 0.3; this.lavaAccel = 0.0012; this.raceTime = 0; this.racing = false;
+    this.lavaStart = -9; this.lavaY = this.lavaStart; this.lavaSpeed = 0.27; this.lavaAccel = 0.0011; this.raceTime = 0; this.racing = false;
     this.emberT = 0; this.spawnYaw = Math.PI / 2; this.introCam = { from: new THREE.Vector3(-70, 48, -70), look: new THREE.Vector3(10, 30, 0) };
   }
 
@@ -131,12 +131,12 @@ export class LavaClimb extends LevelBase {
     return { ang, q };
   }
   /** Tall safety fence (posts + bars + invisible wall) along both edges of a walkway span. */
-  _fence(f, x0, x1, y0, y1, width = W, height = 1.5) {
+  _fence(f, x0, x1, y0, y1, width = W, height = 2.2) {
     const L = Math.hypot(x1 - x0, y1 - y0); const ang = Math.atan2(y1 - y0, x1 - x0); const q = f.quat(0, 0, ang); const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
     for (const s of [-1, 1]) {
       const z = s * (width / 2 + 0.12);
       const w = f.v3(cx, cy, z + s * 0.4).add(new THREE.Vector3(0, height / 2, 0).applyQuaternion(q)); this.box([L, height, 0.9], [w.x, w.y, w.z], [0, 0, 0], null, { quat: q, noMesh: true });
-      for (const by of [0.72, 1.32]) { const b = f.v3(cx, cy, z).add(new THREE.Vector3(0, by, 0).applyQuaternion(q)); this.box([L, 0.09, 0.09], [b.x, b.y, b.z], [0, 0, 0], this.M.metal, { quat: q, noCollider: true, uv: 0.5 }); }
+      for (const by of [0.72, 1.32, 1.92]) { const b = f.v3(cx, cy, z).add(new THREE.Vector3(0, by, 0).applyQuaternion(q)); this.box([L, 0.09, 0.09], [b.x, b.y, b.z], [0, 0, 0], this.M.metal, { quat: q, noCollider: true, uv: 0.5 }); }
       for (let x = x0 + 1; x < x1; x += 3.5) { const yy = y0 + (y1 - y0) * (x - x0) / (x1 - x0); this.box([0.12, height, 0.12], f.pos(x, yy + height / 2, z), f.rot(0, 0, 0), this.M.darkMetal, { noCollider: true, uv: 0.5 }); }
     }
   }
@@ -164,7 +164,7 @@ export class LavaClimb extends LevelBase {
       this.box([stepL, 1.2, W], p, f.rot(0, 0, 0), k % 2 ? this.M.concrete : this.M.concreteDark, { noCollider: true, uv: 0.35 });
     }
     const L = Math.hypot(SEG_LEN, RISE), ang = Math.atan2(RISE, SEG_LEN); const q = f.quat(0, 0, ang); const p = f.v3(SEG_LEN / 2, RISE / 2 + 0.05, 0).add(new THREE.Vector3(0, -0.3, 0).applyQuaternion(q));
-    this.box([L, 0.6, W], [p.x, p.y, p.z], [0, 0, 0], null, { quat: q, noMesh: true }); this._fence(f, 0, SEG_LEN, 0, RISE, W, 1.2);
+    this.box([L, 0.6, W], [p.x, p.y, p.z], [0, 0, 0], null, { quat: q, noMesh: true }); this._fence(f, 0, SEG_LEN, 0, RISE, W, 1.3);
     const under = f.v3(SEG_LEN / 2, RISE / 2, 0).add(new THREE.Vector3(0, -1.0, 0).applyQuaternion(q)); this.box([L, 0.5, W + 0.5], [under.x, under.y, under.z], [0, 0, 0], this.M.darkMetal, { quat: q, noCollider: true });
     for (const s of [-1, 1]) { const r = f.v3(SEG_LEN / 2, RISE / 2, s * (W / 2 + 0.05)).add(new THREE.Vector3(0, 0.32, 0).applyQuaternion(q)); this.box([L, 0.55, 0.22], [r.x, r.y, r.z], [0, 0, 0], this.M.darkMetal, { quat: q, uv: 0.5 }); }
     // pushers: kinematic blocks sliding across the stairs
@@ -199,15 +199,13 @@ export class LavaClimb extends LevelBase {
       const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 1.0, 16), this.M.darkMetal); hub.rotation.z = Math.PI / 2; g.add(hub);
       const phase = k * 1.9 + i; const fx = f, X = x, PY = pivotY, A = 1.15;
       const m = this.mover(g, (t) => ({ pos: fx.v3(X, PY, 0), quat: fx.quat(Math.sin(t * w + phase) * A, 0, 0) }), { data: { type: 'platform' } });
-      this.moverShape(m, 'box', [1.6, 2.2, 2.4], [0, -arm - 1.0, 0], [0, 0, 0], { hazardSolid: true });
       this.moverShape(m, 'box', [2.0, 2.6, 2.8], [0, -arm - 1.0, 0], [0, 0, 0], { sensor: true, data: { type: 'hazard', mul: 0.9, up: 3.5, push: 1.5, max: 12, metal: true } });
-      this.moverShape(m, 'cylinder', [0.3, arm], [0, -arm / 2, 0], [0, 0, 0], { hazardSolid: true });
     });
     this._wps(f, [3, 8, 13, 18, 23, 28, 33], (x) => this._surf(x), { spread: 5 });
   }
 
   _seg_stepping(f, i) {
-    const n = 5; const len = 4.2, gap = (SEG_LEN - n * len) / (n - 1);
+    const n = 5; const len = 4.4, gap = (SEG_LEN - n * len) / (n - 1);
     for (let k = 0; k < n; k++) {
       const x = k * (len + gap) + len / 2; const y = k * (RISE / (n - 1));
       const p = f.pos(x, y - 0.3, 0);
@@ -231,7 +229,6 @@ export class LavaClimb extends LevelBase {
       this.cylinder(0.5, 2.5, f.pos(x, ys - 1.2, 0), [0, 0, 0], this.M.darkMetal, { noCollider: true });
       const fx = f, X = x, Y = ys + 0.95, D = dir, w = 1.5 + i * 0.03;
       const m = this.mover(g, (t) => ({ pos: fx.v3(X, Y, 0), quat: fx.quat(0, t * w * D, 0) }));
-      this.moverShape(m, 'box', [9.5, 0.5, 0.5], [0, 0.25, 0], [0, 0, 0], { hazardSolid: true });
       this.moverShape(m, 'box', [9.8, 0.9, 0.9], [0, 0.25, 0], [0, 0, 0], { sensor: true, data: { type: 'hazard', mul: 0.9, up: 4, push: 2, max: 11, metal: true } });
       this.moverShape(m, 'cylinder', [1.0, 1.6]);
     }
@@ -268,7 +265,7 @@ export class LavaClimb extends LevelBase {
   }
 
   _seg_conveyor(f, i) {
-    this._walkway(f, { rails: false }); this._fence(f, 0, SEG_LEN, 0, RISE, W, 1.2);
+    this._walkway(f, { rails: false }); this._fence(f, 0, SEG_LEN, 0, RISE, W, 1.3);
     const ang = Math.atan2(RISE, SEG_LEN);
     // belts: alternate backward and sideways
     const belts = [[4, 'back'], [11, 'side+'], [18, 'back'], [25, 'side-'], [32, 'back']];
@@ -309,12 +306,12 @@ export class LavaClimb extends LevelBase {
   startRace() { this.racing = true; this.raceTime = 0; }
   preStep(dt, time) {
     super.preStep(dt, time);
-    if (this.racing) { this.raceTime += dt; const t = this.raceTime; this.lavaY = this.lavaStart + this.lavaSpeed * t + this.lavaAccel * t * t; }
+    if (this.racing) { this.raceTime += dt; const t = this.raceTime; this.lavaY = Math.min(SEGMENTS * RISE - 3, this.lavaStart + this.lavaSpeed * t + this.lavaAccel * t * t); }
     this.lava.y = this.lavaY;
   }
   postStep(chars) {
     super.postStep(chars);
-    for (const ch of chars) { if (!ch.eliminated && ch.pos.y < this.lavaY + 0.15) ch.eliminate('lava'); }
+    for (const ch of chars) { if (!ch.eliminated && !ch.finished && ch.pos.y < this.lavaY + 0.15) ch.eliminate('lava'); }
   }
   update(dt, time, camPos, playerPos) {
     super.update(dt, time, camPos, playerPos);

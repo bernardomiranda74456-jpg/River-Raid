@@ -203,7 +203,7 @@ export class Game {
     } else if (this.state === GS.RACING) {
       this.roundTime += dt; this.ui.setTimer(Math.max(0, this.level.duration - this.roundTime));
       if (this.roundTime >= this.level.duration) this.endRound();
-      if (this.level.kind === 'survival') { const alive = this.chars.chars.filter((c) => !c.eliminated); if (alive.length <= 1 || this.player.eliminated) this.endRound(); }
+      if (this.level.kind === 'survival') { const alive = this.chars.chars.filter((c) => !c.eliminated); if (alive.length <= 1) this.endRound(); }
       else { const active = this.chars.chars.filter((c) => !c.eliminated && !c.finished); if (active.length === 0) this.endRound(); }
     } else if (this.state === GS.ROUND_END) { this.endTimer += dt; if (this.endTimer > 4.0) { this.advance(); return; } }
 

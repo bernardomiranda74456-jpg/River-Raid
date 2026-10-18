@@ -19,8 +19,8 @@ export class PendulumRun extends LevelBase {
   build() {
     const M = this.M;
     this.env = new Environment({ scene: this.scene, renderer: this.game.renderer, camera: this.game.camera, materials: M, settings: this.settings,
-      preset: { elevation: 48, azimuth: 140, turbidity: 2.5, rayleigh: 1.2, mie: 0.004, mieG: 0.8, fogColor: 0xd6e6f5, fogDensity: 0.0026, sunColor: 0xfff4e0, sunIntensity: 5.2, envIntensity: 0.18, hemi: 0.28, hemiSky: 0xcfe3ff, hemiGround: 0x3a6a7a, exposure: 1.0, groundBounce: 0x2a5a6a } });
-    this.water = new Water(this.scene, { y: -16, sunDir: this.env.sunDir, fogColor: 0xd6e6f5, fogDensity: 0.0026 }); this.disposables.push(this.water);
+      preset: { elevation: 40, azimuth: 140, turbidity: 3, rayleigh: 1.4, mie: 0.004, mieG: 0.8, fogColor: 0xa9c4dc, fogDensity: 0.0021, sunColor: 0xfff4e0, sunIntensity: 5.0, envIntensity: 0.13, hemi: 0.24, hemiSky: 0xbfd8f5, hemiGround: 0x2a5a6a, exposure: 0.72, groundBounce: 0x1f4a5a } });
+    this.water = new Water(this.scene, { y: -16, sunDir: this.env.sunDir, fogColor: 0xa9c4dc, fogDensity: 0.0021, deep: 0x07263a, shallow: 0x146878, sky: 0x8fb8dc }); this.disposables.push(this.water);
     this.paintRed = M.paint('#c8352b'); this.paintBlue = M.paint('#2d6fb3'); this.paintYellow = M.paint('#e8b72a', { edgeDirt: 0.35 }); this.paintGreen = M.paint('#3f9d4a'); this.paintWhite = M.paint('#e9e4dc', { edgeDirt: 0.4 }); this.paintTeal = M.paint('#2a8f8a');
     const f = new Frame(new THREE.Vector3(0, 0, 0), 0); this.f = f;
     // scenery: cliffs and islands
@@ -50,7 +50,7 @@ export class PendulumRun extends LevelBase {
   _hammers(x0, x1) {
     this._deck(x0, x1);
     [8, 18, 28].forEach((x, k) => {
-      const pivotY = 8.2, arm = 6.2, w = 1.2 + k * 0.08;
+      const pivotY = 8.2, arm = 6.2, w = 1.45 + k * 0.1;
       for (const s of [-1, 1]) for (const zz of [-8, 8]) { const b = new THREE.Vector3(x + s * 2.8, -0.6, zz), top = new THREE.Vector3(x, pivotY + 0.3, 0); const mid = b.clone().lerp(top, 0.5); const dir = top.clone().sub(b); const len = dir.length(); dir.normalize(); const qq = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir); this.cylinder(0.24, len, [mid.x, mid.y, mid.z], [0, 0, 0], this.M.darkMetal, { quat: qq, noCollider: true, segments: 10 }); }
       this.cylinder(0.32, 18, [x, pivotY, 0], [0, 0, 0], this.M.metal, { quat: new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0)), noCollider: true, segments: 12 });
       const g = new THREE.Group();
@@ -60,9 +60,7 @@ export class PendulumRun extends LevelBase {
       const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 1.0, 16), this.M.darkMetal); hub.rotation.z = Math.PI / 2; g.add(hub);
       const phase = k * 2.0; const X = x;
       const m = this.mover(g, (t) => ({ pos: new THREE.Vector3(X, pivotY, 0), quat: new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.sin(t * w + phase) * 1.2, 0, 0)) }));
-      this.moverShape(m, 'box', [1.8, 2.4, 2.8], [0, -arm - 1.1, 0], [0, 0, 0], { hazardSolid: true });
       this.moverShape(m, 'box', [2.2, 2.8, 3.2], [0, -arm - 1.1, 0], [0, 0, 0], { sensor: true, data: { type: 'hazard', mul: 1.0, up: 5, push: 2, max: 16, metal: true } });
-      this.moverShape(m, 'cylinder', [0.3, arm], [0, -arm / 2, 0], [0, 0, 0], { hazardSolid: true });
     });
     for (const x of [8, 13, 18, 23, 28, 33]) this.wp(x, 0.2, 0, { spread: 8 });
   }
@@ -75,8 +73,7 @@ export class PendulumRun extends LevelBase {
       for (const s of [-1, 1]) { const tip = new THREE.Mesh(new THREE.SphereGeometry(0.5, 14, 10), this.paintRed); tip.position.set(s * 6.6, 0.25, 0); g.add(tip); }
       this.cylinder(0.55, 2, [x, -0.8, 0], [0, 0, 0], this.M.darkMetal, { noCollider: true });
       const X = x, D = dir;
-      const m = this.mover(g, (t) => ({ pos: new THREE.Vector3(X, 0.95, 0), quat: new THREE.Quaternion().setFromEuler(new THREE.Euler(0, t * 1.4 * D, 0)) }));
-      this.moverShape(m, 'box', [13, 0.5, 0.5], [0, 0.25, 0], [0, 0, 0], { hazardSolid: true });
+      const m = this.mover(g, (t) => ({ pos: new THREE.Vector3(X, 0.95, 0), quat: new THREE.Quaternion().setFromEuler(new THREE.Euler(0, t * 1.75 * D, 0)) }));
       this.moverShape(m, 'box', [13.3, 0.9, 0.9], [0, 0.25, 0], [0, 0, 0], { sensor: true, data: { type: 'hazard', mul: 1.0, up: 5, push: 2, max: 14, metal: true } });
       this.moverShape(m, 'cylinder', [1.1, 1.6]);
       this.wp(x - 2.2, 0.2, 0, { jump: true, jumpDist: 1.8, spread: 5 }); this.wp(x + 3, 0.2, 0, { spread: 6 });
@@ -157,7 +154,7 @@ export class PendulumRun extends LevelBase {
       const face = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.6, 0.3), this.M.hazard); face.position.z = 2.1; g.add(face); const f2 = face.clone(); f2.position.z = -2.1; g.add(f2);
       this.box([0.3, 0.3, W + 2], [x, y + 0.15, 0], [0, 0, 0], this.M.darkMetal, { noCollider: true });
       const X = x, PH = ph;
-      const m = this.mover(g, (t) => ({ pos: new THREE.Vector3(X, y + 1.2, Math.sin(t * 1.1 + PH) * 5.5), quat: new THREE.Quaternion() }));
+      const m = this.mover(g, (t) => ({ pos: new THREE.Vector3(X, y + 1.2, Math.sin(t * 1.5 + PH) * 5.5), quat: new THREE.Quaternion() }));
       this.moverShape(m, 'box', [1.8, 2.0, 4.0]);
     }
     for (const x of [x0 + 3, x0 + 9, x0 + 15, x0 + 21]) this.wp(x, y + 0.2, 0, { spread: 8 });

@@ -124,7 +124,7 @@ export class Character {
     if (this.state === STATE.AIR && this.grounded) {
       const impact = -this.lastVy;
       this.state = STATE.GROUND; this.stateTime = 0; this.squash = Math.min(1, impact / 14); this.events.push(impact > 9 ? 'landHard' : 'land');
-      if (impact > 19.5) { this.knock(_v.set(vx * 0.4, 2.5, vz * 0.4), 'fall'); return; }
+      if (impact > 23.5) { this.knock(_v.set(vx * 0.4, 2.5, vz * 0.4), 'fall'); return; }
     }
     this.lastVy = this.vel.y;
 

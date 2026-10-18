@@ -35,7 +35,7 @@ const simSeconds = async (s) => { const frames = Math.ceil(s * 20); await ev((n)
 
 await ev(() => { const g = window.__game; g.settings.applyPreset('low'); g.testDt = 1 / 20; g.skipRender = true; });
 await page.click('#btn-play');
-if (round > 1) await ev((r) => { const g = window.__game; g.round = r - 1; g.loadRound(); }, round);
+if (round > 1) await ev((r) => { const g = window.__game; const n = r === 2 ? 16 : 8; g.roster.forEach((x, i) => { x.alive = i < n; }); g.round = r - 1; g.loadRound(); }, round);
 await simSeconds(1.5); await shotHQ('lobby');
 await simSeconds(5.5); // countdown done
 await ev(() => { const g = window.__game; const B = g.bots[0].constructor; g.__bot = new B(g.player, g.level, 7); g.__bot.skill = 0.95; g.__bot.speedMul = 1; g.__botActive = true; });

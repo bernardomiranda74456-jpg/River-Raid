@@ -15,7 +15,7 @@ export class Bot {
   constructor(ch, level, seed) {
     this.ch = ch; this.level = level; this.rnd = mulberry32(seed);
     this.skill = 0.35 + this.rnd() * 0.65;      // 0.35..1
-    this.speedMul = 0.78 + this.skill * 0.22;    // 0.78..1
+    this.speedMul = 0.86 + this.skill * 0.14;    // 0.86..1
     this.wp = 0; this.lateral = (this.rnd() - 0.5) * 4; this.lateralT = 0;
     this.hesitate = 0; this.waiting = 0; this.stuck = 0; this.thinkT = this.rnd() * 0.1; this.mistakeT = 2 + this.rnd() * 6;
     this.dir = new THREE.Vector3(); this.reactDelay = 0.15 + (1 - this.skill) * 0.4;
@@ -51,24 +51,24 @@ export class Bot {
 
     // mistakes: hesitation
     this.mistakeT -= dtt;
-    if (this.mistakeT <= 0) { this.mistakeT = 3 + this.rnd() * 9 * this.skill; if (this.rnd() > this.skill * 0.9) this.hesitate = 0.25 + this.rnd() * 0.6; }
+    if (this.mistakeT <= 0) { this.mistakeT = 4 + this.rnd() * 12 * this.skill; if (this.rnd() > this.skill * 0.9) this.hesitate = 0.25 + this.rnd() * 0.6; }
     if (this.hesitate > 0) { this.hesitate -= dtt; c.mag = 0; c.x = c.z = 0; return; }
 
     // obstacle / gap awareness via raycasts ahead
     let wantJump = false; let speed = this.speedMul;
     if (ch.grounded) {
       const ph = this.level.physics;
-      const ahead = 1.3, far = 3.2;
-      const o1 = { x: ch.pos.x + this.dir.x * ahead, y: ch.pos.y + 1.0, z: ch.pos.z + this.dir.z * ahead };
-      const h1 = ph.ray(o1, { x: 0, y: -1, z: 0 }, 3.5, ch.body, RAYF);
-      if (!h1) {
-        // gap ahead: is there ground further?
-        const o2 = { x: ch.pos.x + this.dir.x * far, y: ch.pos.y + 1.0, z: ch.pos.z + this.dir.z * far };
-        const h2 = ph.ray(o2, { x: 0, y: -1, z: 0 }, 4.5, ch.body, RAYF);
-        const o3 = { x: ch.pos.x + this.dir.x * (far + 2.5), y: ch.pos.y + 1.5, z: ch.pos.z + this.dir.z * (far + 2.5) };
-        const h3 = ph.ray(o3, { x: 0, y: -1, z: 0 }, 5.5, ch.body, RAYF);
-        if (h2 || (h3 && w.wait === false) || w.jump) wantJump = true;
-        else if (w.wait !== false) { this.waiting += dtt; c.mag = 0; c.x = c.z = 0; if (this.waiting > 6 && this.rnd() < 0.3) { wantJump = true; this.waiting = 0; } else return; }
+      const probe = (d, up, len) => ph.ray({ x: ch.pos.x + this.dir.x * d, y: ch.pos.y + up, z: ch.pos.z + this.dir.z * d }, { x: 0, y: -1, z: 0 }, len, ch.body, RAYF);
+      const near = probe(0.7, 1.0, 3.5);     // ground right in front of the feet?
+      const mid = probe(1.8, 1.0, 3.5);      // ground a step ahead?
+      if (!mid || !near) {
+        const h2 = probe(3.2, 1.2, 4.8), h3 = probe(5.2, 1.6, 5.5);   // landing spots at jump range
+        const landing = h2 || h3 || w.jump;
+        if (!near) { // at the edge: jump at full speed if there is somewhere to land, else wait
+          if (landing) { wantJump = true; speed = 1; }
+          else if (w.wait !== false) { this.waiting += dtt; c.mag = 0; c.x = c.z = 0; if (this.waiting > 6 && this.rnd() < 0.3) { wantJump = true; this.waiting = 0; } else return; }
+        } else if (landing) speed = 1; // sprint towards the edge
+        else if (w.wait !== false) { c.mag = 0; c.x = c.z = 0; this.waiting += dtt; return; }
       } else this.waiting = 0;
       // wall ahead at chest height -> jump
       const hw = ph.ray({ x: ch.pos.x, y: ch.pos.y + 0.9, z: ch.pos.z }, { x: this.dir.x, y: 0, z: this.dir.z }, 1.2, ch.body, RAYF);
@@ -87,15 +87,28 @@ export class Bot {
   thinkSurvival(dt, time) {
     const ch = this.ch, c = ch.ctrl; const lvl = this.level;
     this.lateralT -= dt;
-    if (this.lateralT <= 0 || !this.hasTarget) {
-      this.lateralT = 0.8 + this.rnd() * 1.5;
-      const t = lvl.pickTileFor(ch, this.rnd); if (t) { this.target.copy(t); this.hasTarget = true; } else { this.hasTarget = false; }
+    let len = this.hasTarget ? Math.hypot(this.target.x - ch.pos.x, this.target.z - ch.pos.z) : 0;
+    if (this.lateralT <= 0 || !this.hasTarget || len < 0.9) {
+      this.lateralT = 1.0 + this.rnd() * 1.5;
+      const t = lvl.pickTileFor(ch, this.rnd);
+      if (t) { this.target.copy(t); this.hasTarget = true; } else { const n = lvl.nearestTile(ch); if (n) { this.target.copy(n); this.hasTarget = true; } else { c.mag = 0; return; } }
+      len = Math.hypot(this.target.x - ch.pos.x, this.target.z - ch.pos.z);
     }
-    if (!this.hasTarget) { c.mag = 0; return; }
-    this.dir.set(this.target.x - ch.pos.x, 0, this.target.z - ch.pos.z); const len = this.dir.length();
-    if (len < 0.6) { this.hasTarget = false; c.mag = 0; return; }
+    this.dir.set(this.target.x - ch.pos.x, 0, this.target.z - ch.pos.z);
+    if (len < 0.05) { c.mag = 0; return; }
     this.dir.divideScalar(len);
-    const sp = 0.6 + this.skill * 0.35; c.x = this.dir.x * sp; c.z = this.dir.z * sp; c.mag = sp;
-    if (this.rnd() < 0.01) c.jump = true;
+    let sp = 0.6 + this.skill * 0.35;
+    // holes: jump over a missing tile ahead when there is a landing spot, otherwise turn around
+    if (ch.grounded) {
+      const ph = lvl.physics;
+      const probe = (d, up, l) => ph.ray({ x: ch.pos.x + this.dir.x * d, y: ch.pos.y + up, z: ch.pos.z + this.dir.z * d }, { x: 0, y: -1, z: 0 }, l, ch.body, RAYF);
+      const near = probe(0.9, 1.0, 2.5);
+      if (!near) {
+        const land = probe(3.0, 1.2, 3.0) || probe(4.6, 1.5, 3.5);
+        if (land) { c.jump = true; sp = 1; }
+        else { this.lateralT = 0; this.hasTarget = false; this.dir.negate(); }
+      }
+    }
+    c.x = this.dir.x * sp; c.z = this.dir.z * sp; c.mag = sp;
   }
 }
