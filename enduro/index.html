@@ -1,40 +1,127 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enduro</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: #111;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      font-family: monospace;
-      color: #fff;
-      touch-action: none;
-    }
-    canvas {
-      display: block;
-      border: 2px solid #333;
-      image-rendering: pixelated;
-      max-width: 100vw;
-      max-height: 85vh;
-    }
-    #controls {
-      margin-top: 8px;
-      font-size: 11px;
-      color: #888;
-      text-align: center;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>Enduro</title>
+<style>
+  /* Layout: tela única de fliperama; canvas em cima, botões de toque embaixo */
+  :root {
+    --bg: #0e1116;
+    --frame: #2a3340;
+    --fg: #e6edf3;
+    --muted: #8b98a8;
+    --accent: #ffd54f;
+    --btn: #1b2430;
+    --btn-border: #3a4656;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding-inline: 12px;
+    padding-block: 8px;
+    box-sizing: border-box;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    max-width: 720px;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    max-height: calc(100% - 60px);
+    object-fit: contain;
+    border: 2px solid var(--frame);
+    border-radius: 4px;
+    image-rendering: pixelated;
+  }
+  #controls {
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--muted);
+    text-align: center;
+    max-width: 720px;
+  }
+  #controls b { color: var(--accent); font-weight: 600; letter-spacing: 0.04em; }
+
+  /* Botões na tela (só em telas de toque) */
+  #pad {
+    display: none;
+    width: 100%;
+    max-width: 720px;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .grp { display: flex; gap: 10px; align-items: center; }
+  .pb {
+    width: 72px; height: 72px;
+    border-radius: 16px;
+    border: 2px solid var(--btn-border);
+    background: var(--btn);
+    color: var(--fg);
+    font: bold 26px ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .pb.wide  { width: 116px; font-size: 15px; letter-spacing: 0.04em; }
+  .pb.brake { font-size: 15px; letter-spacing: 0.04em; }
+  .pb.small { width: 58px; height: 46px; font-size: 12px; border-radius: 10px; color: var(--muted); }
+  .pb.on { background: var(--accent); color: #111; border-color: var(--accent); }
+  .pb:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (pointer: coarse) {
+    #pad { display: flex; }
+    #controls { display: none; }
+    canvas { max-height: calc(100% - 96px); }
+  }
+  @media (pointer: coarse) and (max-width: 420px) {
+    .pb { width: 62px; height: 62px; font-size: 22px; }
+    .pb.wide { width: 96px; font-size: 13px; }
+    .pb.brake { font-size: 13px; }
+    .pb.small { width: 64px; height: 40px; font-size: 11px; }
+    .grp { gap: 6px; }
+    .grp.aux { order: 3; width: 100%; justify-content: center; gap: 12px; }
+    canvas { max-height: calc(100% - 150px); }
+  }
+</style>
 </head>
 <body>
-  <canvas id="c"></canvas>
-  <div id="controls">← →: Virar &nbsp;|&nbsp; ↑ ou ESPAÇO: Acelerar &nbsp;|&nbsp; ↓: Frear &nbsp;|&nbsp; M: Som &nbsp;|&nbsp; WASD também funciona &nbsp;|&nbsp; Toque: lados viram, centro acelera, painel freia</div>
-  <script src="game.js"></script>
+<canvas id="c" tabindex="0" aria-label="Jogo Enduro"></canvas>
+<div id="pad">
+  <div class="grp">
+    <button class="pb" data-k="left" aria-label="Virar à esquerda">◀</button>
+    <button class="pb" data-k="right" aria-label="Virar à direita">▶</button>
+  </div>
+  <div class="grp aux">
+    <button class="pb small" data-k="sound" aria-label="Som">SOM</button>
+    <button class="pb small" data-k="auto" aria-label="Acelerador automático">AUTO</button>
+  </div>
+  <div class="grp">
+    <button class="pb brake" data-k="brake" aria-label="Frear">FREAR</button>
+    <button class="pb wide" data-k="gas" aria-label="Acelerar">ACELERAR</button>
+  </div>
+</div>
+<div id="controls"><b>← →</b> virar &nbsp;·&nbsp; <b>↑ / ESPAÇO</b> acelerar &nbsp;·&nbsp; <b>↓</b> frear &nbsp;·&nbsp; <b>M</b> som &nbsp;·&nbsp; WASD também funciona</div>
+<script src="game.js"></script>
 </body>
 </html>
