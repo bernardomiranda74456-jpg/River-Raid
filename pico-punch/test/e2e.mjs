@@ -5,7 +5,7 @@ const level = +(process.argv[2] || 1); const mode = process.argv[3] || 'retro'; 
 const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
 const page = await b.newPage({ viewport: { width: 1280, height: 720 } }); const errors = [];
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); }); page.on('pageerror', (e) => errors.push('PAGEERROR ' + e.message));
-await page.goto(`http://localhost:8787/index.html?level=${level}&mode=${mode}&bot=1&fast=${fast}`, { waitUntil: 'load' });
+await page.goto(`${process.env.PP_URL || 'http://localhost:8787/index.html'}?level=${level}&mode=${mode}&bot=1&fast=${fast}`, { waitUntil: 'load' });
 await page.waitForTimeout(800); await page.keyboard.press('KeyK'); // gesto para liberar áudio
 const t0 = Date.now(); let result = null;
 while (Date.now() - t0 < 180000) {
