@@ -197,7 +197,8 @@ export class Hero extends Entity {
     else this.frame = (Math.floor(this.idleT * 1.6) % 2) ? 'idle2' : 'idle0';
   }
   /** Hitbox da cabeça para itens etc. */
-  respawnAt(x, y) {
-    this.x = x; this.y = y; this.vx = 0; this.vy = 0; this.state = 'normal'; this.frame = 'idle0'; this.rotation = 0; this.invuln = 1.5; this.crouch = false; this.h = STAND_H; this.punch = 0; this.vehicle = null; this.scaleX = this.scaleY = 1; this.savePrev();
+  respawnAt(x, y, map = null) {
+    this.x = x; this.y = y;
+    if (map) { let g = 0; const inside = () => map.anyInRect(this.x + 1, this.y + 1, this.w - 2, this.h - 2, (t) => isSolidType(t)); while (inside() && g++ < 8) this.x += 4; g = 0; while (inside() && g++ < 8) { this.x -= 4; this.y -= 4; } } this.vx = 0; this.vy = 0; this.state = 'normal'; this.frame = 'idle0'; this.rotation = 0; this.invuln = 1.5; this.crouch = false; this.h = STAND_H; this.punch = 0; this.vehicle = null; this.scaleX = this.scaleY = 1; this.savePrev();
   }
 }

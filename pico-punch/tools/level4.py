@@ -51,7 +51,7 @@ m2 = [
 ".==========....========.......",  # 6  telhados: casa 1 cols 31–40; casa 2 cols 45–52
 "..########.....########.......",  # 7  tetos: casa 1 cols 32–39; casa 2 cols 45–52
 "....$.........##.......#......",  # 8  saco sob a arcada; caixote alto (col 44) + pilar (col 45); pilar col 52
-".............###......#...a.C.",  # 9  escadinha cols 43–44; caranguejo col 56; sino col 58
+".............###......#.....C.",  # 9  escadinha cols 43–44; sino col 58
 "##############################",  # 10
 "##############################",  # 11
 ]
@@ -80,9 +80,9 @@ m3 = [
 "............===...............",  # 4  telhado da torre (cols 72–74)
 "............##................",  # 5  torre (cols 72–73, linhas 5–9)
 "........====##................",  # 6  telhado da casa 3 (cols 68–71)
-"..SSS...######................",  # 7  estrelas (62–64); teto da casa 3 (68–71)
+"SSS.....######................",  # 7  estrelas (60–62, longe da escadinha); teto da casa 3 (68–71)
 ".......##...##................",  # 8  caixote alto (67) + pilar (68)
-"......###...##....$$$$$...a...",  # 9  escadinha 66–67; sacos 78–82; caranguejo 86
+"...a..###...##....$$$$$...a...",  # 9  caranguejo 63 (longe da queda do telhado); escadinha 66–67; sacos 78–82; caranguejo 86
 "##############################",  # 10
 "##############################",  # 11
 ]
@@ -96,7 +96,7 @@ d3 = [
 "..............................",
 "..............................",
 ".........w.W..................",
-"FF...t..........p.......f...FF",
+"...F.t..........p.......f...FF",
 "..............................",
 "..............................",
 ]
@@ -142,7 +142,7 @@ m5 = [
 "..............................",  # 4
 "....................$$$.......",  # 5  sacos no telhado da casa 6
 "..................=========...",  # 6  telhado da casa 6 (cols 138–146)
-"....?SS...........#########...",  # 7  ? coração (col 124) + estrelas; teto da casa 6
+".?SS..............#########...",  # 7  ? coração (col 121) + estrelas; teto da casa 6
 "........&........##.......#...",  # 8  saco grande sobre o banco; caixote alto (137) + pilar (138); pilar 146
 "........##...a..###.......#...",  # 9  banco cols 128–129; caranguejo 133; escadinha 136–137
 "##############################",  # 10
@@ -208,7 +208,7 @@ assert sum(r.count('P') for r in rows) == 1 and sum(r.count('E') for r in rows) 
 
 def find(ch):
     return [(x, y) for y, r in enumerate(rows) for x, c in enumerate(r) if c == ch]
-assert find('?') == [(124, 7)], find('?')
+assert find('?') == [(121, 7)], find('?')
 assert find('D') == [(11, 9)]
 # porta da loja: 2×2 tiles + 2 acima e 1 à direita livres
 for (dx, dy) in [(0, 8), (1, 8), (1, 9), (0, 7), (1, 7), (2, 9), (2, 8)]:
@@ -221,7 +221,7 @@ for y, r in enumerate(decor):
 level = {
   "id": "l4", "name": "Vila Caramelo", "theme": "village", "music": "village", "time": "sunset",
   "map": rows, "decor": decor,
-  "qcontents": { "124,7": "heart" },
+  "qcontents": { "121,7": "heart" },
   "entities": [],
   "cameraZones": [],
   # Caminho do bot: pela rua, subindo as escadinhas e cruzando os telhados das casas fechadas (e a torre).

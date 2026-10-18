@@ -17,13 +17,13 @@ export function installDuel(game) {
     if (game.mode === 'hd') level.camera.targetZoom = 1.12;
     game.audio?.music.play('duel');
     const L = game.menuLayer; L.removeChildren(); const cx = Math.round(game.viewW / 2);
-    const g = new Graphics(); g.roundRect(cx - 120, 8, 240, 112, 4).fill({ color: 0x120c22, alpha: 0.92 }).stroke({ color: 0xffd36b, width: 1 }); L.addChild(g);
-    const title = line('DUELO DE MÃOS', cx, 14, 0xffd36b); const sub = line(bd.name + ' - MELHOR DE 3', cx, 26, 0x9aa4c8, 'center', 7); L.addChild(title, sub);
+    const g = new Graphics(); g.roundRect(cx - 120, 8, 240, 112, 4).fill({ color: 0x120c22, alpha: 0.92 }).stroke({ color: 0xffaa00, width: 1 }); L.addChild(g);
+    const title = line('DUELO DE MÃOS', cx, 14, 0xffaa00); const sub = line(bd.name + ' - MELHOR DE 3', cx, 26, 0xaaaaff, 'center', 7); L.addChild(title, sub);
     const heroS = new Sprite(game.bank.sprite('hero', 'idle0')); heroS.anchor.set(0.5, 1); heroS.x = cx - 80; heroS.y = 96; heroS.scale.set(game.bank.invScale); L.addChild(heroS);
     const bossS = new Sprite(game.bank.sprite(def.type, 'f0')); bossS.anchor.set(0.5, 1); bossS.x = cx + 80; bossS.y = 100; bossS.scale.set(-game.bank.invScale, game.bank.invScale); L.addChild(bossS);
     const heroHand = new Sprite(); heroHand.anchor.set(0.5); heroHand.x = cx - 40; heroHand.y = 70; heroHand.scale.set(game.bank.invScale); heroHand.visible = false; L.addChild(heroHand);
     const bossHand = new Sprite(); bossHand.anchor.set(0.5); bossHand.x = cx + 40; bossHand.y = 70; bossHand.scale.set(-game.bank.invScale, game.bank.invScale); bossHand.visible = false; L.addChild(bossHand);
-    const score = line('0 × 0', cx, 42, 0xffffff); const msg = line('', cx, 56, 0xfff3a0); const hint = line('← PEDRA   ↑ PAPEL   → TESOURA', cx, 108, 0x9aa4c8, 'center', 7); L.addChild(score, msg, hint);
+    const score = line('0 × 0', cx, 42, 0xffffff); const msg = line('', cx, 56, 0xffff55); const hint = line('← PEDRA   ↑ PAPEL   → TESOURA', cx, 108, 0xaaaaff, 'center', 7); L.addChild(score, msg, hint);
     const sel = [0, 1, 2].map((i) => { const s = new Sprite(game.bank.sprite(HANDS[i], 'f0')); s.anchor.set(0.5, 1); s.x = cx - 24 + i * 24; s.y = 104; s.scale.set(game.bank.invScale * 0.6); s.alpha = 0.45; L.addChild(s); return s; });
     D = { level, def, bd, t: 0, phase: 'count', beat: 0, wins: 0, losses: 0, heroPick: 1, bossPick: 0, ui: { heroS, bossS, heroHand, bossHand, score, msg, sel, title }, eye: level.hero.items.eye, tellShown: false, history: [] };
     D.bossPick = choose(D); D.t = 0;

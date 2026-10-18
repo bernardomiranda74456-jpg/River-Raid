@@ -7,7 +7,7 @@ import { installShop } from './shop.js';
 import { installDuel } from './duel.js';
 import { installStory } from './story.js';
 
-const COL = { title: 0xffd36b, text: 0xffffff, dim: 0x9aa4c8, sel: 0xfff3a0, bad: 0xff6b6b, ok: 0x8cf58c };
+const COL = { title: 0xffaa00, text: 0xffffff, dim: 0xaaaaff, sel: 0xffff55, bad: 0xff5555, ok: 0x55ff55 };
 
 export class Menu {
   constructor(game, items, opts = {}) {
@@ -126,7 +126,7 @@ export function installUI(game) {
     const t = Math.floor(lv.time); const best = game.save.progress.bestTimes[lv.id];
     L.addChild(line(`TEMPO  ${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`, center(), 76));
     L.addChild(line(`PLACAR ${lv.score}`, center(), 88));
-    L.addChild(line(`DINHEIRO ${lv.money}  (+${lv.money - lv.moneyStart})`, center(), 100, 0xffe066));
+    L.addChild(line(`DINHEIRO ${lv.money}  (+${lv.money - lv.moneyStart})`, center(), 100, 0xffff55));
     L.addChild(line(`INIMIGOS ${lv.defeated}   MORTES ${lv.deaths}`, center(), 112, COL.dim));
     L.addChild(line(game.levelIndex + 1 < LEVELS.length ? 'PULO: PRÓXIMA FASE' : 'PULO: CONTINUAR', center(), 130, COL.ok));
   }

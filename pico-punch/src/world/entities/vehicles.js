@@ -43,7 +43,7 @@ class Moto extends Vehicle {
     if (hero.vy < 0 && !inp.held.jump) hero.vy *= 0.9;
     hero.vy = Math.min(hero.vy + GRAVITY * dt, MAX_FALL);
     // quebra o que está à frente antes de colidir
-    this.smash(level, hero, hero.facing > 0 ? hero.x + hero.w : hero.x - 6, hero.y - 6, 6, hero.h + 6, true);
+    this.smash(level, hero, hero.facing > 0 ? hero.x + hero.w : hero.x - 6, hero.y - 14, 6, hero.h + 14, true);
     moveBody(hero, map, dt);
     if (hero.hitWall) { // bateu em parede: moto destruída
       level.fx.sparks(hero.facing > 0 ? hero.right : hero.x, hero.cy, 12); level.sfx('crash'); level.camera.shake(5, 0.3); level.flash(0.5);

@@ -121,7 +121,7 @@ export class Scene {
   }
   _syncText(e, alpha, retro) {
     let v = this.textViews.get(e.id);
-    if (!v) { v = new BitmapLine(e.text, { tint: 0xfff3a0, shadow: true, align: 'center' }); this.frontLayer.addChild(v); this.textViews.set(e.id, v); }
+    if (!v) { v = new BitmapLine(e.text, { tint: 0xffff55, shadow: true, align: 'center' }); this.frontLayer.addChild(v); this.textViews.set(e.id, v); }
     let x = e.px + (e.x - e.px) * alpha, y = e.py + (e.y - e.py) * alpha; if (retro) { x = Math.round(x); y = Math.round(y); }
     v.x = x; v.y = y - 8; v.alpha = e.life < 0.3 ? e.life / 0.3 : 1;
   }

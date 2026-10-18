@@ -157,7 +157,11 @@ export class Knight extends Enemy {
     if (hero.punchDir === 'fwd' && !fromBehind) { level.fx.sparks(this.cx - this.dir * 6, this.cy, 4); level.sfx('clank'); this.vx = -hero.facing * 20; return true; }
     return super.onPunch(level, hero);
   }
-  update(dt, level) { super.update(dt, level); this.animate(4); const hero = level.hero; if (Math.abs(hero.cx - this.cx) < 120 && Math.abs(hero.cy - this.cy) < 24) this.dir = sign(hero.cx - this.cx) || this.dir; this.patrol(dt, level, 30, true); }
+  update(dt, level) {
+    super.update(dt, level); this.animate(4); const hero = level.hero; this.turnCd = (this.turnCd ?? 0) - dt;
+    if (this.turnCd <= 0 && Math.abs(hero.cx - this.cx) < 120 && Math.abs(hero.cy - this.cy) < 24) { const want = sign(hero.cx - this.cx) || this.dir; if (want !== this.dir) { this.dir = want; this.turnCd = 1.4; } }
+    this.patrol(dt, level, 30, true);
+  }
 }
 
 export class Bee extends Enemy {

@@ -23,7 +23,7 @@ export function installStory(game) {
     const bg = new Graphics(); bg.rect(0, 0, game.viewW, game.viewH).fill(0x06061a); L.addChild(bg);
     const hero = new Sprite(game.bank.sprite('hero', kind === 'ending' ? 'eat1' : 'idle0')); hero.anchor.set(0.5, 1); hero.x = cx; hero.y = 118; hero.scale.set(game.bank.invScale * 1); L.addChild(hero);
     const l1 = line('', cx, 136, 0xffffff, 7), l2 = line('', cx, 148, 0xffffff, 7); L.addChild(l1, l2);
-    const hint = line('PULO AVANÇA   SOCO PULA TUDO', cx, 178, 0x6a7090, 7); L.addChild(hint);
+    const hint = line('PULO AVANÇA   SOCO PULA TUDO', cx, 178, 0x5555aa, 7); L.addChild(hint);
     const glow = new Graphics(); L.addChildAt(glow, 1);
     S = { pages, i: 0, t: 0, l1, l2, hero, glow, bg, onDone, kind, cx };
     if (music) game.audio?.music.play(music, { restart: true }); draw();
@@ -31,7 +31,7 @@ export function installStory(game) {
   function draw() { const p = S.pages[S.i]; S.l1.setText(p[0]); S.l2.setText(p[1]); S.t = 0; S.hero.texture = game.bank.sprite('hero', S.kind === 'ending' ? ['eat0', 'eat1', 'eat2'][S.i % 3] : ['idle0', 'punch1', 'eat0', 'victory'][S.i % 4]); }
   function update(dt) {
     S.t += dt; const inp = game.input; const g = S.glow; g.clear(); const r = 30 + Math.sin(S.t * 2) * 4;
-    g.circle(S.cx, 90, r).fill({ color: S.kind === 'ending' ? 0xffd36b : 0x3a2a6a, alpha: 0.5 }); g.circle(S.cx, 90, r * 0.6).fill({ color: S.kind === 'ending' ? 0xfff3b0 : 0x5a4a9a, alpha: 0.6 });
+    g.circle(S.cx, 90, r).fill({ color: S.kind === 'ending' ? 0xffaa00 : 0x3a2a6a, alpha: 0.5 }); g.circle(S.cx, 90, r * 0.6).fill({ color: S.kind === 'ending' ? 0xfff3b0 : 0x5a4a9a, alpha: 0.6 });
     S.hero.y = 118 + Math.round(Math.sin(S.t * 3) * 1.5);
     if (inp.pressed.jump || inp.pressed.confirm) { inp.consume('jump'); inp.consume('confirm'); game.audio?.sfx('menu'); S.i++; if (S.i >= S.pages.length) finish(); else draw(); }
     if (inp.pressed.back || inp.pressed.punch) { inp.consume('back'); inp.consume('punch'); finish(); }
@@ -41,7 +41,7 @@ export function installStory(game) {
   function credits() {
     game.setState('story'); const L = game.menuLayer; L.removeChildren(); const cx = Math.round(game.viewW / 2);
     const bg = new Graphics(); bg.rect(0, 0, game.viewW, game.viewH).fill(0x06061a); L.addChild(bg);
-    const lines = CREDITS.map((t, i) => { const l = line(t, cx, 200 + i * 12, i === 0 ? 0xffd36b : 0xffffff, 7); L.addChild(l); return l; });
+    const lines = CREDITS.map((t, i) => { const l = line(t, cx, 200 + i * 12, i === 0 ? 0xffaa00 : 0xffffff, 7); L.addChild(l); return l; });
     const hero = new Sprite(game.bank.sprite('hero', 'victory')); hero.anchor.set(0.5, 1); hero.x = cx; hero.y = 200 + CREDITS.length * 12 + 40; hero.scale.set(game.bank.invScale); L.addChild(hero);
     S = { credits: true, t: 0, lines, hero, update: (dt) => { S.t += dt; const off = S.t * 18; lines.forEach((l, i) => { l.y = 200 + i * 12 - off; }); hero.y = 200 + CREDITS.length * 12 + 40 - off; if ((game.input.pressed.jump || game.input.pressed.confirm) && S.t > 2) { game.input.consume('jump'); S = null; game.level = null; game.setState('title'); } return true; } };
   }

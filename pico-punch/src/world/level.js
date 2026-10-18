@@ -101,10 +101,10 @@ export class Level {
     const p = this.game.save.progress; p.lives--;
     if (p.lives < 0) { this.game.gameOver(this); return; }
     const cp = this.checkpoint; const sp = this.map.spawn;
-    if (cp) this.hero.respawnAt(cp.x, cp.y); else this.hero.respawnAt(sp.x * TILE + 3, (sp.y + 1) * TILE - 22);
+    if (cp) this.hero.respawnAt(cp.x, cp.y, this.map); else this.hero.respawnAt(sp.x * TILE + 3, (sp.y + 1) * TILE - 22, this.map);
     // reinicia inimigos próximos ao ponto de respawn? mantemos o estado, mas removemos fantasmas
     for (const e of this.entities) if (e instanceof Ghost || e.type === 'ghostbuddy') e.remove = true;
-    this.applyInventory();
+    this.applyInventory(); if (this.vehicleAtStart) mountVehicle(this, this.vehicleAtStart);
     this.state = 'play'; this.camera.snapTo(this.hero, this.map.pixelW, this.map.pixelH); this.game.audio?.music.play(this.json.music, { restart: true }); this.game.iris = { t: 0, dir: 1, dur: 0.6 };
   }
   // ----- Passo fixo -----------------------------------------------------------------------------
