@@ -9,6 +9,16 @@ todo o conteúdo (nome, personagens, perseguidores, texturas, grafites, música 
 
 ## Como rodar
 
+**Jeito mais simples:** abra `fuga-nos-trilhos.html` (na raiz do repositório) com duplo
+clique. É um arquivo único com todo o código e o Three.js embutidos, funciona sem servidor e
+sem internet. Ele é gerado a partir desta pasta com:
+
+```bash
+cd fuga-nos-trilhos && npm install && node tools/build-single.mjs
+```
+
+**Versão de desenvolvimento** (módulos separados, precisa de servidor):
+
 Projeto estático, sem bundler. O Three.js 0.186.1 (versão estável mais recente na data do
 projeto) está vendorizado em `vendor/three` (licença MIT) para funcionar offline; o
 `importmap` em `index.html` mostra como apontar para o CDN se preferir.

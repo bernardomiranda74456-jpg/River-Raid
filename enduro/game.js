@@ -128,18 +128,24 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('keyup', e => { keys[e.code] = false; });
 
-const touch = { left: false, right: false, gas: false, brake: false, active: false };
+// Zonas de toque no canvas (usadas só quando não há botões na tela)
+const zone = { left: false, right: false, gas: false, brake: false };
+// Botões na tela (#pad): aparecem em telas de toque
+const touch = { left: false, right: false, gas: false, brake: false, auto: false };
+const pad = document.getElementById('pad');
+function padVisible() { return !!pad && getComputedStyle(pad).display !== 'none'; }
+
 function readTouches(ev) {
-  touch.left = touch.right = touch.gas = touch.brake = false;
+  zone.left = zone.right = zone.gas = zone.brake = false;
+  if (padVisible()) return;
   const rect = canvas.getBoundingClientRect();
-  touch.active = ev.touches.length > 0;
   for (const t of ev.touches) {
     const fx = (t.clientX - rect.left) / rect.width;
     const fy = (t.clientY - rect.top) / rect.height;
-    if (fy > 0.82)      { touch.brake = true; continue; }   // faixa do painel: freio
-    if (fx < 0.33)      touch.left  = true;
-    else if (fx > 0.67) touch.right = true;
-    touch.gas = true;
+    if (fy > 0.82)      { zone.brake = true; continue; }   // faixa do painel: freio
+    if (fx < 0.33)      zone.left  = true;
+    else if (fx > 0.67) zone.right = true;
+    zone.gas = true;
   }
 }
 canvas.addEventListener('touchstart', ev => {
@@ -152,12 +158,74 @@ canvas.addEventListener('touchmove', ev => { ev.preventDefault(); readTouches(ev
 canvas.addEventListener('touchend',  ev => { ev.preventDefault(); readTouches(ev); }, { passive: false });
 canvas.addEventListener('touchcancel', ev => { ev.preventDefault(); readTouches(ev); }, { passive: false });
 
+if (pad) {
+  const btns = Array.from(pad.querySelectorAll('.pb'));
+  const held = new Map();   // identificador do toque → tecla
+  const keyAt = (x, y) => {
+    const el = document.elementFromPoint(x, y);
+    const b = el && el.closest ? el.closest('.pb') : null;
+    return b ? b.dataset.k : null;
+  };
+  const refresh = () => {
+    const ks = new Set(held.values());
+    touch.left  = ks.has('left');
+    touch.right = ks.has('right');
+    touch.brake = ks.has('brake');
+    touch.gas   = ks.has('gas');
+    for (const b of btns) {
+      const k = b.dataset.k;
+      b.classList.toggle('on', ks.has(k) || (k === 'auto' && touch.auto));
+    }
+  };
+  pad.addEventListener('touchstart', ev => {
+    ev.preventDefault();
+    initAudio();
+    for (const t of ev.changedTouches) {
+      const k = keyAt(t.clientX, t.clientY);
+      if (k === 'auto') { touch.auto = !touch.auto; showMsg(touch.auto ? 'ACELERADOR AUTOMÁTICO LIGADO' : 'ACELERADOR AUTOMÁTICO DESLIGADO'); }
+      else if (k === 'sound') { audio.muted = !audio.muted; showMsg(audio.muted ? 'SOM DESLIGADO' : 'SOM LIGADO'); }
+      else if (k) held.set(t.identifier, k);
+    }
+    if (state === 'title' || state === 'gameover') startGame();
+    refresh();
+  }, { passive: false });
+  pad.addEventListener('touchmove', ev => {
+    ev.preventDefault();
+    for (const t of ev.changedTouches) {
+      const k = keyAt(t.clientX, t.clientY);
+      if (k && k !== 'auto' && k !== 'sound') held.set(t.identifier, k);
+      else held.delete(t.identifier);
+    }
+    refresh();
+  }, { passive: false });
+  const release = ev => {
+    ev.preventDefault();
+    for (const t of ev.changedTouches) held.delete(t.identifier);
+    refresh();
+  };
+  pad.addEventListener('touchend', release, { passive: false });
+  pad.addEventListener('touchcancel', release, { passive: false });
+  // Mouse (para testar no computador)
+  for (const b of btns) {
+    const k = b.dataset.k;
+    if (k === 'auto' || k === 'sound') continue;
+    b.addEventListener('mousedown', e => { e.preventDefault(); initAudio(); held.set('mouse', k); if (state !== 'play') startGame(); refresh(); });
+    b.addEventListener('mouseup',   e => { e.preventDefault(); held.delete('mouse'); refresh(); });
+    b.addEventListener('mouseleave', () => { held.delete('mouse'); refresh(); });
+  }
+  pad.querySelectorAll('.pb[data-k=auto],.pb[data-k=sound]').forEach(b => b.addEventListener('click', e => {
+    if (e.detail === 0) return; // já tratado no toque
+    if (b.dataset.k === 'auto') touch.auto = !touch.auto; else audio.muted = !audio.muted;
+    refresh();
+  }));
+}
+
 function input() {
   return {
-    left:  keys['ArrowLeft']  || keys['KeyA'] || touch.left,
-    right: keys['ArrowRight'] || keys['KeyD'] || touch.right,
-    gas:   keys['ArrowUp']    || keys['KeyW'] || keys['Space'] || touch.gas,
-    brake: keys['ArrowDown']  || keys['KeyS'] || touch.brake,
+    left:  keys['ArrowLeft']  || keys['KeyA'] || touch.left  || zone.left,
+    right: keys['ArrowRight'] || keys['KeyD'] || touch.right || zone.right,
+    gas:   keys['ArrowUp']    || keys['KeyW'] || keys['Space'] || touch.gas || touch.auto || zone.gas,
+    brake: keys['ArrowDown']  || keys['KeyS'] || touch.brake || zone.brake,
   };
 }
 

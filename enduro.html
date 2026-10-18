@@ -2,16 +2,18 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <title>Enduro</title>
 <style>
-  /* Layout: tela única de fliperama, canvas centralizado sobre painel de controles */
+  /* Layout: tela única de fliperama; canvas em cima, botões de toque embaixo */
   :root {
     --bg: #0e1116;
     --frame: #2a3340;
     --fg: #e6edf3;
     --muted: #8b98a8;
     --accent: #ffd54f;
+    --btn: #1b2430;
+    --btn-border: #3a4656;
     color-scheme: dark;
   }
   html, body { height: 100%; }
@@ -24,13 +26,14 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding-inline: 16px;
-    padding-block: 12px;
+    gap: 8px;
+    padding-inline: 12px;
+    padding-block: 8px;
     box-sizing: border-box;
     touch-action: none;
     -webkit-user-select: none;
     user-select: none;
+    overflow: hidden;
   }
   canvas {
     display: block;
@@ -52,11 +55,73 @@
     max-width: 720px;
   }
   #controls b { color: var(--accent); font-weight: 600; letter-spacing: 0.04em; }
+
+  /* Botões na tela (só em telas de toque) */
+  #pad {
+    display: none;
+    width: 100%;
+    max-width: 720px;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .grp { display: flex; gap: 10px; align-items: center; }
+  .pb {
+    width: 72px; height: 72px;
+    border-radius: 16px;
+    border: 2px solid var(--btn-border);
+    background: var(--btn);
+    color: var(--fg);
+    font: bold 26px ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .pb.wide  { width: 116px; font-size: 15px; letter-spacing: 0.04em; }
+  .pb.brake { font-size: 15px; letter-spacing: 0.04em; }
+  .pb.small { width: 58px; height: 46px; font-size: 12px; border-radius: 10px; color: var(--muted); }
+  .pb.on { background: var(--accent); color: #111; border-color: var(--accent); }
+  .pb:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (pointer: coarse) {
+    #pad { display: flex; }
+    #controls { display: none; }
+    canvas { max-height: calc(100% - 96px); }
+  }
+  @media (pointer: coarse) and (max-width: 420px) {
+    .pb { width: 62px; height: 62px; font-size: 22px; }
+    .pb.wide { width: 96px; font-size: 13px; }
+    .pb.brake { font-size: 13px; }
+    .pb.small { width: 64px; height: 40px; font-size: 11px; }
+    .grp { gap: 6px; }
+    .grp.aux { order: 3; width: 100%; justify-content: center; gap: 12px; }
+    canvas { max-height: calc(100% - 150px); }
+  }
 </style>
 </head>
 <body>
 <canvas id="c" tabindex="0" aria-label="Jogo Enduro"></canvas>
-<div id="controls"><b>← →</b> virar &nbsp;·&nbsp; <b>↑ / ESPAÇO</b> acelerar &nbsp;·&nbsp; <b>↓</b> frear &nbsp;·&nbsp; <b>M</b> som &nbsp;·&nbsp; WASD também funciona<br>No toque: laterais viram, centro acelera, painel freia</div>
+<div id="pad">
+  <div class="grp">
+    <button class="pb" data-k="left" aria-label="Virar à esquerda">◀</button>
+    <button class="pb" data-k="right" aria-label="Virar à direita">▶</button>
+  </div>
+  <div class="grp aux">
+    <button class="pb small" data-k="sound" aria-label="Som">SOM</button>
+    <button class="pb small" data-k="auto" aria-label="Acelerador automático">AUTO</button>
+  </div>
+  <div class="grp">
+    <button class="pb brake" data-k="brake" aria-label="Frear">FREAR</button>
+    <button class="pb wide" data-k="gas" aria-label="Acelerar">ACELERAR</button>
+  </div>
+</div>
+<div id="controls"><b>← →</b> virar &nbsp;·&nbsp; <b>↑ / ESPAÇO</b> acelerar &nbsp;·&nbsp; <b>↓</b> frear &nbsp;·&nbsp; <b>M</b> som &nbsp;·&nbsp; WASD também funciona</div>
 <script>
 'use strict';
 
@@ -188,18 +253,24 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('keyup', e => { keys[e.code] = false; });
 
-const touch = { left: false, right: false, gas: false, brake: false, active: false };
+// Zonas de toque no canvas (usadas só quando não há botões na tela)
+const zone = { left: false, right: false, gas: false, brake: false };
+// Botões na tela (#pad): aparecem em telas de toque
+const touch = { left: false, right: false, gas: false, brake: false, auto: false };
+const pad = document.getElementById('pad');
+function padVisible() { return !!pad && getComputedStyle(pad).display !== 'none'; }
+
 function readTouches(ev) {
-  touch.left = touch.right = touch.gas = touch.brake = false;
+  zone.left = zone.right = zone.gas = zone.brake = false;
+  if (padVisible()) return;
   const rect = canvas.getBoundingClientRect();
-  touch.active = ev.touches.length > 0;
   for (const t of ev.touches) {
     const fx = (t.clientX - rect.left) / rect.width;
     const fy = (t.clientY - rect.top) / rect.height;
-    if (fy > 0.82)      { touch.brake = true; continue; }   // faixa do painel: freio
-    if (fx < 0.33)      touch.left  = true;
-    else if (fx > 0.67) touch.right = true;
-    touch.gas = true;
+    if (fy > 0.82)      { zone.brake = true; continue; }   // faixa do painel: freio
+    if (fx < 0.33)      zone.left  = true;
+    else if (fx > 0.67) zone.right = true;
+    zone.gas = true;
   }
 }
 canvas.addEventListener('touchstart', ev => {
@@ -212,12 +283,74 @@ canvas.addEventListener('touchmove', ev => { ev.preventDefault(); readTouches(ev
 canvas.addEventListener('touchend',  ev => { ev.preventDefault(); readTouches(ev); }, { passive: false });
 canvas.addEventListener('touchcancel', ev => { ev.preventDefault(); readTouches(ev); }, { passive: false });
 
+if (pad) {
+  const btns = Array.from(pad.querySelectorAll('.pb'));
+  const held = new Map();   // identificador do toque → tecla
+  const keyAt = (x, y) => {
+    const el = document.elementFromPoint(x, y);
+    const b = el && el.closest ? el.closest('.pb') : null;
+    return b ? b.dataset.k : null;
+  };
+  const refresh = () => {
+    const ks = new Set(held.values());
+    touch.left  = ks.has('left');
+    touch.right = ks.has('right');
+    touch.brake = ks.has('brake');
+    touch.gas   = ks.has('gas');
+    for (const b of btns) {
+      const k = b.dataset.k;
+      b.classList.toggle('on', ks.has(k) || (k === 'auto' && touch.auto));
+    }
+  };
+  pad.addEventListener('touchstart', ev => {
+    ev.preventDefault();
+    initAudio();
+    for (const t of ev.changedTouches) {
+      const k = keyAt(t.clientX, t.clientY);
+      if (k === 'auto') { touch.auto = !touch.auto; showMsg(touch.auto ? 'ACELERADOR AUTOMÁTICO LIGADO' : 'ACELERADOR AUTOMÁTICO DESLIGADO'); }
+      else if (k === 'sound') { audio.muted = !audio.muted; showMsg(audio.muted ? 'SOM DESLIGADO' : 'SOM LIGADO'); }
+      else if (k) held.set(t.identifier, k);
+    }
+    if (state === 'title' || state === 'gameover') startGame();
+    refresh();
+  }, { passive: false });
+  pad.addEventListener('touchmove', ev => {
+    ev.preventDefault();
+    for (const t of ev.changedTouches) {
+      const k = keyAt(t.clientX, t.clientY);
+      if (k && k !== 'auto' && k !== 'sound') held.set(t.identifier, k);
+      else held.delete(t.identifier);
+    }
+    refresh();
+  }, { passive: false });
+  const release = ev => {
+    ev.preventDefault();
+    for (const t of ev.changedTouches) held.delete(t.identifier);
+    refresh();
+  };
+  pad.addEventListener('touchend', release, { passive: false });
+  pad.addEventListener('touchcancel', release, { passive: false });
+  // Mouse (para testar no computador)
+  for (const b of btns) {
+    const k = b.dataset.k;
+    if (k === 'auto' || k === 'sound') continue;
+    b.addEventListener('mousedown', e => { e.preventDefault(); initAudio(); held.set('mouse', k); if (state !== 'play') startGame(); refresh(); });
+    b.addEventListener('mouseup',   e => { e.preventDefault(); held.delete('mouse'); refresh(); });
+    b.addEventListener('mouseleave', () => { held.delete('mouse'); refresh(); });
+  }
+  pad.querySelectorAll('.pb[data-k=auto],.pb[data-k=sound]').forEach(b => b.addEventListener('click', e => {
+    if (e.detail === 0) return; // já tratado no toque
+    if (b.dataset.k === 'auto') touch.auto = !touch.auto; else audio.muted = !audio.muted;
+    refresh();
+  }));
+}
+
 function input() {
   return {
-    left:  keys['ArrowLeft']  || keys['KeyA'] || touch.left,
-    right: keys['ArrowRight'] || keys['KeyD'] || touch.right,
-    gas:   keys['ArrowUp']    || keys['KeyW'] || keys['Space'] || touch.gas,
-    brake: keys['ArrowDown']  || keys['KeyS'] || touch.brake,
+    left:  keys['ArrowLeft']  || keys['KeyA'] || touch.left  || zone.left,
+    right: keys['ArrowRight'] || keys['KeyD'] || touch.right || zone.right,
+    gas:   keys['ArrowUp']    || keys['KeyW'] || keys['Space'] || touch.gas || touch.auto || zone.gas,
+    brake: keys['ArrowDown']  || keys['KeyS'] || touch.brake || zone.brake,
   };
 }
 
