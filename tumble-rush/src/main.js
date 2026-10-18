@@ -21,7 +21,7 @@ async function boot() {
   await new Promise((r) => setTimeout(r, 30));
   const canvas = document.getElementById('game');
   const game = new Game({ RAPIER, canvas, settings, ui, gpu });
-  ui.attach(game); game.applySettings();
+  ui.attach(game); game.applySettings(); game.showMenu();
   ui.setLoading(1, 'Pronto!');
   setTimeout(() => { ui.hideLoading(); ui.show('menu'); }, 250);
   game.start();

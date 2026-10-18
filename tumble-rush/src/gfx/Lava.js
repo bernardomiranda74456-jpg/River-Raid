@@ -22,21 +22,24 @@ float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
   return mix(mix(a,b,f.x), mix(c,d,f.x), f.y); }
 float fbm(vec2 p){ float v = 0.0, a = 0.5; mat2 r = mat2(0.8, 0.6, -0.6, 0.8); for (int i = 0; i < 5; i++) { v += a * noise(p); p = r * p * 2.05 + 7.3; a *= 0.5; } return v; }
 void main(){
-  vec2 p = vWorld.xz * 0.11;
+  vec2 p = vWorld.xz * 0.15;
   float t = uTime * 0.06;
   // domain-warped flow
   vec2 q = vec2(fbm(p + vec2(0.0, t)), fbm(p + vec2(5.2, 1.3) - t * 0.7));
   vec2 r = vec2(fbm(p + 4.0 * q + vec2(1.7, 9.2) + t * 0.3), fbm(p + 4.0 * q + vec2(8.3, 2.8) - t * 0.4));
   float f = fbm(p + 3.0 * r);
-  // crust vs cracks
-  float crust = smoothstep(0.31, 0.44, f);
-  float cracks = 1.0 - smoothstep(0.0, 0.035, abs(f - 0.47));
-  vec3 hot = vec3(1.0, 0.22, 0.02) * 2.4;
-  vec3 veryHot = vec3(1.0, 0.62, 0.15) * 5.0;
-  vec3 crustCol = vec3(0.05, 0.025, 0.02) + vec3(0.3, 0.09, 0.02) * (1.0 - crust) * 0.5;
-  vec3 col = mix(hot, crustCol, crust);
-  col += veryHot * cracks * (0.6 + 0.4 * sin(uTime * 2.0 + f * 20.0)) * 0.5;
-  col += vec3(1.0, 0.3, 0.05) * smoothstep(0.2, -0.3, vWave) * 0.25; // troughs glow
+  // mostly dark crust, with molten channels (low f) and glowing veins inside the crust
+  float crust = smoothstep(0.24, 0.36, f);
+  float edge = 1.0 - smoothstep(0.0, 0.03, abs(f - 0.355));          // bright rim where crust meets melt
+  float g = fbm(p * 2.6 + vec2(3.1, 7.7) + r * 1.5 + t * 0.5);
+  float veins = (1.0 - smoothstep(0.0, 0.018, abs(g - 0.5))) * crust;  // thin cracks across the crust
+  float pulse = 0.75 + 0.25 * sin(uTime * 1.6 + f * 25.0);
+  vec3 melt = vec3(1.0, 0.16, 0.015) * 1.9 * (0.7 + 0.6 * (1.0 - smoothstep(0.1, 0.27, f)));
+  vec3 veryHot = vec3(1.0, 0.55, 0.12) * 6.0;
+  vec3 crustCol = vec3(0.045, 0.028, 0.024) * (0.6 + 0.8 * fbm(p * 6.0)) + vec3(0.35, 0.06, 0.0) * (1.0 - crust) * 0.35;
+  vec3 col = mix(melt, crustCol, crust);
+  col += veryHot * (edge * 0.5 + veins * 0.7) * pulse;
+  col += vec3(1.0, 0.25, 0.04) * smoothstep(0.2, -0.3, vWave) * 0.15 * (1.0 - crust); // troughs glow
   col *= uIntensity;
   // distance fog
   float dist = length(vWorld - uCam); float fogF = 1.0 - exp(-uFogDensity * uFogDensity * dist * dist);

@@ -47,7 +47,8 @@ for (let t = 0; t < seconds; t += 5) {
   if (i.pstate === 5) { console.log('player eliminated'); }
 }
 // ragdoll shot: knock the player
-await ev(() => { const g = window.__game; if (g.player.state !== 5) g.player.knock(new (g.player.pos.constructor)(3, 7, 2), 'hit'); });
-await simSeconds(0.4); await shotHQ('ragdoll');
+const st = await ev(() => window.__game.state);
+if (st === 'racing') { await ev(() => { const g = window.__game; if (g.player.state !== 5) g.player.knock(new (g.player.pos.constructor)(3, 7, 2), 'hit'); }); await simSeconds(0.4); await shotHQ('ragdoll'); } else { await shotHQ('end'); }
+const deaths = await ev(() => window.__game.chars ? window.__game.chars.chars.filter((c) => c.deathInfo).map((c) => c.deathInfo) : []); console.log('deaths:', JSON.stringify(deaths));
 console.log('console messages:', logs.length); for (const l of logs.slice(0, 30)) console.log(l);
 await browser.close(); server.kill();

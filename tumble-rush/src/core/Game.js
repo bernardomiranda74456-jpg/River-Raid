@@ -18,6 +18,7 @@ import { mulberry32 } from '../gfx/Textures.js';
 import { LavaClimb } from '../levels/LavaClimb.js';
 import { PendulumRun } from '../levels/PendulumRun.js';
 import { HexFall } from '../levels/HexFall.js';
+import { MenuStage } from '../levels/MenuStage.js';
 
 export const GS = { MENU: 'menu', LOBBY: 'lobby', COUNTDOWN: 'countdown', RACING: 'racing', ROUND_END: 'roundEnd', RESULTS: 'results' };
 const ROUNDS = [
@@ -56,6 +57,34 @@ export class Game {
     this.ui.setFpsVisible(s.showFps);
   }
 
+  // ---------------- menu backdrop ----------------
+  showMenu() {
+    this.unloadRound();
+    this.physics = new Physics(this.R); this.particles = new Particles(this.scene, this.settings.values.particles);
+    this.level = new MenuStage(this); this.level.build();
+    this.chars = new CharacterSystem({ scene: this.scene, physics: this.physics, materials: this.materials, maxChars: 12 });
+    const rnd = mulberry32(42);
+    this.player = this.chars.add(SKINS[this.settings.skin % SKINS.length], { name: 'Você', isPlayer: true }); this.player.spawn(this.level.spawns[0], Math.PI);
+    this.bots = [];
+    for (let i = 1; i < this.level.spawns.length; i++) { const ch = this.chars.add(randomSkin(rnd), { name: 'bot' }); const sp = this.level.spawns[i]; ch.spawn(sp, Math.atan2(-sp.x, -sp.z)); ch.menuT = 1 + rnd() * 4; }
+    this.menuAngle = 0; this.state = GS.MENU; this.paused = false; this.ui.showHud(false);
+    this.renderer.setGtaoBox(new THREE.Box3(new THREE.Vector3(-60, -40, -60), new THREE.Vector3(60, 40, 60)));
+  }
+  /** Live skin preview on the menu podium. */
+  setMenuSkin(i) { if (this.state !== GS.MENU || !this.player) return; this.player.skin = SKINS[i % SKINS.length]; this.chars._applySkin(this.player); }
+  _menuTick(dt) {
+    this.clock.time += dt; this.menuAngle += dt * 0.12;
+    for (const ch of this.chars.chars) { if (ch.isPlayer) continue; ch.menuT -= dt; if (ch.menuT <= 0) { ch.menuT = 2 + Math.random() * 5; ch.ctrl.jump = true; } }
+    this.player.celebrate = 1; if (this.player.state === STATE.GROUND) { this.player.state = STATE.FINISHED; }
+    this.acc += dt; let steps = 0; while (this.acc >= FIXED_DT && steps < 4) { this.level.preStep(FIXED_DT, this.physics.time); this.chars.preStep(FIXED_DT, this.physics.time); this.physics.step(); this.chars.postStep(); this.level.postStep(this.chars.chars); this.acc -= FIXED_DT; steps++; }
+    if (steps === 4) this.acc = 0;
+    const a = this.menuAngle; this.camera.position.set(Math.sin(a) * 13, 4.2 + Math.sin(a * 0.7) * 0.8, Math.cos(a) * 13); this.camera.lookAt(0, 1.6, 0); this.camera.fov += (50 - this.camera.fov) * Math.min(1, dt * 3); this.camera.updateProjectionMatrix();
+    this.chars.advance(dt); this.chars.render(this.acc / FIXED_DT, this.camera.position);
+    this.level.update(dt, this.clock.time, this.camera.position, this.player.renderPos); this.particles.update(dt); this._handleEvents();
+    this.renderer.setFocus(13); this.renderer.setSpeedBlur(0, 0, 0);
+    if (!this.skipRender) this.renderer.render(); this.frame++;
+  }
+
   // ---------------- match flow ----------------
   startMatch() {
     this.audio.resume(); this.audio.startAmbient();
@@ -87,6 +116,7 @@ export class Game {
       else this.player = ch;
     });
     this.tpc.reset(this.player.pos, this.level.spawnYaw ?? 0);
+    if (this.level.introCam) this.tpc.startIntro(this.level.introCam.from, this.level.introCam.look, 5.5);
     this.roundTime = 0; this.countdown = 4.0; this.state = GS.LOBBY; this.lobbyTime = 2.5; this.endTimer = 0;
     this.ui.showHud(true); this.ui.setRound(this.round + 1, def.name, this.level.kind === 'survival' ? null : def.to, alive.length);
     this.ui.setLavaVisible(!!this.level.lavaDanger);
@@ -103,7 +133,7 @@ export class Game {
     this.bots = []; this.player = null;
   }
 
-  quitToMenu() { this.unloadRound(); this.state = GS.MENU; this.paused = false; this.ui.showHud(false); this.ui.show('menu'); this.input.exitPointerLock(); }
+  quitToMenu() { this.showMenu(); this.ui.show('menu'); this.input.exitPointerLock(); }
 
   onFinish(ch) {
     if (this.state !== GS.RACING || ch.finished || ch.eliminated) return;
@@ -159,7 +189,8 @@ export class Game {
     this._fpsAcc += dt; this._fpsN++; if (this._fpsAcc >= 0.5) { this.fps = this._fpsN / this._fpsAcc; this._fpsAcc = 0; this._fpsN = 0; this.ui.setFps(this.fps, this.renderer.r.info.render.calls); }
     const inp = this.input.poll();
     if (inp.pausePressed && this.state !== GS.MENU && this.state !== GS.RESULTS) this.pause(!this.paused);
-    if (this.state === GS.MENU || this.state === GS.RESULTS || !this.level) { return; }
+    if (this.state === GS.MENU) { if (this.level && this.level.kind === 'menu') this._menuTick(dt); return; }
+    if (this.state === GS.RESULTS || !this.level) { if (this.level && !this.skipRender) this.renderer.render(); this.frame++; return; }
     if (this.paused) { this.renderer.render(); return; }
     if (inp.anyPressed && !this.input.pointerLocked && !this.gpu.isMobile) this.input.requestPointerLock();
     this.ui.setHint(!this.input.pointerLocked && !this.gpu.isMobile && this.state === GS.RACING);
@@ -188,7 +219,10 @@ export class Game {
     // ----- per-frame visuals -----
     this.chars.advance(dt);
     this.chars.render(alpha, this.camera.position);
-    const p = this.player; const pv = p.vel;
+    let p = this.player;
+    if ((p.eliminated || p.finished) && this.state === GS.RACING) { const s = this._spectateTarget(); if (s) { if (s !== this._spec) { this._spec = s; this.ui.message(`Espectando ${s.name}`, '', 1.5); } p = s; } }
+    else this._spec = null;
+    const pv = p.vel;
     const speedFactor = THREE.MathUtils.clamp((Math.hypot(pv.x, pv.z) - 4) / 8, 0, 1) + (p.state === STATE.DIVE ? 0.4 : 0);
     this.tpc.update(dt, p.renderPos, pv, inp.lookX, inp.lookY, speedFactor);
     this.level.update(dt, this.clock.time, this.camera.position, p.renderPos);
@@ -201,6 +235,12 @@ export class Game {
     if (!this.skipRender) this.renderer.render(); this.frame++;
   }
 
+  /** Best alive character to follow once the player is out (highest progress, or nearest survivor). */
+  _spectateTarget() {
+    let best = null, bp = -1e9;
+    for (const c of this.chars.chars) { if (c.eliminated || c.finished || c === this.player) continue; const pr = this.level.kind === 'survival' ? -c.pos.distanceTo(this.player.pos) : c.progress; if (pr > bp) { bp = pr; best = c; } }
+    return best;
+  }
   _applyPlayerInput(inp) {
     const p = this.player; const c = p.ctrl;
     if (this.__botActive) return; // automated test driver controls the player
@@ -249,6 +289,7 @@ export class Game {
       }
       ch.events.length = 0;
       if (ch.state === STATE.GROUND && ch.speed > 5 && ch.isPlayer && Math.random() < 0.5) P.trail(ch.renderPos, ch.vel);
+      if (ch.isPlayer && ch.state === STATE.GROUND && ch.grounded && ch.speed > 2.5) { this._stepT = (this._stepT || 0) - (1 / 60); if (this._stepT <= 0) { this._stepT = 0.32 - ch.speed * 0.012; A.step(); } }
     }
   }
 

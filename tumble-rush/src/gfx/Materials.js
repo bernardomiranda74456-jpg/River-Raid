@@ -8,7 +8,7 @@ import * as T from './Textures.js';
 export class Materials {
   constructor({ textureSize = 512, anisotropy = 8 } = {}) {
     this.size = textureSize; this.aniso = anisotropy;
-    this.all = []; this.csm = null; this.cache = new Map();
+    this.all = []; this.csm = null; this.cache = new Map(); this.csmGen = 0;
     this._build();
   }
 
@@ -36,7 +36,7 @@ export class Materials {
     this.darkMetal = this.register(new THREE.MeshPhysicalMaterial({ ...this.tex.darkMetal, color: 0xdddddd, roughness: 1, metalness: 1, normalScale: new THREE.Vector2(0.6, 0.6), anisotropy: 0.5 }));
     this.rubber = this.register(new THREE.MeshPhysicalMaterial({ ...this.tex.rubber, color: 0xffffff, roughness: 1, metalness: 0, normalScale: new THREE.Vector2(1, 1) }));
     this.wood = this.register(new THREE.MeshPhysicalMaterial({ ...this.tex.wood, color: 0xffffff, roughness: 1, metalness: 0, normalScale: new THREE.Vector2(0.7, 0.7) }));
-    this.rock = this.register(new THREE.MeshPhysicalMaterial({ ...this.tex.rock, color: 0xffffff, roughness: 1, metalness: 0, normalScale: new THREE.Vector2(1.3, 1.3) }));
+    this.rock = this.register(new THREE.MeshPhysicalMaterial({ ...this.tex.rock, color: 0xb9aea6, roughness: 1, metalness: 0, normalScale: new THREE.Vector2(1.8, 1.8) }));
     this.hazard = this.register(new THREE.MeshPhysicalMaterial({ map: this.tex.hazard, roughnessMap: this.tex.rubber.roughnessMap, normalMap: this.tex.metal.normalMap, normalScale: new THREE.Vector2(0.4, 0.4), roughness: 0.9, metalness: 0.2, clearcoat: 0.3, clearcoatRoughness: 0.4 }));
     this.gold = this.register(new THREE.MeshPhysicalMaterial({ color: 0xffc44d, roughness: 0.25, metalness: 1, normalMap: this.tex.metal.normalMap, normalScale: new THREE.Vector2(0.3, 0.3) }));
     this.glass = this.register(new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.05, metalness: 0, transmission: 0.9, thickness: 0.5, ior: 1.45, transparent: true, opacity: 1 }));
@@ -66,11 +66,12 @@ export class Materials {
       if (m.defines) { delete m.defines.USE_CSM; delete m.defines.CSM_CASCADES; delete m.defines.CSM_FADE; }
       m.onBeforeCompile = m.userData.patch ? (shader) => m.userData.patch(shader) : () => {};
     }
-    m.customProgramCacheKey = () => (this.csm ? 'csm' + this.csm.cascades : 'nocsm') + (m.userData.patch ? '+patch' : '');
+    // unique key per CSM instance: forces a fresh program (and onBeforeCompile) whenever the sun is rebuilt
+    m.customProgramCacheKey = () => (this.csm ? 'csm' + this.csm.cascades + '#' + this.csmGen : 'nocsm#' + this.csmGen) + (m.userData.patch ? '+patch' : '');
     m.needsUpdate = true;
   }
-  attachCSM(csm) { this.csm = csm; for (const m of this.all) this._setup(m); }
-  detachCSM() { this.csm = null; for (const m of this.all) this._setup(m); }
+  attachCSM(csm) { this.csm = csm; this.csmGen = (this.csmGen || 0) + 1; for (const m of this.all) this._setup(m); }
+  detachCSM() { this.csm = null; this.csmGen = (this.csmGen || 0) + 1; for (const m of this.all) this._setup(m); }
 
   setAnisotropy(a) { for (const k in this.tex) { const t = this.tex[k]; if (t.isTexture) { t.anisotropy = a; t.needsUpdate = true; } else for (const kk in t) { t[kk].anisotropy = a; t[kk].needsUpdate = true; } } }
 }

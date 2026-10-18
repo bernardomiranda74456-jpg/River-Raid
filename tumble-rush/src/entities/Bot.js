@@ -67,8 +67,8 @@ export class Bot {
         const h2 = ph.ray(o2, { x: 0, y: -1, z: 0 }, 4.5, ch.body, RAYF);
         const o3 = { x: ch.pos.x + this.dir.x * (far + 2.5), y: ch.pos.y + 1.5, z: ch.pos.z + this.dir.z * (far + 2.5) };
         const h3 = ph.ray(o3, { x: 0, y: -1, z: 0 }, 5.5, ch.body, RAYF);
-        if (h2 || h3 || w.jump) wantJump = true;
-        else if (w.wait !== false) { this.waiting += dtt; if (this.waiting < 2.5 + this.skill * 2) { c.mag = 0; c.x = c.z = 0; return; } else { wantJump = true; this.waiting = 0; } }
+        if (h2 || (h3 && w.wait === false) || w.jump) wantJump = true;
+        else if (w.wait !== false) { this.waiting += dtt; c.mag = 0; c.x = c.z = 0; if (this.waiting > 6 && this.rnd() < 0.3) { wantJump = true; this.waiting = 0; } else return; }
       } else this.waiting = 0;
       // wall ahead at chest height -> jump
       const hw = ph.ray({ x: ch.pos.x, y: ch.pos.y + 0.9, z: ch.pos.z }, { x: this.dir.x, y: 0, z: this.dir.z }, 1.2, ch.body, RAYF);

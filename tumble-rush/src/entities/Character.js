@@ -170,15 +170,15 @@ export class Character {
     const mk = (kind, pos, rot, half, radius, density) => {
       const desc = R.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z).setRotation({ x: rot.x, y: rot.y, z: rot.z, w: rot.w })
         .setLinvel(this.vel.x + vel.x, this.vel.y + vel.y, this.vel.z + vel.z).setAngvel({ x: (Math.random() - 0.5) * 6, y: (Math.random() - 0.5) * 6, z: (Math.random() - 0.5) * 6 })
-        .setLinearDamping(0.4).setAngularDamping(1.5).setCanSleep(true);
+        .setLinearDamping(1.1).setAngularDamping(2.0).setCanSleep(true);
       const body = world.createRigidBody(desc);
-      const cd = (kind === 'ball' ? R.ColliderDesc.ball(radius) : R.ColliderDesc.capsule(half, radius)).setFriction(0.8).setRestitution(0.15).setDensity(density)
+      const cd = (kind === 'ball' ? R.ColliderDesc.ball(radius) : R.ColliderDesc.capsule(half, radius)).setFriction(1.0).setRestitution(0.1).setDensity(density)
         .setCollisionGroups(groups(GROUP.RAGDOLL, GROUP.STATIC | GROUP.PLATFORM | GROUP.RAGDOLL));
       const col = world.createCollider(cd, body); ph.userData.set(col.handle, { type: 'ragdoll', char: this });
       const e = ph.track(body); return { body, col, track: e };
     };
     const rd = {};
-    rd.torso = mk('ball', pose.body.p, pose.body.q, 0, DIM.bodyR * 0.9, 1.0);
+    rd.torso = mk('ball', pose.body.p, pose.body.q, 0, DIM.bodyR * 0.9, 1.0); rd.torso.body.enableCcd(true);
     rd.head = mk('ball', pose.head.p, pose.head.q, 0, DIM.headR, 0.6);
     rd.armL = mk('capsule', pose.armL.p, pose.armL.q, DIM.armLen * 0.5, DIM.armR, 0.4);
     rd.armR = mk('capsule', pose.armR.p, pose.armR.q, DIM.armLen * 0.5, DIM.armR, 0.4);
@@ -228,7 +228,7 @@ export class Character {
   // ------------- elimination / finish -------------
   eliminate(kind = 'fall') {
     if (this.eliminated) return;
-    this.eliminated = true; this.events.push(kind === 'lava' ? 'lava' : 'eliminated');
+    this.eliminated = true; this.events.push(kind === 'lava' ? 'lava' : 'eliminated'); this.deathInfo = { kind, y: Math.round(this.pos.y), x: Math.round(this.pos.x), z: Math.round(this.pos.z), state: this.state };
     if (kind === 'lava') { this._toSink(); } else { this._hide(); }
   }
   _toSink() {

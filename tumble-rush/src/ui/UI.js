@@ -63,7 +63,7 @@ export class UI {
       const card = document.createElement('div'); card.className = 'skin-card' + (i === this.settings.skin ? ' selected' : '');
       const c = document.createElement('canvas'); c.width = c.height = 160; drawSkinPreview(c, sk); card.appendChild(c);
       const n = document.createElement('div'); n.className = 'name'; n.textContent = sk.name; card.appendChild(n);
-      card.onclick = () => { this.settings.skin = i; this.settings.save(); grid.querySelectorAll('.skin-card').forEach((x) => x.classList.remove('selected')); card.classList.add('selected'); };
+      card.onclick = () => { this.settings.skin = i; this.settings.save(); if (this.game) this.game.setMenuSkin(i); grid.querySelectorAll('.skin-card').forEach((x) => x.classList.remove('selected')); card.classList.add('selected'); };
       grid.appendChild(card);
     });
   }

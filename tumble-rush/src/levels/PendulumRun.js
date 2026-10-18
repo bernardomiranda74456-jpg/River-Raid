@@ -14,7 +14,7 @@ import { rockGeometry, mountainGeometry } from '../gfx/Rocks.js';
 const W = 14;
 export class PendulumRun extends LevelBase {
   constructor(game) {
-    super(game); this.name = 'Pista dos Pêndulos'; this.kind = 'race'; this.qualify = 8; this.duration = 120; this.killY = -14; this.respawn = true; this.spawnYaw = Math.PI / 2;
+    super(game); this.name = 'Pista dos Pêndulos'; this.kind = 'race'; this.qualify = 8; this.duration = 120; this.killY = -14; this.respawn = true; this.spawnYaw = Math.PI / 2; this.introCam = { from: new THREE.Vector3(40, 26, -60), look: new THREE.Vector3(60, 0, 0) };
   }
   build() {
     const M = this.M;
@@ -61,7 +61,7 @@ export class PendulumRun extends LevelBase {
       const phase = k * 2.0; const X = x;
       const m = this.mover(g, (t) => ({ pos: new THREE.Vector3(X, pivotY, 0), quat: new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.sin(t * w + phase) * 1.2, 0, 0)) }));
       this.moverShape(m, 'box', [1.8, 2.4, 2.8], [0, -arm - 1.1, 0], [0, 0, 0], { hazardSolid: true });
-      this.moverShape(m, 'box', [2.2, 2.8, 3.2], [0, -arm - 1.1, 0], [0, 0, 0], { sensor: true, data: { type: 'hazard', mul: 1.3, up: 6, push: 2, max: 26, metal: true } });
+      this.moverShape(m, 'box', [2.2, 2.8, 3.2], [0, -arm - 1.1, 0], [0, 0, 0], { sensor: true, data: { type: 'hazard', mul: 1.0, up: 5, push: 2, max: 16, metal: true } });
       this.moverShape(m, 'cylinder', [0.3, arm], [0, -arm / 2, 0], [0, 0, 0], { hazardSolid: true });
     });
     for (const x of [8, 13, 18, 23, 28, 33]) this.wp(x, 0.2, 0, { spread: 8 });
@@ -77,7 +77,7 @@ export class PendulumRun extends LevelBase {
       const X = x, D = dir;
       const m = this.mover(g, (t) => ({ pos: new THREE.Vector3(X, 0.95, 0), quat: new THREE.Quaternion().setFromEuler(new THREE.Euler(0, t * 1.4 * D, 0)) }));
       this.moverShape(m, 'box', [13, 0.5, 0.5], [0, 0.25, 0], [0, 0, 0], { hazardSolid: true });
-      this.moverShape(m, 'box', [13.3, 0.9, 0.9], [0, 0.25, 0], [0, 0, 0], { sensor: true, data: { type: 'hazard', mul: 1.3, up: 6.5, push: 3, max: 22, metal: true } });
+      this.moverShape(m, 'box', [13.3, 0.9, 0.9], [0, 0.25, 0], [0, 0, 0], { sensor: true, data: { type: 'hazard', mul: 1.0, up: 5, push: 2, max: 14, metal: true } });
       this.moverShape(m, 'cylinder', [1.1, 1.6]);
       this.wp(x - 2.2, 0.2, 0, { jump: true, jumpDist: 1.8, spread: 5 }); this.wp(x + 3, 0.2, 0, { spread: 6 });
     });

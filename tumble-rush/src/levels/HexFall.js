@@ -17,7 +17,7 @@ const _m = new THREE.Matrix4(), _p = new THREE.Vector3(), _q = new THREE.Quatern
 export class HexFall extends LevelBase {
   constructor(game) {
     super(game); this.name = 'Blocos que Somem'; this.kind = 'survival'; this.qualify = 1; this.duration = 180; this.killY = -27; this.spawnYaw = 0;
-    this.tiles = []; this.meshes = [];
+    this.tiles = []; this.meshes = []; this.introCam = { from: new THREE.Vector3(30, 22, 30), look: new THREE.Vector3(0, -6, 0) };
   }
   build() {
     const M = this.M;

@@ -18,8 +18,8 @@ const _q = new THREE.Quaternion(), _e = new THREE.Euler();
 export class LavaClimb extends LevelBase {
   constructor(game) {
     super(game); this.name = 'Corrida da Lava'; this.kind = 'race'; this.qualify = 16; this.duration = 150; this.killY = -60;
-    this.lavaStart = -9; this.lavaY = this.lavaStart; this.lavaSpeed = 0.42; this.lavaAccel = 0.0028; this.raceTime = 0; this.racing = false;
-    this.emberT = 0; this.spawnYaw = Math.PI / 2;
+    this.lavaStart = -9; this.lavaY = this.lavaStart; this.lavaSpeed = 0.3; this.lavaAccel = 0.0012; this.raceTime = 0; this.racing = false;
+    this.emberT = 0; this.spawnYaw = Math.PI / 2; this.introCam = { from: new THREE.Vector3(-70, 48, -70), look: new THREE.Vector3(10, 30, 0) };
   }
 
   build() {
@@ -59,7 +59,7 @@ export class LavaClimb extends LevelBase {
       const g = rockGeometry(s, 2, 200 + i, { rough: 0.45 }); const m = new THREE.Mesh(g, M.rock); m.position.set(Math.cos(a) * r, -10 + s * 0.3, Math.sin(a) * r); m.rotation.set(i, i * 2, 0); m.castShadow = true; this.deco(m);
     }
     // steel support columns at the four corners going into the lava
-    for (let k = 0; k < 4; k++) { const sx = k % 2 ? 1 : -1, sz = k < 2 ? -1 : 1; this.cylinder(0.6, 110, [sx * SIDE, 20, sz * SIDE], [0, 0, 0], M.darkMetal, { noCollider: true, segments: 12 }); }
+    for (let k = 0; k < 4; k++) { const sx = k % 2 ? 1 : -1, sz = k < 2 ? -1 : 1; this.cylinder(0.6, 110, [sx * (SIDE + 4.8), 20, sz * (SIDE + 4.8)], [0, 0, 0], M.darkMetal, { noCollider: true, segments: 12 }); }
   }
 
   _buildPlaza() {
@@ -75,6 +75,13 @@ export class LavaClimb extends LevelBase {
     this.spawns.length = 0;
     for (let r = 0; r < 4; r++) for (let c = 0; c < 8; c++) this.spawns.push(new THREE.Vector3(-45 + r * 3.0, 0.05, -30.5 + 1.8 + c * 2.1));
     this.wp(-26, 0.2, -22, { spread: 8 });
+    // plaza dressing: crates, barrels, banner, lamp posts
+    const crate = (x, y, z, s, ry, mat) => this.box([s, s, s], [x, y + s / 2, z], [0, ry, 0], mat, { uv: 0.8 });
+    crate(-44, 0, -29.5, 1.4, 0.3, M.wood); crate(-42.6, 0, -29.8, 1.1, 0.9, M.wood); crate(-43.5, 1.4, -29.6, 1.0, 0.5, this.paintOrange);
+    crate(-41, 0, -14.2, 1.3, 0.2, M.wood); crate(-39.6, 0, -13.9, 1.3, 1.1, this.paintBlue);
+    for (const [x, z] of [[-46, -27], [-46, -25.4], [-46.4, -18.6], [-45.5, -17]]) { this.cylinder(0.55, 1.3, [x, 0.65, z], [0, 0, 0], this.paintYellow, { segments: 16 }); this.cylinder(0.57, 0.08, [x, 1.0, z], [0, 0, 0], M.darkMetal, { noCollider: true, segments: 16 }); this.cylinder(0.57, 0.08, [x, 0.3, z], [0, 0, 0], M.darkMetal, { noCollider: true, segments: 16 }); }
+    const banner = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.2, 12), new THREE.MeshPhysicalMaterial({ color: 0xffffff, emissive: 0xff6b35, emissiveIntensity: 1.1, roughness: 0.5 })); banner.position.set(-19.4, 4.4, -22); this.deco(banner);
+    for (const [x, z] of [[-46, -31.5], [-46, -12.5], [-33, -31.5], [-33, -12.5]]) { this.cylinder(0.12, 4, [x, 2, z], [0, 0, 0], M.darkMetal, { noCollider: true, segments: 8 }); const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), new THREE.MeshPhysicalMaterial({ color: 0xffe0a0, emissive: 0xffb050, emissiveIntensity: 2.5, roughness: 0.3 })); lamp.position.set(x, 4.1, z); this.deco(lamp); }
     // pillars under plaza
     for (const [x, z] of [[-44, -30], [-44, -14], [-22, -30], [-22, -14]]) this.cylinder(0.8, 60, [x, -30, z], [0, 0, 0], M.darkMetal, { noCollider: true, segments: 10 });
   }
@@ -97,6 +104,8 @@ export class LavaClimb extends LevelBase {
     if (i < SEGMENTS - 1) {
       this.box([W, 0.7, W], [cx, h - 0.35, cz], [0, 0, 0], this.M.concrete, { uv: 0.4 });
       this.box([W + 0.4, 0.5, W + 0.4], [cx, h - 0.95, cz], [0, 0, 0], this.M.darkMetal, { noCollider: true });
+      this.box([0.22, 0.55, W + 0.4], [cx + Math.sign(cx) * (W / 2 + 0.05), h + 0.27, cz], [0, 0, 0], this.M.darkMetal, {});
+      this.box([W + 0.4, 0.55, 0.22], [cx, h + 0.27, cz + Math.sign(cz) * (W / 2 + 0.05)], [0, 0, 0], this.M.darkMetal, {});
       // painted corner marker + a lamp post
       this.cylinder(0.12, 3.2, [cx + (cx > 0 ? 3.4 : -3.4), h + 1.6, cz + (cz > 0 ? 3.4 : -3.4)], [0, 0, 0], this.M.darkMetal, { noCollider: true, segments: 8 });
       const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), new THREE.MeshPhysicalMaterial({ color: 0xffe0a0, emissive: 0xffb050, emissiveIntensity: 2.5, roughness: 0.3 })); lamp.position.set(cx + (cx > 0 ? 3.4 : -3.4), h + 3.3, cz + (cz > 0 ? 3.4 : -3.4)); this.deco(lamp);
@@ -118,8 +127,18 @@ export class LavaClimb extends LevelBase {
     // steel frame under the walkway + edge paint
     const under = f.v3(cx, cy, 0).add(new THREE.Vector3(0, -thick - 0.25, 0).applyQuaternion(q));
     this.box([L, 0.5, width + 0.5], [under.x, under.y, under.z], [0, 0, 0], this.M.darkMetal, { quat: q, noCollider: true, uv: 0.3 });
-    if (rails) for (const s of [-1, 1]) { const e = f.v3(cx, cy, s * (width / 2 - 0.25)).add(new THREE.Vector3(0, 0.02, 0).applyQuaternion(q)); this.box([L, 0.06, 0.5], [e.x, e.y, e.z], [0, 0, 0], this.M.hazard, { quat: q, noCollider: true, uv: 0.5 }); }
+    if (rails) for (const s of [-1, 1]) { const e = f.v3(cx, cy, s * (width / 2 - 0.25)).add(new THREE.Vector3(0, 0.02, 0).applyQuaternion(q)); this.box([L, 0.06, 0.5], [e.x, e.y, e.z], [0, 0, 0], this.M.hazard, { quat: q, noCollider: true, uv: 0.5 }); const r = f.v3(cx, cy, s * (width / 2 + 0.05)).add(new THREE.Vector3(0, 0.3, 0).applyQuaternion(q)); this.box([L, 0.55, 0.22], [r.x, r.y, r.z], [0, 0, 0], this.M.darkMetal, { quat: q, uv: 0.5 }); }
     return { ang, q };
+  }
+  /** Tall safety fence (posts + bars + invisible wall) along both edges of a walkway span. */
+  _fence(f, x0, x1, y0, y1, width = W, height = 1.5) {
+    const L = Math.hypot(x1 - x0, y1 - y0); const ang = Math.atan2(y1 - y0, x1 - x0); const q = f.quat(0, 0, ang); const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    for (const s of [-1, 1]) {
+      const z = s * (width / 2 + 0.12);
+      const w = f.v3(cx, cy, z + s * 0.4).add(new THREE.Vector3(0, height / 2, 0).applyQuaternion(q)); this.box([L, height, 0.9], [w.x, w.y, w.z], [0, 0, 0], null, { quat: q, noMesh: true });
+      for (const by of [0.72, 1.32]) { const b = f.v3(cx, cy, z).add(new THREE.Vector3(0, by, 0).applyQuaternion(q)); this.box([L, 0.09, 0.09], [b.x, b.y, b.z], [0, 0, 0], this.M.metal, { quat: q, noCollider: true, uv: 0.5 }); }
+      for (let x = x0 + 1; x < x1; x += 3.5) { const yy = y0 + (y1 - y0) * (x - x0) / (x1 - x0); this.box([0.12, height, 0.12], f.pos(x, yy + height / 2, z), f.rot(0, 0, 0), this.M.darkMetal, { noCollider: true, uv: 0.5 }); }
+    }
   }
   _wps(f, xs, yFn, flags = {}) { for (const x of xs) this.wp(...f.pos(x, yFn(x) + 0.2, 0), flags); }
   _surf(x) { return (x / SEG_LEN) * RISE; }
@@ -145,8 +164,9 @@ export class LavaClimb extends LevelBase {
       this.box([stepL, 1.2, W], p, f.rot(0, 0, 0), k % 2 ? this.M.concrete : this.M.concreteDark, { noCollider: true, uv: 0.35 });
     }
     const L = Math.hypot(SEG_LEN, RISE), ang = Math.atan2(RISE, SEG_LEN); const q = f.quat(0, 0, ang); const p = f.v3(SEG_LEN / 2, RISE / 2 + 0.05, 0).add(new THREE.Vector3(0, -0.3, 0).applyQuaternion(q));
-    this.box([L, 0.6, W], [p.x, p.y, p.z], [0, 0, 0], null, { quat: q, noMesh: true });
+    this.box([L, 0.6, W], [p.x, p.y, p.z], [0, 0, 0], null, { quat: q, noMesh: true }); this._fence(f, 0, SEG_LEN, 0, RISE, W, 1.2);
     const under = f.v3(SEG_LEN / 2, RISE / 2, 0).add(new THREE.Vector3(0, -1.0, 0).applyQuaternion(q)); this.box([L, 0.5, W + 0.5], [under.x, under.y, under.z], [0, 0, 0], this.M.darkMetal, { quat: q, noCollider: true });
+    for (const s of [-1, 1]) { const r = f.v3(SEG_LEN / 2, RISE / 2, s * (W / 2 + 0.05)).add(new THREE.Vector3(0, 0.32, 0).applyQuaternion(q)); this.box([L, 0.55, 0.22], [r.x, r.y, r.z], [0, 0, 0], this.M.darkMetal, { quat: q, uv: 0.5 }); }
     // pushers: kinematic blocks sliding across the stairs
     for (const [x, ph] of [[11, 0], [19, 2.1], [27, 4.2]]) {
       const y = this._surf(x) + 0.9; const g = new THREE.Group();
@@ -154,14 +174,14 @@ export class LavaClimb extends LevelBase {
       const face = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.2, 0.3), this.M.hazard); face.position.z = 1.4; g.add(face); const face2 = face.clone(); face2.position.z = -1.4; g.add(face2);
       const rail = this.box([0.3, 0.3, W + 2], f.pos(x, y - 0.95, 0), f.rot(0, 0, 0), this.M.darkMetal, { noCollider: true });
       const fx = f, X = x, Y = y, PH = ph;
-      const m = this.mover(g, (t) => ({ pos: fx.v3(X, Y, Math.sin(t * 0.9 + PH) * 3.6), quat: fx.quat(0, 0, 0) }));
+      const m = this.mover(g, (t) => ({ pos: fx.v3(X, Y, Math.sin(t * 0.75 + PH) * 2.6), quat: fx.quat(0, 0, 0) }));
       this.moverShape(m, 'box', [1.6, 1.6, 2.6]);
     }
     this._wps(f, [4, 10, 16, 22, 28, 34], (x) => this._surf(x), { spread: 3 });
   }
 
   _seg_pendulums(f, i, fast = false) {
-    this._walkway(f);
+    this._walkway(f); this._fence(f, 0, SEG_LEN, 0, RISE);
     const xs = [8, 18, 28];
     xs.forEach((x, k) => {
       const ys = this._surf(x); const pivotY = ys + 7.2; const arm = 5.4; const w = 1.35 + (fast ? 0.25 : 0) + k * 0.05;
@@ -180,7 +200,7 @@ export class LavaClimb extends LevelBase {
       const phase = k * 1.9 + i; const fx = f, X = x, PY = pivotY, A = 1.15;
       const m = this.mover(g, (t) => ({ pos: fx.v3(X, PY, 0), quat: fx.quat(Math.sin(t * w + phase) * A, 0, 0) }), { data: { type: 'platform' } });
       this.moverShape(m, 'box', [1.6, 2.2, 2.4], [0, -arm - 1.0, 0], [0, 0, 0], { hazardSolid: true });
-      this.moverShape(m, 'box', [2.0, 2.6, 2.8], [0, -arm - 1.0, 0], [0, 0, 0], { sensor: true, data: { type: 'hazard', mul: 1.25, up: 6, push: 2, max: 24, metal: true } });
+      this.moverShape(m, 'box', [2.0, 2.6, 2.8], [0, -arm - 1.0, 0], [0, 0, 0], { sensor: true, data: { type: 'hazard', mul: 0.9, up: 3.5, push: 1.5, max: 12, metal: true } });
       this.moverShape(m, 'cylinder', [0.3, arm], [0, -arm / 2, 0], [0, 0, 0], { hazardSolid: true });
     });
     this._wps(f, [3, 8, 13, 18, 23, 28, 33], (x) => this._surf(x), { spread: 5 });
@@ -195,14 +215,14 @@ export class LavaClimb extends LevelBase {
       this.box([len + 0.3, 0.3, 5.5], f.pos(x, y - 0.75, 0), f.rot(0, 0, 0), this.M.darkMetal, { noCollider: true });
       this.box([len - 0.4, 0.05, 4.8], f.pos(x, y + 0.02, 0), f.rot(0, 0, 0), this.M.rubber, { noCollider: true, uv: 0.8 });
       // hanging cable to a beam above
-      this.cylinder(0.06, 9, f.pos(x, y + 4.5, 0), [0, 0, 0], this.M.darkMetal, { noCollider: true, segments: 6 });
+      for (const sz of [-2.2, 2.2]) this.cylinder(0.05, 9, f.pos(x, y + 4.5, sz), [0, 0, 0], this.M.darkMetal, { noCollider: true, segments: 6 });
       this.wp(...f.pos(x, y + 0.2, 0), { spread: 2.5, radius: 1.5 });
     }
     const beam = f.v3(SEG_LEN / 2, RISE / 2 + 9, 0); this.box([SEG_LEN + 2, 0.5, 0.6], [beam.x, beam.y, beam.z], f.rot(0, 0, Math.atan2(RISE, SEG_LEN)), this.M.darkMetal, { noCollider: true });
   }
 
   _seg_spinners(f, i) {
-    this._walkway(f);
+    this._walkway(f); this._fence(f, 0, SEG_LEN, 0, RISE);
     for (const [x, dir] of [[11, 1], [25, -1]]) {
       const ys = this._surf(x); const g = new THREE.Group();
       const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.0, 1.6, 20), this.M.hazard); hub.castShadow = true; g.add(hub);
@@ -212,7 +232,7 @@ export class LavaClimb extends LevelBase {
       const fx = f, X = x, Y = ys + 0.95, D = dir, w = 1.5 + i * 0.03;
       const m = this.mover(g, (t) => ({ pos: fx.v3(X, Y, 0), quat: fx.quat(0, t * w * D, 0) }));
       this.moverShape(m, 'box', [9.5, 0.5, 0.5], [0, 0.25, 0], [0, 0, 0], { hazardSolid: true });
-      this.moverShape(m, 'box', [9.8, 0.9, 0.9], [0, 0.25, 0], [0, 0, 0], { sensor: true, data: { type: 'hazard', mul: 1.3, up: 6.5, push: 3, max: 20, metal: true } });
+      this.moverShape(m, 'box', [9.8, 0.9, 0.9], [0, 0.25, 0], [0, 0, 0], { sensor: true, data: { type: 'hazard', mul: 0.9, up: 4, push: 2, max: 11, metal: true } });
       this.moverShape(m, 'cylinder', [1.0, 1.6]);
     }
     this._wps(f, [3, 7], (x) => this._surf(x), { spread: 4 });
@@ -248,7 +268,7 @@ export class LavaClimb extends LevelBase {
   }
 
   _seg_conveyor(f, i) {
-    this._walkway(f, { rails: false });
+    this._walkway(f, { rails: false }); this._fence(f, 0, SEG_LEN, 0, RISE, W, 1.2);
     const ang = Math.atan2(RISE, SEG_LEN);
     // belts: alternate backward and sideways
     const belts = [[4, 'back'], [11, 'side+'], [18, 'back'], [25, 'side-'], [32, 'back']];
