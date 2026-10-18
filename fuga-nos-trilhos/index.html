@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0f1a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Fuga nos Trilhos</title>
+  <!--
+    Importmap: Three.js 0.186.1 vendorizado em ./vendor/three (MIT) para funcionar offline.
+    Para usar o CDN, troque por:
+      "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+  -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/build/three.module.js",
+      "three/addons/": "./vendor/three/examples/jsm/"
+    }
+  }
+  </script>
+  <style>
+    :root { --accent: #ff3b5c; --accent2: #ffd60a; --bg: #0b0f1a; --glass: rgba(10, 14, 26, 0.72); }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: #fff; font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; touch-action: none; overscroll-behavior: none; }
+    #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+    #touch { position: fixed; inset: 0; z-index: 5; touch-action: none; }
+    .screen { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); }
+    .hidden, .screen.hidden { display: none !important; }
+    .panel { background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; padding: 22px 20px; width: min(94vw, 440px); max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+    @media (min-aspect-ratio: 5/4) { #menu { justify-content: flex-start; align-items: flex-start; padding-left: max(5vw, env(safe-area-inset-left)); } }
+    h1.title { font-size: clamp(34px, 9vw, 64px); font-weight: 900; letter-spacing: -1px; line-height: 0.95; text-align: center; background: linear-gradient(180deg, #fff 0%, #ffd6a0 45%, var(--accent) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 6px 22px rgba(255, 59, 92, 0.45)); text-transform: uppercase; }
+    .subtitle { text-align: center; opacity: 0.8; margin: 6px 0 18px; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; }
+    .btn { display: block; width: 100%; padding: 15px 18px; margin: 10px 0; border: 0; border-radius: 14px; font-size: 18px; font-weight: 800; letter-spacing: 1px; color: #fff; background: linear-gradient(180deg, #ff5c7a, var(--accent)); box-shadow: 0 8px 22px rgba(255,59,92,0.35), inset 0 1px 0 rgba(255,255,255,0.35); cursor: pointer; text-transform: uppercase; transition: transform .08s; }
+    .btn:active { transform: scale(0.97); }
+    .btn.secondary { background: rgba(255,255,255,0.1); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15); }
+    .btn.small { padding: 10px 12px; font-size: 14px; margin: 6px 0 0; }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .stats-row { display: flex; justify-content: space-around; margin: 8px 0 14px; font-size: 14px; opacity: 0.9; }
+    .stats-row b { display: block; font-size: 20px; color: var(--accent2); }
+    .hint { font-size: 12px; opacity: 0.6; text-align: center; margin-top: 10px; line-height: 1.5; }
+    /* loading */
+    #loading .bar { width: 100%; height: 10px; background: rgba(255,255,255,0.12); border-radius: 6px; overflow: hidden; margin-top: 16px; }
+    #loading .bar div { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width .25s; }
+    #load-label { margin-top: 10px; text-align: center; font-size: 13px; opacity: 0.75; }
+    /* HUD */
+    #hud { justify-content: flex-start; align-items: stretch; pointer-events: none; padding-top: max(10px, env(safe-area-inset-top)); }
+    #hud .top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .hud-box { background: var(--glass); border-radius: 12px; padding: 8px 12px; font-weight: 800; font-size: 18px; text-shadow: 0 2px 6px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.08); }
+    .hud-box small { display: block; font-size: 10px; font-weight: 600; opacity: 0.65; letter-spacing: 1px; text-transform: uppercase; }
+    #hud-score { font-size: 26px; color: #fff; }
+    #hud-coins { color: var(--accent2); }
+    #hud-mult { color: #ff7ad9; font-size: 14px; margin-left: 8px; }
+    #btn-pause { pointer-events: auto; width: 44px; height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: var(--glass); color: #fff; font-size: 20px; cursor: pointer; }
+    #hud-power { margin: 10px auto 0; width: min(80vw, 300px); background: var(--glass); border-radius: 12px; padding: 6px 10px; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; }
+    #hud-power .pbar { flex: 1; height: 8px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden; }
+    #hud-power .pbar div { height: 100%; background: linear-gradient(90deg, #4cc9ff, #7dffb0); }
+    #hud-warn { margin: 10px auto 0; background: rgba(200, 16, 46, 0.85); border-radius: 10px; padding: 6px 14px; font-weight: 900; letter-spacing: 2px; animation: blink .5s steps(2) infinite; }
+    @keyframes blink { to { opacity: 0.4; } }
+    #hud .bottom { margin-top: auto; display: flex; justify-content: space-between; font-size: 13px; opacity: 0.8; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+    /* loja e missões */
+    #shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+    .card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px; }
+    .card.selected { border-color: var(--accent2); box-shadow: 0 0 0 1px var(--accent2) inset; }
+    .card h3 { font-size: 16px; margin: 6px 0 2px; }
+    .card p { font-size: 11px; opacity: 0.7; min-height: 30px; }
+    .swatch { display: flex; gap: 4px; }
+    .swatch span { flex: 1; height: 26px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); }
+    .mission { background: rgba(255,255,255,0.06); border-radius: 12px; padding: 10px 12px; margin: 8px 0; }
+    .mission .mt { font-weight: 700; font-size: 14px; }
+    .mbar { height: 8px; background: rgba(255,255,255,0.12); border-radius: 4px; margin: 8px 0 4px; overflow: hidden; }
+    .mbar div { height: 100%; background: linear-gradient(90deg, var(--accent2), #ff8c42); }
+    .mp { font-size: 12px; opacity: 0.7; }
+    /* configurações */
+    .row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 15px; }
+    .row select { background: #1a2033; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 6px 8px; font-size: 14px; }
+    .switch { position: relative; width: 46px; height: 26px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch span { position: absolute; inset: 0; background: rgba(255,255,255,0.15); border-radius: 13px; transition: .2s; }
+    .switch span::before { content: ""; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+    .switch input:checked + span { background: var(--accent); }
+    .switch input:checked + span::before { transform: translateX(20px); }
+    h2 { font-size: 22px; text-align: center; margin-bottom: 6px; }
+    .coins-line { text-align: center; color: var(--accent2); font-weight: 800; }
+    #toasts { position: fixed; top: max(70px, calc(env(safe-area-inset-top) + 60px)); left: 0; right: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
+    .toast { background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 8px 14px; font-size: 14px; font-weight: 700; animation: pop .25s ease-out; }
+    .toast.out { opacity: 0; transition: opacity .4s; }
+    @keyframes pop { from { transform: translateY(-10px); opacity: 0; } }
+    #go-title { color: var(--accent); }
+    .controls-table { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 12px; opacity: 0.7; margin-top: 12px; }
+    .controls-table b { color: var(--accent2); }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="touch"></div>
+
+  <!-- carregamento -->
+  <div id="loading" class="screen">
+    <div class="panel">
+      <h1 class="title">Fuga nos<br>Trilhos</h1>
+      <div class="bar"><div id="load-bar"></div></div>
+      <div id="load-label">Iniciando…</div>
+    </div>
+  </div>
+
+  <!-- menu -->
+  <div id="menu" class="screen hidden">
+    <div class="panel">
+      <h1 class="title">Fuga nos<br>Trilhos</h1>
+      <div class="subtitle">endless runner · linha 9</div>
+      <div class="stats-row"><div>Recorde<b id="menu-best">0</b></div><div>Moedas<b id="menu-coins">0</b></div><div>Chaves<b id="menu-keys">0</b></div></div>
+      <button id="btn-play" class="btn">Jogar</button>
+      <button id="btn-shop" class="btn secondary">Loja de skins · <span id="menu-skin">Vega</span></button>
+      <button id="btn-missions" class="btn secondary">Missões</button>
+      <button id="btn-settings" class="btn secondary">Configurações</button>
+      <div class="controls-table">
+        <b>← → / A D</b><span>trocar de pista · swipe lateral</span>
+        <b>↑ / W</b><span>pular · swipe para cima</span>
+        <b>↓ / S</b><span>rolar · swipe para baixo</span>
+        <b>Espaço</b><span>prancha · toque duplo</span>
+        <b>Esc / P</b><span>pausa</span>
+      </div>
+      <div class="hint" id="menu-preset"></div>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud" class="screen hidden">
+    <div class="top">
+      <div class="hud-box"><small>Pontos</small><span id="hud-score">0</span><span id="hud-mult">x1</span></div>
+      <div style="display:flex; gap:8px; align-items:flex-start">
+        <div class="hud-box"><small>Moedas</small><span id="hud-coins">0</span></div>
+        <div class="hud-box"><small>Chaves</small><span id="hud-keys">0</span></div>
+        <button id="btn-pause" aria-label="Pausar">❚❚</button>
+      </div>
+    </div>
+    <div id="hud-power" class="hidden"><span id="hud-power-icon">🧲</span><span id="hud-power-name">Ímã</span><div class="pbar"><div id="hud-power-bar"></div></div></div>
+    <div id="hud-warn" class="hidden">⚠ FISCAL ATRÁS DE VOCÊ</div>
+    <div class="bottom"><span id="hud-dist">0 m</span><span>toque duplo / Espaço = prancha</span></div>
+  </div>
+
+  <!-- pausa -->
+  <div id="pause" class="screen hidden">
+    <div class="panel">
+      <h2>Pausa</h2>
+      <button id="btn-resume" class="btn">Continuar</button>
+      <button id="btn-pause-settings" class="btn secondary">Configurações</button>
+      <button id="btn-pause-menu" class="btn secondary">Menu</button>
+    </div>
+  </div>
+
+  <!-- fim de corrida -->
+  <div id="gameover" class="screen hidden">
+    <div class="panel">
+      <h2 id="go-title">Batida!</h2>
+      <div class="stats-row"><div>Pontos<b id="go-score">0</b></div><div>Distância<b id="go-dist">0 m</b></div><div>Moedas<b id="go-coins">0</b></div></div>
+      <div class="coins-line" id="go-best"></div>
+      <button id="btn-continue" class="btn">Continuar (1 🔑)</button>
+      <button id="btn-retry" class="btn secondary">Correr de novo</button>
+      <button id="btn-go-menu" class="btn secondary">Menu</button>
+    </div>
+  </div>
+
+  <!-- loja -->
+  <div id="shop" class="screen hidden">
+    <div class="panel">
+      <h2>Loja de skins</h2>
+      <div class="coins-line"><span id="shop-coins">0</span> 🪙</div>
+      <div id="shop-grid"></div>
+      <button id="btn-shop-back" class="btn secondary">Voltar</button>
+    </div>
+  </div>
+
+  <!-- missões -->
+  <div id="missions" class="screen hidden">
+    <div class="panel">
+      <h2>Missões</h2>
+      <div id="missions-list"></div>
+      <button id="btn-missions-back" class="btn secondary">Voltar</button>
+    </div>
+  </div>
+
+  <!-- configurações -->
+  <div id="settings" class="screen hidden">
+    <div class="panel">
+      <h2>Configurações</h2>
+      <div class="row"><span>Preset gráfico</span><span><select id="sel-quality"><option value="auto">Automático</option><option value="low">Baixo</option><option value="medium">Médio</option><option value="high">Alto</option><option value="ultra">Ultra</option></select></span></div>
+      <button id="btn-apply-quality" class="btn small secondary">Aplicar preset e recarregar</button>
+      <div class="hint" id="settings-info"></div>
+      <div class="row"><span>Oclusão ambiente (GTAO)</span><label class="switch"><input type="checkbox" id="tg-ao"><span></span></label></div>
+      <div class="row"><span>Bloom</span><label class="switch"><input type="checkbox" id="tg-bloom"><span></span></label></div>
+      <div class="row"><span>Motion blur</span><label class="switch"><input type="checkbox" id="tg-motionBlur"><span></span></label></div>
+      <div class="row"><span>Aberração cromática</span><label class="switch"><input type="checkbox" id="tg-chroma"><span></span></label></div>
+      <div class="row"><span>Lens flare</span><label class="switch"><input type="checkbox" id="tg-flare"><span></span></label></div>
+      <div class="row"><span>Antialiasing (SMAA)</span><label class="switch"><input type="checkbox" id="tg-smaa"><span></span></label></div>
+      <div class="row"><span>Sombras</span><label class="switch"><input type="checkbox" id="tg-shadows"><span></span></label></div>
+      <div class="row"><span>Chuva</span><label class="switch"><input type="checkbox" id="tg-rain"><span></span></label></div>
+      <div class="row"><span>Efeitos sonoros</span><label class="switch"><input type="checkbox" id="tg-sfx"><span></span></label></div>
+      <div class="row"><span>Música</span><label class="switch"><input type="checkbox" id="tg-music"><span></span></label></div>
+      <button id="btn-settings-back" class="btn secondary">Voltar</button>
+    </div>
+  </div>
+
+  <div id="toasts"></div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
