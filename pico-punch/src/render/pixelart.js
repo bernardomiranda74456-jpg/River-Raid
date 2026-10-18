@@ -50,7 +50,7 @@ export class PixelAtlas {
     this.w = opts.w || first[0].length; this.h = opts.h || first.length;
     const cols = Math.min(this.names.length, 16); const rowsN = Math.ceil(this.names.length / cols);
     this.canvas = makeCanvas(cols * this.w, rowsN * this.h);
-    const ctx = this.canvas.getContext('2d'); const img = ctx.createImageData(this.canvas.width, this.canvas.height);
+    const ctx = this.canvas.getContext('2d', { willReadFrequently: true }); const img = ctx.createImageData(this.canvas.width, this.canvas.height);
     this.rects = {};
     this.names.forEach((n, i) => {
       const cx = (i % cols) * this.w, cy = Math.floor(i / cols) * this.h;

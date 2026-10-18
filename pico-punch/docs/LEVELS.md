@@ -63,6 +63,8 @@ Entidades no mapa (âncora = pé no tile):
 
 `b` arbusto · `f` flor · `t` tufo · `p` pedra · `m` cogumelo · `c` cristal · `s` caveira · `w` janela acesa · `W` janela escura · `k` cacto · `T` tocha de parede · `n` estandarte · `i` pilar · `F` cerca · `a`/`A` algas · `o` coral · `g` engrenagem · `S` placa
 
+Entidades (`$`, `f`, `j`…) colocadas numa coluna d'água herdam o tile de água dos vizinhos laterais (não abrem buraco).
+
 Decorações são desenhadas por trás dos tiles, com a base no fundo do tile indicado — coloque-as na linha
 imediatamente acima do chão.
 

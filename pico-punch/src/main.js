@@ -58,7 +58,7 @@ export class Game {
     if (mode === 'hd' && !this.hdReady) { this.loadHD().then(() => this.setMode('hd', silent)); return; }
     this.mode = mode; this.bank.mode = mode; this.particles.setMode(mode); this.save.settings.mode = mode; this.save.save();
     if (mode === 'retro' && this.hdRenderer) this.hdRenderer.detach(this.scene);
-    this.onResize(); this.scene.refreshMode(); this.hud.refreshMode(); this.applyCrt();
+    this.onResize(); if (mode === 'hd' && this.level) this.bank.hd?.warmup(this.level); this.scene.refreshMode(); this.hud.refreshMode(); this.applyCrt();
     if (!this.level && this.state === 'title') this.buildTitleParallax();
     this.hooks.modeChanged?.(mode); this.audio?.setMode(mode);
     if (this.level) this.buildParallax();
@@ -83,7 +83,7 @@ export class Game {
   async startLevel(index, opts = {}) {
     this.levelIndex = index; const def = LEVELS[index] || (this.debug.get('file') ? { file: this.debug.get('file') } : null); if (!def) { this.setState('title'); return; }
     const json = await loadLevel(this.debug.get('file') && index === 99 ? this.debug.get('file') : def.file); this.level = new Level(json, this, opts); this.level.camera.setView(this.viewW, this.viewH);
-    this.scene.setLevel(this.level); this.buildParallax(); this.hud.showMessage('');
+    this.scene.setLevel(this.level); this.buildParallax(); this.hud.showMessage(''); if (this.mode === 'hd') this.bank.hd?.warmup(this.level);
     this.setState('play'); this.audio?.music.play(json.music, { restart: true }); this.iris = { t: 0, dir: 1, dur: 0.8 };
     this.hooks.levelStarted?.(this.level);
   }

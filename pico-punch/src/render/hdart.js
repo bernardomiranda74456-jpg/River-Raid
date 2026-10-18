@@ -36,7 +36,7 @@ function epx({ w, h, px }) {
   }
   return { w: W, h: H, px: out };
 }
-function toCanvas(img) { const c = makeCanvas(img.w, img.h); const ctx = c.getContext('2d'); const id = ctx.createImageData(img.w, img.h); id.data.set(img.px); ctx.putImageData(id, 0, 0); return c; }
+function toCanvas(img) { const c = makeCanvas(img.w, img.h); const ctx = c.getContext('2d', { willReadFrequently: true }); const id = ctx.createImageData(img.w, img.h); id.data.set(img.px); ctx.putImageData(id, 0, 0); return c; }
 /** Distância (em texels) até o pixel transparente mais próximo (chamfer 3-4, limitado). */
 function insideDistance(data, w, h, cap = 14) {
   const d = new Float32Array(w * h); const INF = 1e4;
@@ -70,13 +70,14 @@ const MATERIAL = { y: { shine: 0.9, bump: 1.0 }, a: { shine: 1.0, bump: 0.8 }, A
  * emissiveColors: conjunto de códigos de cor que brilham (lava, cristais...).
  */
 export function spriteHD(rows, pal, { outline = true, pillow = 1, emissive = null, flatTop = false, alpha = 1, smooth = 0 } = {}) {
-  const base = matrixToRGBA(rows, pal); const up = epx(epx(base)); // ×4
-  const w = base.w * S, h = base.h * S; const c = makeCanvas(w, h); const ctx = c.getContext('2d');
-  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(toCanvas(up), 0, 0, w, h);
-  const id = ctx.getImageData(0, 0, w, h); const data = id.data;
+  const P = globalThis.__hdProfile; const tp = []; const mark = (n) => { if (P) tp.push([n, performance.now()]); };
+  mark('start'); const base = matrixToRGBA(rows, pal); const up = epx(epx(base)); mark('epx'); // ×4
+  const w = base.w * S, h = base.h * S; const c = makeCanvas(w, h); const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(toCanvas(up), 0, 0, w, h); mark('draw');
+  const id = ctx.getImageData(0, 0, w, h); const data = id.data; mark('getImageData');
   // limiar de alpha para bordas limpas
   for (let i = 3; i < data.length; i += 4) data[i] = data[i] > 110 ? Math.round(255 * alpha) : 0;
-  const dist = insideDistance(data, w, h, 16);
+  const dist = insideDistance(data, w, h, 16); mark('dist');
   const height = new Float32Array(w * h); const emis = new Float32Array(w * h);
   const colorKeyAt = (x, y) => rows[Math.min(rows.length - 1, Math.floor(y / S))][Math.min(rows[0].length - 1, Math.floor(x / S))];
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
@@ -94,9 +95,10 @@ export function spriteHD(rows, pal, { outline = true, pillow = 1, emissive = nul
     const o = i * 4; data[o] = Math.min(255, data[o] * edge * lambert + spec * 255); data[o + 1] = Math.min(255, data[o + 1] * edge * lambert + spec * 255); data[o + 2] = Math.min(255, data[o + 2] * edge * lambert + spec * 255);
     if (emissive && emissive.has(k)) emis[i] = 1;
   }
-  ctx.putImageData(id, 0, 0);
+  mark('shade'); ctx.putImageData(id, 0, 0); mark('put');
   const nrm = heightToNormal(height, w, h, 2.2, (x, y) => { const i = y * w + x; return { cov: data[i * 4 + 3] !== 0, emis: emis[i] }; });
-  const nc = makeCanvas(w, h); const nctx = nc.getContext('2d'); const nid = nctx.createImageData(w, h); nid.data.set(nrm); nctx.putImageData(nid, 0, 0);
+  mark('normal'); const nc = makeCanvas(w, h); const nctx = nc.getContext('2d', { willReadFrequently: true }); const nid = nctx.createImageData(w, h); nid.data.set(nrm); nctx.putImageData(nid, 0, 0); mark('end');
+  if (P) { const o = {}; for (let i = 1; i < tp.length; i++) o[tp[i][0]] = +(tp[i][1] - tp[i - 1][1]).toFixed(1); P.push(o); }
   return { diffuse: c, normal: nc };
 }
 
@@ -107,7 +109,7 @@ const THEME_LOOK = {
   lake: { rock: ['#6b7d7a', '#4a5c5a', '#8aa29e'], grass: ['#5bb561', '#327a3c', '#8fe090'], dirt: ['#5e6e64', '#3f4d45'], kind: 'rock' },
   village: { rock: ['#c8a376', '#9c7a53', '#e2c49a'], grass: ['#d8d0c0', '#b0a690', '#f0e8d8'], dirt: ['#a08060', '#705840'], kind: 'brick' },
   desert: { rock: ['#d9b26a', '#b58d4a', '#f0d08c'], grass: ['#e8c87a', '#c4a052', '#fde6a8'], dirt: ['#d9b26a', '#b58d4a'], kind: 'sand' },
-  road: { rock: ['#8a8a8a', '#666666', '#aaaaaa'], grass: ['#8c8c8c', '#5e5e5e', '#b8b8b8'], dirt: ['#7a6a5a', '#54483c'], kind: 'rock' },
+  road: { rock: ['#8a8a8a', '#666666', '#aaaaaa'], grass: ['#5c5c62', '#3a3a40', '#9a9aa0'], dirt: ['#4a4a50', '#34343a'], kind: 'sand' },
   sky: { rock: ['#9a9aa8', '#70707f', '#c0c0cc'], grass: ['#62c04c', '#3f8a30', '#9ae878'], dirt: ['#7a6a5a', '#54483c'], kind: 'rock' },
   cave: { rock: ['#5a4a58', '#3a2e3a', '#7c6a7a'], grass: ['#b4442a', '#6e2416', '#e07a40'], dirt: ['#4a3a48', '#2e2230'], kind: 'rock' },
   city: { rock: ['#5a6474', '#3c4452', '#7a8696'], grass: ['#8a94a4', '#5a6474', '#aab4c4'], dirt: ['#3c4452', '#262c36'], kind: 'metal' },
@@ -120,7 +122,7 @@ const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[
 /** Tile de solo HD (96×96) com textura, superfície e bisel; normal map a partir da altura. */
 export function groundHD(theme, mask, alt, variant = 0) {
   const look = THEME_LOOK[theme] || THEME_LOOK.mountain; const rng = new Rng(1234 + mask * 7 + (alt ? 99 : 0) + variant * 1013); const n = noise2(rng); const n2 = noise2(new Rng(77 + mask + variant * 31)); const n3 = noise2(new Rng(555 + variant * 17));
-  const w = 16 * S, h = 16 * S; const c = makeCanvas(w, h); const ctx = c.getContext('2d'); const id = ctx.createImageData(w, h); const d = id.data; const height = new Float32Array(w * h);
+  const w = 16 * S, h = 16 * S; const c = makeCanvas(w, h); const ctx = c.getContext('2d', { willReadFrequently: true }); const id = ctx.createImageData(w, h); const d = id.data; const height = new Float32Array(w * h);
   const rock = look.rock.map(hexToRgb), grass = (alt && look.snow ? look.snow : look.grass).map(hexToRgb), dirt = look.dirt.map(hexToRgb);
   const up = !!(mask & 1), right = !!(mask & 2), down = !!(mask & 4), left = !!(mask & 8);
   const surfaceH = alt && look.snow ? 22 : look.kind === 'sand' ? 16 : 26; // altura da camada superficial em texels
@@ -169,13 +171,13 @@ export function groundHD(theme, mask, alt, variant = 0) {
   if (up && right) for (let y = 0; y < 8; y++) for (let x = w - 8; x < w; x++) if (Math.hypot(x - (w - 9), 8 - y) > 8) d[(y * w + x) * 4 + 3] = 0;
   ctx.putImageData(id, 0, 0);
   const nrm = heightToNormal(height, w, h, 3.0, (x, y) => ({ cov: d[(y * w + x) * 4 + 3] !== 0, emis: theme === 'cave' && up && y < 10 ? 0.18 : 0 }));
-  const nc = makeCanvas(w, h); const nctx = nc.getContext('2d'); const nid = nctx.createImageData(w, h); nid.data.set(nrm); nctx.putImageData(nid, 0, 0);
+  const nc = makeCanvas(w, h); const nctx = nc.getContext('2d', { willReadFrequently: true }); const nid = nctx.createImageData(w, h); nid.data.set(nrm); nctx.putImageData(nid, 0, 0);
   return { diffuse: c, normal: nc };
 }
 
 /** Lava HD procedural (96×96): base escura com veios brilhantes; emissivo forte nos veios. */
 export function lavaHD(frame = 0) {
-  const w = 16 * S, h = 16 * S; const c = makeCanvas(w, h); const ctx = c.getContext('2d'); const id = ctx.createImageData(w, h); const d = id.data;
+  const w = 16 * S, h = 16 * S; const c = makeCanvas(w, h); const ctx = c.getContext('2d', { willReadFrequently: true }); const id = ctx.createImageData(w, h); const d = id.data;
   const n = noise2(new Rng(9001)), n2 = noise2(new Rng(9002)); const nrm = new Uint8ClampedArray(w * h * 4); const ph = frame * 0.35;
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     // periódico no tile: usa coordenadas em torno de um círculo para repetir sem emenda
@@ -194,6 +196,12 @@ const EMISSIVE_TILES = { lava0: new Set(['r', 'o', 'y']), lava1: new Set(['r', '
 const EMISSIVE_SPRITES = { bolt: new Set(['w', 'b']), capsule: new Set(['b', 'w']), star: new Set(['y']), jelly: new Set(['p']), slug: new Set(['o', 'y']), drone: new Set(['r']) };
 export class HDArt {
   constructor() { this.sprites = {}; this.tiles = {}; this.atlases = []; }
+  /** Pré-gera texturas dos sprites usados numa fase (evita engasgos na primeira aparição). */
+  warmup(level) {
+    const arts = new Set(['hero', 'moneybag', 'bigbag', 'heart', 'pop0', 'pop1', 'bolt', 'life', 'bell', 'flag']);
+    for (const e of level.entities) arts.add(e.art); if (level.bossDef) arts.add(level.bossDef.type); if (level.json.vehicle) arts.add(level.json.vehicle + 'Ride');
+    for (const a of arts) { const frames = this._spriteFrames(a); if (!frames) continue; for (const f in frames) this.sprite(a, f); }
+  }
   _tex(canvas, linear = true) { const src = new CanvasSource({ resource: canvas, scaleMode: linear ? 'linear' : 'nearest', autoGenerateMipmaps: false, alphaMode: 'premultiply-alpha-on-upload' }); return new Texture({ source: src }); }
   _spriteFrames(art) {
     if (art === 'hero') return HERO_FRAMES; if (ENEMY_ART[art]) return ENEMY_ART[art]; if (BOSS_ART[art]) return BOSS_ART[art]; if (ITEM_ART[art]) return ITEM_ART[art]; return null;

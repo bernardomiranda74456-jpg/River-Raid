@@ -100,6 +100,11 @@ export class Level {
   respawn() {
     const p = this.game.save.progress; p.lives--;
     if (p.lives < 0) { this.game.gameOver(this); return; }
+    if (this.boss || this.gateTiles) { // morreu na luta: desfaz a arena e o duelo recomeça ao voltar
+      if (this.boss) { this.boss.remove = true; this.boss = null; }
+      if (this.gateTiles) { for (const [tx, ty] of this.gateTiles) this.map.set(tx, ty, T.EMPTY); this.gateTiles = null; }
+      this.camera.zones = this.json.cameraZones || []; this.game.hud.showBoss(null); this.camera.targetZoom = 1;
+    }
     const cp = this.checkpoint; const sp = this.map.spawn;
     if (cp) this.hero.respawnAt(cp.x, cp.y, this.map); else this.hero.respawnAt(sp.x * TILE + 3, (sp.y + 1) * TILE - 22, this.map);
     // reinicia inimigos próximos ao ponto de respawn? mantemos o estado, mas removemos fantasmas

@@ -95,6 +95,7 @@ class Boat extends Vehicle {
     if (surfY !== null) { const targetY = surfY - hero.h + 6 + Math.sin(this.t * 3) * 1.2; const dy = targetY - hero.y; hero.vy = dy * 8; if (inp.pressed.jump && Math.abs(dy) < 6) { hero.vy = -170; level.sfx('splash'); level.fx.splash(hero.cx, hero.bottom); } }
     else hero.vy = Math.min(hero.vy + GRAVITY * dt, MAX_FALL);
     moveBody(hero, map, dt);
+    this.dryT = surfY === null && hero.onGround ? (this.dryT || 0) + dt : 0; if (this.dryT > 0.6) { level.floatText('ENCALHOU', hero.cx, hero.y - 8); this.destroy(level, hero); return; }
     if (hero.hitWall) { hero.vx = 0; }
     if (map.anyInRect(hero.x + 4, hero.y + 4, hero.w - 8, hero.h - 4, (t) => isHazardType(t))) { hero.hurt(level, 'hazard'); return; }
     if (hero.y > map.pixelH + 32) { hero.hurt(level, 'fall'); return; }

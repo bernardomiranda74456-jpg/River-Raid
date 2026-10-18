@@ -42,7 +42,7 @@ export class Bot {
     if (nearest) {
       const ex = nearest.cx - h.cx; const edir = ex > 0 ? 1 : -1; const above = nearest.cy < h.y + 2;
       if (above && Math.abs(ex) < 24 && h.onGround) { T.left = T.right = false; if (this.punchCd <= 0) { T.up = true; T.punch = true; this.punchCd = 0.26; } threat = true; }
-      else if (Math.abs(ex) < 34 && Math.abs(nearest.cy - h.cy) < 30 && h.onGround) { T.left = T.right = false; if (edir !== fx) { if (edir > 0) T.right = true; else T.left = true; } else if (this.punchCd <= 0) { T.punch = true; this.punchCd = 0.26; } threat = true; }
+      else if (Math.abs(ex) < 26 && Math.abs(nearest.cy - h.cy) < 30 && h.onGround) { T.left = T.right = false; if (edir !== fx) { if (edir > 0) T.right = true; else T.left = true; } else if (this.punchCd <= 0) { T.punch = true; this.punchCd = 0.26; } threat = true; }
     }
     const handX = h.cx + fx * 14, handY = h.y + 5;
     if (punchable(map.getAt(handX, handY)) || punchable(map.getAt(handX, h.y + h.h - 4))) threat = true;
@@ -58,7 +58,7 @@ export class Bot {
       const enemyClose = !!nearest && Math.abs(nearest.cx - h.cx) < 40 && !gapAhead;
       if ((wallAhead || (gapAhead && Math.abs(dx) > 10 && dy <= 24) || hazardAhead || targetAbove) && !enemyClose) { T.jump = true; this.jumpHold = targetAbove || gapAhead ? 0.32 : 0.2; }
     } else if (this.jumpHold > 0) { this.jumpHold -= dt; T.jump = true; }
-    if (T.jump && this.prevJump && h.onGround && this.jumpHold <= 0) T.jump = false; // solta por 1 frame para gerar nova borda (hit-stop pode engolir o 'pressed')
+    if (T.jump && this.prevJump && this.jumpHold <= 0) T.jump = false; // solta por 1 frame para gerar nova borda (hit-stop pode engolir o 'pressed')
     this.prevJump = T.jump;
     // detector de travamento: se não progride por 4 s, tenta pular
     if (Math.abs(h.x - this.lastX) < 0.5) { this.stuckT += dt; if (this.stuckT > 2.5) { T.jump = true; this.jumpHold = 0.3; if (this.stuckT > 4) { this.log.push(`travado em (${h.x.toFixed(0)},${h.y.toFixed(0)}) indo para waypoint ${this.i}`); this.stuckT = 0; } } } else this.stuckT = 0;

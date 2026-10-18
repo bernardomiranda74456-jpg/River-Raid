@@ -48,11 +48,13 @@ export class Tilemap {
         }
       }
     }
+    // entidades colocadas em colunas d'água não abrem "buracos": herdam água dos vizinhos laterais
+    for (const e of this.entities) { if (e.fromList) continue; const l = this.get(e.x - 1, e.y), r = this.get(e.x + 1, e.y); const up = this.get(e.x, e.y - 1); if (isWaterType(l) && isWaterType(r)) this.tiles[e.y * this.w + e.x] = (l === T.WATER_TOP || r === T.WATER_TOP) && !isWaterType(up) ? T.WATER_TOP : T.WATER; }
     if (json.decor) for (let y = 0; y < Math.min(json.decor.length, this.h); y++) {
       const row = json.decor[y];
       for (let x = 0; x < Math.min(row.length, this.w); x++) { const ch = row[x]; if (ch in DECOR_LEGEND) this.decor[y * this.w + x] = DECOR_LEGEND[ch]; }
     }
-    for (const e of json.entities || []) this.entities.push({ ...e });
+    for (const e of json.entities || []) this.entities.push({ ...e, fromList: true });
     this.pixelW = this.w * TILE; this.pixelH = this.h * TILE;
     this.version = 0; // incrementa quando um tile muda (para o renderer atualizar)
     this.changed = [];

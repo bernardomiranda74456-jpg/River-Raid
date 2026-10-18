@@ -15,6 +15,7 @@ export function installDuel(game) {
     const def = level.bossDef || { type: 'frogking' }; const bd = BOSS_DEFS[def.type] || BOSS_DEFS.frogking;
     level.bossSpawn = level.bossSpawn || { x: level.hero.x + 120, y: level.hero.bottom }; level.state = 'duel'; game.setState('duel'); level.hero.state = 'frozen'; level.hero.vx = 0;
     if (game.mode === 'hd') level.camera.targetZoom = 1.12;
+    if (level.hero.onGround) level.setCheckpoint(level.hero.x - 24, level.hero.y); // perder o duelo repete daqui
     game.audio?.music.play('duel');
     const L = game.menuLayer; L.removeChildren(); const cx = Math.round(game.viewW / 2);
     const g = new Graphics(); g.roundRect(cx - 120, 8, 240, 112, 4).fill({ color: 0x120c22, alpha: 0.92 }).stroke({ color: 0xffaa00, width: 1 }); L.addChild(g);
