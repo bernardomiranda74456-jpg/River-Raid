@@ -50,11 +50,11 @@ export class FollowCamera {
     } else {
       const back = lerp(6.4, 7.8, sp), up = lerp(3.5, 3.9, sp);
       const flyUp = player.jetpack > 0 ? 1.0 : 0;
-      const tx = _p.x * 0.75, ty = _p.y * 0.85 + up + flyUp, tz = _p.z - back;
+      const tx = _p.x * 0.75, ty = (player.jetpack > 0 ? _p.y * 0.45 : _p.y * 0.85) + up + flyUp * 0.4, tz = _p.z - back;
       this.pos.x = damp(this.pos.x, tx, 8, dt);
       this.pos.y = damp(this.pos.y, ty, 6, dt);
       this.pos.z = tz; // sem atraso no eixo de corrida (sensação de velocidade estável)
-      _look.set(_p.x * 0.85, _p.y * 0.8 + 1.3 + flyUp * 0.5, _p.z + lerp(9, 13, sp));
+      _look.set(_p.x * 0.85, (player.jetpack > 0 ? _p.y * 0.6 : _p.y * 0.8) + 1.3 + flyUp * 0.3, _p.z + lerp(9, 13, sp));
       this.look.x = damp(this.look.x, _look.x, 10, dt); this.look.y = damp(this.look.y, _look.y, 8, dt); this.look.z = _look.z;
       this.fov = damp(this.fov, lerp(62, 80, sp) + (player.jetpack > 0 ? 4 : 0) + (cam.aspect < 1 ? 10 : 0), 3, dt);
     }

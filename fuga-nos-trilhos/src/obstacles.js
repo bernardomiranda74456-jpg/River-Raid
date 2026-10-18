@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { Pool } from './utils.js';
 import { TRAIN_W, TRAIN_H, TRAIN_CAR_LEN, LANE_W } from './config.js';
-import { mergeGeoms, box, cyl, wedge } from './geom.js';
+import { mergeGeoms, mergeByMaterial, box, cyl, wedge } from './geom.js';
 import { warningSign, toTexture } from './textures.js';
 
 export const OB = {
@@ -53,7 +53,20 @@ export function buildTrain(M, setIndex, cars, withCab = true) {
     const geo = new THREE.BoxGeometry(TRAIN_W, bodyH, TRAIN_CAR_LEN);
     flipFaceU(geo, 1); // só a face -x fica espelhada por padrão
     const isFront = c === 0, isBack = c === cars - 1;
-    const mats = [set.side, set.side, M.trainRoof, M.trainUnder, (isBack && withCab) ? set.front : M.trainUnder, (isFront && withCab) ? set.front : M.trainUnder];
+    const cabBack = isBack && withCab, cabFront = isFront && withCab;
+    // grupos: lados (+x,-x) → 0, teto → 1, fundo → 2, extremidades → 3 (cabine) ou 2
+    const per = 6; // índices por face
+    const groups = [{ start: 0, count: per * 2, materialIndex: 0 }, { start: per * 2, count: per, materialIndex: 1 }];
+    if (cabBack === cabFront) {
+      if (cabBack) { groups.push({ start: per * 3, count: per, materialIndex: 2 }); groups.push({ start: per * 4, count: per * 2, materialIndex: 3 }); }
+      else groups.push({ start: per * 3, count: per * 3, materialIndex: 2 });
+    } else {
+      groups.push({ start: per * 3, count: per, materialIndex: 2 });
+      groups.push({ start: per * 4, count: per, materialIndex: cabBack ? 3 : 2 });
+      groups.push({ start: per * 5, count: per, materialIndex: cabFront ? 3 : 2 });
+    }
+    geo.clearGroups(); for (const gr of groups) geo.addGroup(gr.start, gr.count, gr.materialIndex);
+    const mats = [set.side, M.trainRoof, M.trainUnder, set.front];
     const body = new THREE.Mesh(geo, mats);
     body.position.set(0, floorY + bodyH / 2, z0 + TRAIN_CAR_LEN / 2);
     body.castShadow = true; body.receiveShadow = true;
@@ -105,7 +118,8 @@ export function buildTrain(M, setIndex, cars, withCab = true) {
       g.add(t); lights.push(t);
     }
   }
-  g.userData = { cars, length: total, bogies, lights, setIndex };
+  g.userData = { cars, length: total, bogies: bogies.map((b) => b.position.clone()), lights, setIndex };
+  mergeByMaterial(g);
   return g;
 }
 
@@ -132,8 +146,7 @@ export function buildLowBarrier(M) {
   base.position.set(0, 0.04, 0); base.receiveShadow = true; g.add(base);
   const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), M.taillight);
   lamp.position.set(0, 1.0, 0); g.add(lamp);
-  g.userData.bar = bar;
-  return g;
+  return mergeByMaterial(g);
 }
 
 export function buildHighBarrier(M) {
@@ -146,7 +159,7 @@ export function buildHighBarrier(M) {
   top.position.set(0, 2.5, 0); g.add(top);
   const bar = new THREE.Mesh(box(2.3, 0.08, 0.08), M.rustMetal);
   bar.position.set(0, 1.18, 0); g.add(bar);
-  return g;
+  return mergeByMaterial(g);
 }
 
 export function buildCone(M) {
@@ -157,7 +170,7 @@ export function buildCone(M) {
   g.add(stripe);
   const base = new THREE.Mesh(box(0.5, 0.04, 0.5, 0, 0.02, 0), M.plastic);
   g.add(base);
-  return g;
+  return mergeByMaterial(g);
 }
 
 export function buildHoarding(M) {
@@ -170,7 +183,7 @@ export function buildHoarding(M) {
   for (const x of [-1.05, 1.05]) { const p = new THREE.Mesh(box(0.08, 1.35, 0.08), M.rustMetal); p.position.set(x, 0.68, -0.06); g.add(p); }
   const sign = new THREE.Mesh(box(1.1, 0.5, 0.02), M.warning);
   sign.position.set(0.3, 0.9, 0.03); g.add(sign);
-  return g;
+  return mergeByMaterial(g);
 }
 
 export function buildRamp(M) {
@@ -181,7 +194,7 @@ export function buildRamp(M) {
   const sr = new THREE.Mesh(box(0.08, 0.12, 7.2, TRAIN_W / 2 - 0.02, 0, 3.6), M.yellowMetal);
   g.add(sl, sr);
   g.userData.len = 7;
-  return g;
+  return mergeByMaterial(g);
 }
 
 export function buildArch(M) {
@@ -194,7 +207,7 @@ export function buildArch(M) {
   sign.position.set(0, d.bottom + 0.35, -d.depth / 2 - 0.02); g.add(sign);
   const lamp = new THREE.Mesh(box(0.6, 0.05, 0.1), M.tunnelLight);
   lamp.position.set(0, d.bottom - 0.03, 0); g.add(lamp);
-  return g;
+  return mergeByMaterial(g);
 }
 
 /* -------------------------------------------------------- pools */
@@ -219,10 +232,10 @@ export class ObstaclePools {
     }
   }
   warm() {
-    this.low.warm(14); this.high.warm(10); this.cone.warm(16); this.hoarding.warm(8); this.ramp.warm(6); this.arch.warm(6);
-    this.trains[1].forEach((p) => p.warm(2)); this.trains[2].forEach((p) => p.warm(2)); this.trains[3].forEach((p) => p.warm(1));
+    this.low.warm(18); this.high.warm(16); this.cone.warm(18); this.hoarding.warm(14); this.ramp.warm(8); this.arch.warm(14);
+    this.trains[1].forEach((p) => p.warm(3)); this.trains[2].forEach((p) => p.warm(2)); this.trains[3].forEach((p) => p.warm(1));
   }
-  acquireTrain(cars, livery) { const pools = this.trains[cars]; return pools[livery % pools.length].acquire(); }
+  acquireTrain(cars, livery) { const pools = this.trains[cars]; let p = pools[livery % pools.length]; if (!p.free.length) { for (const q of pools) if (q.free.length) { p = q; break; } } return p.acquire(); }
   releaseTrain(g) { g.visible = false; this.trains[g.userData.cars][g.userData.setIndex].release(g); }
   acquire(type) { return this[type].acquire(); }
   release(type, g) { g.visible = false; this[type].release(g); }

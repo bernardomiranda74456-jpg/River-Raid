@@ -102,8 +102,11 @@ class Game {
     if (this.params.rain) this.rainForce = parseFloat(this.params.rain);
     this.env.todSpeed = this.params.todspeed ? parseFloat(this.params.todspeed) : 24 / 380;
     this.weather = { rain: 0, timer: 30, target: 0 };
-    // pré-compila
+    // pré-compila todos os shaders (objetos em pool ficam visíveis só durante o compile)
+    const hidden = [];
+    this.scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
     this.renderer.compile(this.scene, this.camera.cam);
+    for (const o of hidden) o.visible = false;
     this.env.updateEnv();
     this.ui.loading(1, 'Pronto');
     this.toMenu();
@@ -382,7 +385,7 @@ class Game {
       if (!r.passed && r.z0 < p.z + 1) { r.passed = true; if (Math.abs(r.x - p.x) < LANE_W * 1.6) { this.audio.play('whoosh'); this.camera.addShake(0.35); } }
       if (r.z0 > p.z - 30 && r.z0 < p.z + 80) {
         r.sparkT += dt;
-        if (r.sparkT > 0.06) { r.sparkT = 0; const b = r.mesh.userData.bogies; for (let i = 0; i < Math.min(2, b.length); i++) { b[i].getWorldPosition(_v); this.effects.trainSparks(_v.x, 0.1, _v.z, -1, 2); } }
+        if (r.sparkT > 0.06) { r.sparkT = 0; const b = r.mesh.userData.bogies; for (let i = 0; i < Math.min(2, b.length); i++) { r.mesh.localToWorld(_v.copy(b[i])); this.effects.trainSparks(_v.x, 0.1, _v.z, -1, 2); } }
       }
     }
     // perseguição: captura quando o fiscal alcança
@@ -488,7 +491,7 @@ class Game {
     // brilhos aleatórios nas moedas próximas
     const c = this.track.chunkAt(_v.z);
     if (c && c.nCoins) { for (let k = 0; k < 2; k++) { const i = c.coins[Math.floor(Math.random() * c.nCoins)]; if (this.coins.active[i]) E.coinSparkle(this.coins.x[i], this.coins.y[i], this.coins.z[i]); } }
-    E.update(dt, this.scene.fog, lerp(0.25, 1, Math.max(this.env.sun.intensity / 3.9, this.env.hemi.intensity)) * (1 - tunnel * 0.5));
+    E.update(dt, this.scene.fog, lerp(0.45, 1, Math.max(this.env.sun.intensity / 4.6, this.env.hemi.intensity)) * (1 - tunnel * 0.4));
     // pós
     this.flash = Math.max(0, this.flash - dtReal * 1.5);
     const sunDir = this.env.uniforms.uSunDir.value;
@@ -528,7 +531,7 @@ class Game {
       jet: () => this.activatePowerup(PU.JETPACK, 0, 0, 0),
       state: () => ({ state: this.state, z: this.player.z, speed: this.speed, zone: (this.track.chunkAt(this.player.z) || {}).zone, tod: this.env.tod, rain: this.env.rain, stats: this.stats, chunks: this.track.stats }),
       skipTo: (zone) => { // avança até 20 m antes da próxima zona pedida (gera chunks no caminho)
-        for (let i = 0; i < 80; i++) {
+        for (let i = 0; i < 220; i++) {
           const c = this.track.chunkAt(this.player.z + CHUNK_LEN);
           if (c && c.zone === zone && c.zoneIndex === 0) { this.player.z = c.z - 20; break; }
           this.player.z += CHUNK_LEN; this.track.update(0.016, this.player.z, this.player.x, this);
@@ -538,6 +541,7 @@ class Game {
         this.track.update(0.016, this.player.z, this.player.x, this);
       },
       zoneAt: () => this.track.chunks.map((c) => c.zone + '@' + c.z).join(','),
+      pools: () => { const out = {}; for (const [k, p] of Object.entries(this.track.props.pools)) out[k] = p.created + '/' + p.free.length; out.yardTrain = this.track.props.yardTrains.created; for (const k of ['low', 'high', 'cone', 'hoarding', 'ramp', 'arch']) out[k] = this.obPools[k].created + '/' + this.obPools[k].free.length; out.trains = this.obPools.trains.slice(1).map((ps) => ps.map((p) => p.created).join('+')).join(' | '); out.records = this.track.recPool.created; return out; },
     };
   }
 }

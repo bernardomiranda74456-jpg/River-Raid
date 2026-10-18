@@ -306,6 +306,7 @@ export class Track {
     for (let i = 0; i < rows; i++) rowZ.push(z0 + 6 + i * rowGap + rng.range(0, 2));
     // caminho dourado
     const goldenLanes = [];
+    const incomingLane = this.golden.lane; // pista dourada vinda do chunk anterior (até a 1ª linha)
     const minGap = Math.max(rowGap, 14);
     for (let i = 0; i < rows; i++) {
       const zr = rowZ[i];
@@ -319,7 +320,20 @@ export class Track {
     const grid = [];
     for (let i = 0; i < rows; i++) grid.push([0, 0, 0]);
     const trainCover = [[], [], []]; // por pista: [z0,z1] de trens
-    const goldenAt = (lane, za, zb) => { for (let i = 0; i < rows; i++) if (goldenLanes[i] === lane && rowZ[i] > za - 10 && rowZ[i] < zb + 2) return true; return false; };
+    // corredor dourado: a pista dourada da linha i vale de rowZ[i] até rowZ[i+1]
+    // (a primeira começa no início do chunk); trens não podem invadir o corredor
+    // nem uma margem de 8 m usada para a troca de pista.
+    const MARGIN = 12;
+    const goldenAt = (lane, za, zb) => {
+      if (lane === incomingLane && za < rowZ[0] + MARGIN && zb > z0 - 1) return true;
+      for (let i = 0; i < rows; i++) {
+        if (goldenLanes[i] !== lane) continue;
+        const cA = i === 0 ? z0 - 1 : rowZ[i];
+        const cB = i + 1 < rows ? rowZ[i + 1] : z0 + CHUNK_LEN + 1;
+        if (za < cB + MARGIN && zb > cA - MARGIN) return true;
+      }
+      return false;
+    };
     // pista reservada por trem em movimento do chunk anterior (primeiros 25 m)
     const reservedLane = this.prevMovingLane;
     // trens parados

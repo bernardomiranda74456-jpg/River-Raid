@@ -139,7 +139,7 @@ export class Environment {
     // luzes noturnas (pool)
     this.lampLights = [];
     for (let i = 0; i < preset.lights; i++) {
-      const l = new THREE.PointLight(0xffd9a0, 0, 28, 2);
+      const l = new THREE.PointLight(0xffd9a0, 0, 42, 2);
       l.visible = false;
       scene.add(l); this.lampLights.push(l);
     }
@@ -216,7 +216,7 @@ export class Environment {
     this.sun.castShadow = sunI > 0.05;
     this.hemi.color.copy(U.uZenith.value).lerp(U.uHorizon.value, 0.5);
     this.hemi.groundColor.setRGB(0.18, 0.15, 0.12).multiplyScalar(day * 0.8 + 0.2);
-    this.hemi.intensity = (lerp(0.28, 0.34, day) * lerp(1, 0.7, rain) + dusk * 0.25) * (1 - this.tunnel * 0.7) + night * 0.12;
+    this.hemi.intensity = (lerp(0.28, 0.34, day) * lerp(1, 0.7, rain) + dusk * 0.25) * (1 - this.tunnel * 0.7) + night * 0.2;
     this.scene.environmentIntensity = lerp(0.6 + dusk * 0.3, 0.1, this.tunnel) * lerp(1, 0.8, rain);
 
     // neblina
@@ -252,6 +252,7 @@ export class Environment {
     M.facades.forEach((f) => { f.emissiveIntensity = nightLights * 0.9; });
     M.trainSets.forEach((t) => { t.side.emissiveIntensity = nightLights * 0.7; t.front.emissiveIntensity = 0.3 + nightLights * 3; });
     M.lampGlow.emissiveIntensity = nightLights * 5;
+    M.lampPool.opacity = nightLights * (0.28 + rain * 0.3);
     M.ads.forEach((a) => { a.emissiveIntensity = nightLights * 0.9; });
     M.stationSigns.forEach((a) => { a.emissiveMap = a.map; a.emissiveIntensity = nightLights * 0.8; });
     M.neons.forEach((n) => { n.opacity = 0.25 + nightLights * 0.75; });
@@ -269,7 +270,7 @@ export class Environment {
   /** Pool de luzes de poste: recebe lista de posições (Vector3) candidatas. */
   updateLamps(positions, count, playerZ) {
     const n = Math.min(count, this.lampLights.length);
-    const inten = this.nightLights * 32;
+    const inten = this.nightLights * 90;
     for (let i = 0; i < this.lampLights.length; i++) {
       const l = this.lampLights[i];
       if (i < n && inten > 0.2) {

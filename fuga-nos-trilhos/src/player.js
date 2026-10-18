@@ -249,7 +249,7 @@ export class Player {
         if (this.jetpack > 0) return;
         // lateral (entrando na troca de pista) ou frontal?
         const enteringSide = this.laneT < 1 && this.prevZ + 0.3 >= r.z0 && Math.abs(this.prevX - r.x) > hx + 1.15;
-        if (enteringSide && r.type === OB.TRAIN) { this.bounceBack(game); game.onStumble('train-side'); return; }
+        if (enteringSide && r.type === OB.TRAIN) { this.bounceBack(game); return; }
         if (this.hoverboard > 0) { game.onBoardBreak(); return; }
         if (this.invuln > 0) return;
         game.onCrash(r);
@@ -280,14 +280,14 @@ export class Player {
     this.laneFrom = this.x; this.laneTo = from; this.laneT = 0.0;
     this.targetLane = LANES.indexOf(from) >= 0 ? LANES.indexOf(from) : this.lane;
     const _ = to;
-    this.stumble(game);
+    this.stumble(game, 'train-side');
   }
 
-  stumble(game) {
+  stumble(game, kind = 'barrier') {
     if (this.state === PS.DEAD) return;
     this.state = PS.STUMBLE; this.stumbleT = 0;
     this.speedScale = 0.72;
-    game.onStumble('barrier');
+    game.onStumble(kind);
   }
 
   die(mode) {
@@ -297,7 +297,7 @@ export class Player {
     const p = this.parts;
     this.ragdoll = {
       vy: mode === 'caught' ? 2 : 5.5, vz: mode === 'caught' ? -3 : -4.5 - Math.random() * 3, rotX: 0, rotVX: mode === 'caught' ? 4 : 9 + Math.random() * 3,
-      limbs: [...p.arms.map((a) => a.sh), ...p.legs.map((l) => l.hip), ...p.arms.map((a) => a.el), ...p.legs.map((l) => l.knee)].map(() => ({ x: (Math.random() - 0.5) * 12, z: (Math.random() - 0.5) * 8 })),
+      limbs: [...p.arms.map((a) => a.sh), ...p.legs.map((l) => l.hip), ...p.arms.map((a) => a.el), ...p.legs.map((l) => l.knee)].map(() => ({ x: (Math.random() - 0.5) * 7, z: (Math.random() - 0.5) * 4 })),
       y: this.y, z: 0, landed: false,
     };
   }
@@ -316,8 +316,9 @@ export class Player {
     const limbs = [...p.arms.map((a) => a.sh), ...p.legs.map((l) => l.hip), ...p.arms.map((a) => a.el), ...p.legs.map((l) => l.knee)];
     for (let i = 0; i < limbs.length; i++) {
       const L = r.limbs[i];
-      limbs[i].rotation.x += L.x * dt; limbs[i].rotation.z += L.z * dt * 0.5;
-      L.x *= r.landed ? 0.9 : 0.995; L.z *= r.landed ? 0.9 : 0.995;
+      const o = limbs[i];
+      o.rotation.x = clamp(o.rotation.x + L.x * dt, -2.4, 2.4); o.rotation.z = clamp(o.rotation.z + L.z * dt * 0.5, -1.2, 1.2);
+      L.x *= r.landed ? 0.9 : 0.99; L.z *= r.landed ? 0.9 : 0.99;
     }
     p.hips.rotation.x = r.rotX;
     p.hips.position.y = 0.95;

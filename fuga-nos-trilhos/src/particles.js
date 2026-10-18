@@ -140,8 +140,8 @@ const RAIN_VERT = /* glsl */`
     p += uCenter - uBox * 0.5;
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     gl_Position = projectionMatrix * mv;
-    gl_PointSize = min(uScale / max(1.0, -mv.z), 42.0);
-    vA = smoothstep(60.0, 8.0, -mv.z) * smoothstep(0.8, 3.0, -mv.z) * 0.55;
+    gl_PointSize = min(uScale / max(1.0, -mv.z), 34.0);
+    vA = smoothstep(45.0, 6.0, -mv.z) * smoothstep(0.8, 2.5, -mv.z) * 0.42;
   }
 `;
 const RAIN_FRAG = /* glsl */`
@@ -149,7 +149,7 @@ const RAIN_FRAG = /* glsl */`
   varying float vA;
   void main() {
     vec4 t = texture2D(uMap, gl_PointCoord);
-    gl_FragColor = vec4(vec3(0.75, 0.8, 0.9), t.a * vA);
+    gl_FragColor = vec4(vec3(0.8, 0.85, 0.95), t.a * vA);
   }
 `;
 export class Rain {
@@ -162,7 +162,7 @@ export class Rain {
     geo.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
     this.mat = new THREE.ShaderMaterial({
       vertexShader: RAIN_VERT, fragmentShader: RAIN_FRAG,
-      uniforms: { uMap: { value: map }, uTime: { value: 0 }, uCenter: { value: new THREE.Vector3() }, uBox: { value: box }, uSpeed: { value: 22 }, uScale: { value: 520 } },
+      uniforms: { uMap: { value: map }, uTime: { value: 0 }, uCenter: { value: new THREE.Vector3() }, uBox: { value: box }, uSpeed: { value: 22 }, uScale: { value: 220 } },
       transparent: true, depthWrite: false, blending: THREE.NormalBlending,
     });
     this.points = new THREE.Points(geo, this.mat);
@@ -179,7 +179,7 @@ export class Rain {
     this.mat.uniforms.uCenter.value.set(center.x, center.y + 4, center.z + 12);
     this.mat.uniforms.uBox.value.z = 50;
     this.mat.uniforms.uSpeed.value = 22;
-    this.mat.uniforms.uScale.value = 520 * amount;
+    this.mat.uniforms.uScale.value = 220 * (0.6 + amount * 0.4);
     // a chuva "inclina" com a velocidade: deslocamos a caixa para frente
     this.mat.uniforms.uCenter.value.z += speed * 0.1;
   }

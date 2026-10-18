@@ -786,11 +786,11 @@ export function spriteSpark(size = 64) {
   ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
   return c;
 }
-export function spriteStreak(w = 16, h = 64) {
+export function spriteStreak(w = 32, h = 128) {
   const c = makeCanvas(w, h), ctx = c.getContext('2d');
   const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.9)'); g.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = g; ctx.fillRect(w * 0.4, 0, w * 0.2, h);
+  g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.45, 'rgba(255,255,255,0.8)'); g.addColorStop(0.7, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g; ctx.fillRect(w * 0.47, 0, w * 0.06, h);
   return c;
 }
 export function spriteSmoke(size = 128, r) {

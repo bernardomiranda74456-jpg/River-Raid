@@ -219,6 +219,8 @@ export async function buildMaterials(preset, onProgress) {
     M.neons = [['NÉON', '#ff2d95'], ['AURORA', '#00e5ff'], ['24h', '#ffd60a'], ['RÁDIO 9', '#7dff5a'], ['TRILHO', '#ff7a00']].map(([t, c]) =>
       new THREE.MeshBasicMaterial({ map: tex(T.neonSign(512, 128, t, c), { srgb: true, wrap: false }), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: new THREE.Color(c).multiplyScalar(2.5), fog: true }));
     M.lampGlow = std({ color: 0xffe9b0, emissive: 0xffd080, emissiveIntensity: 0 });
+    // poça de luz no chão sob postes/luminárias (decal aditivo; opacidade segue a noite)
+    M.lampPool = new THREE.MeshBasicMaterial({ map: null, color: 0xffd9a0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: true });
     M.tunnelLight = std({ color: 0xffffff, emissive: 0xdfe8ff, emissiveIntensity: 0.6 });
     M.cone = std({ color: 0xff6a00, roughness: 0.6, metalness: 0 });
     M.coneStripe = std({ color: 0xf2f2f2, roughness: 0.4, metalness: 0.1 });
@@ -242,11 +244,13 @@ export async function buildMaterials(preset, onProgress) {
     const rr = new RNG(77);
     M.sprites = {
       soft: tex(T.spriteSoft(64), { wrap: false }), spark: tex(T.spriteSpark(64), { wrap: false }),
+      pool: tex(T.spriteSoft(128), { wrap: false }),
       streak: tex(T.spriteStreak(16, 64), { wrap: false }), smoke: tex(T.spriteSmoke(128, rr), { wrap: false }),
       leaf: tex(T.spriteLeaf(32), { wrap: false }), ring: tex(T.spriteRing(64), { wrap: false }), flare: tex(T.spriteFlare(256), { wrap: false }),
     };
     const fab = T.fabricSet(256, 0xffffff);
     M.fabricNormal = tex(fab.normal, { repeat: [2, 2] });
+    M.lampPool.map = M.sprites.pool;
     M.skin = (c) => phys({ color: c, roughness: 0.55, metalness: 0, sheen: 0.3, sheenColor: new THREE.Color(0xffd0b0) });
     M.cloth = (c) => std({ color: c, roughness: 0.85, metalness: 0, normalMap: M.fabricNormal, normalScale: new THREE.Vector2(0.4, 0.4) });
     M.shiny = (c) => phys({ color: c, roughness: 0.3, metalness: 0.1, clearcoat: 0.8 });

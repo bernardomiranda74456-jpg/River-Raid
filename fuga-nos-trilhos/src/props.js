@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { Pool } from './utils.js';
 import { CHUNK_LEN, LANE_W } from './config.js';
-import { mergeGeoms, box, cyl, wallPlane, floorPlane, railGeometry } from './geom.js';
+import { mergeGeoms, mergeByMaterial, box, cyl, wallPlane, floorPlane, railGeometry } from './geom.js';
 import { buildTrain } from './obstacles.js';
 
 const L = CHUNK_LEN;
@@ -28,12 +28,18 @@ function extra(M) {
 export const extraMats = extra;
 
 const sh = (m, cast = true, recv = true) => { m.castShadow = cast; m.receiveShadow = recv; return m; };
+/** Decal de luz no chão (sob um poste/luminária). */
+function lampPool(M, x, y, z, r = 6) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(r * 2, r * 2), M.lampPool);
+  m.rotation.x = -Math.PI / 2; m.position.set(x, y, z); m.userData.keep = true; m.renderOrder = 2;
+  return m;
+}
 
 /* ------------------------------------------------------------ builders */
 export const BUILDERS = {
   wall(M, rng) {
     const g = new THREE.Group();
-    const len = 20, h = 3.7, x = 8.6;
+    const len = 30, h = 3.7, x = 8.6;
     const useGraf = rng.chance(0.75);
     const mat = useGraf ? rng.pick(M.graffiti) : rng.pick([M.brick, M.brickDark, M.concrete]);
     const front = new THREE.Mesh(useGraf ? new THREE.PlaneGeometry(len, h) : wallPlane(len, h, 0.25), mat);
@@ -67,6 +73,7 @@ export const BUILDERS = {
     g.add(sh(new THREE.Mesh(box(0.7, 0.18, 0.35, x - 1.8, 6.95, 0), M.steelDark)));
     g.add(new THREE.Mesh(box(0.6, 0.04, 0.28, x - 1.8, 6.85, 0), M.lampGlow));
     g.userData.lamp = new THREE.Vector3(x - 1.8, 6.6, 0);
+    g.add(lampPool(M, x - 2.2, -0.19, 0, 6.5));
     g.userData.len = 0;
     return g;
   },
@@ -158,7 +165,7 @@ export const BUILDERS = {
     // luminárias penduradas
     const lamps = [];
     g.userData.lamps = [];
-    for (let z = 6; z < L; z += 12) { lamps.push(box(1.6, 0.08, 0.25, 9.3, roofY - 0.45, z)); lamps.push(box(0.04, 0.3, 0.04, 9.3, roofY - 0.28, z)); g.userData.lamps.push(new THREE.Vector3(9.3, roofY - 0.8, z)); }
+    for (let z = 6; z < L; z += 12) { lamps.push(box(1.6, 0.08, 0.25, 9.3, roofY - 0.45, z)); lamps.push(box(0.04, 0.3, 0.04, 9.3, roofY - 0.28, z)); g.userData.lamps.push(new THREE.Vector3(9.3, roofY - 0.8, z)); g.add(lampPool(M, 9.3, top + 0.02, z, 5)); }
     g.add(new THREE.Mesh(mergeGeoms(lamps), M.lampGlow));
     // bancos
     for (let z = 12; z < L; z += 18) {
@@ -235,6 +242,7 @@ export const BUILDERS = {
     const glow = new THREE.Mesh(mergeGeoms([box(0.7, 0.05, 0.3, x - 2.4, h - 1.15, 0.12), box(0.7, 0.05, 0.3, x - 1.2, h - 1.15, 0.12)]), M.lampGlow);
     glow.rotation.x = 0.5; g.add(glow);
     g.userData.lamp = new THREE.Vector3(x - 2, h - 1.5, 1);
+    g.add(lampPool(M, x - 4, -0.19, 2, 9));
     g.userData.len = 0;
     const _ = E;
     return g;
@@ -267,6 +275,7 @@ export const BUILDERS = {
       g.add(new THREE.Mesh(box(0.6, 0.14, 0.3, x - 1.4, 6.3, z), M.steelDark));
       g.add(new THREE.Mesh(box(0.5, 0.03, 0.24, x - 1.4, 6.22, z), M.lampGlow));
       g.userData.lamps.push(new THREE.Vector3(x - 1.4, 6.0, z));
+      g.add(lampPool(M, x - 2.0, -0.19, z, 6));
     }
     g.userData.len = L;
     return g;
@@ -304,7 +313,7 @@ export const BUILDERS = {
     // luminárias no teto
     const lamps = [];
     g.userData.lamps = [];
-    for (let z = 8; z < L; z += 14) { lamps.push(box(0.4, 0.08, 1.8, 0, cy + r - 0.3, z)); g.userData.lamps.push(new THREE.Vector3(0, cy + r - 1.2, z)); }
+    for (let z = 8; z < L; z += 14) { lamps.push(box(0.4, 0.08, 1.8, 0, cy + r - 0.3, z)); g.userData.lamps.push(new THREE.Vector3(0, cy + r - 1.2, z)); g.add(lampPool(M, 0, -0.19, z, 7)); }
     for (let z = 15; z < L; z += 28) for (const s of [-1, 1]) lamps.push(box(0.1, 0.3, 0.9, s * (r - 0.15), 3.5, z));
     g.add(new THREE.Mesh(mergeGeoms(lamps), M.tunnelLight));
     // catenária rígida
@@ -467,17 +476,17 @@ export class PropPools {
     this.scene = scene; this.M = M; this.rng = rng;
     this.pools = {};
     const warm = {
-      wall: 36, lamp: 16, catenary: 20, overpass: 3, tree: 10, trash: 10, floorAsphalt: 9, floorBallast: 6, platform: 8, stationWall: 8,
-      sideTrack: 12, containers: 8, gantry: 8, warehouse: 4, parapet: 12, pillar: 8, deckUnder: 6, tunnelSeg: 7, portal: 2, factory: 4,
-      chimney: 4, pipes: 8, tank: 4, fence: 10, billboard: 6, barrels: 8, signal: 8, vent: 8, wires: 9,
+      wall: 40, lamp: 18, catenary: 18, overpass: 4, tree: 18, trash: 18, floorAsphalt: 9, floorBallast: 6, platform: 8, stationWall: 8,
+      sideTrack: 12, containers: 12, gantry: 12, warehouse: 8, parapet: 12, pillar: 8, deckUnder: 6, tunnelSeg: 8, portal: 3, factory: 10,
+      chimney: 10, pipes: 10, tank: 10, fence: 12, billboard: 10, barrels: 20, signal: 9, vent: 10, wires: 9,
     };
     for (const key of Object.keys(BUILDERS)) {
-      this.pools[key] = new Pool(() => { const g = BUILDERS[key](M, rng); g.visible = false; g.userData.type = key; return g; }, (g) => { g.visible = true; g.rotation.set(0, 0, 0); g.position.set(0, 0, 0); });
+      this.pools[key] = new Pool(() => { const g = mergeByMaterial(BUILDERS[key](M, rng)); g.visible = false; g.userData.type = key; return g; }, (g) => { g.visible = true; g.rotation.set(0, 0, 0); g.position.set(0, 0, 0); });
       this.pools[key].warm(Math.max(1, Math.round(warm[key] * (key === 'tree' || key === 'wall' ? buildingScale : 1))));
     }
     // trens decorativos do pátio
     this.yardTrains = new Pool(() => { const g = buildTrain(M, rng.int(0, M.trainSets.length - 1), rng.int(1, 3), rng.chance(0.5)); g.visible = false; g.userData.type = 'yardTrain'; return g; }, (g) => { g.visible = true; g.rotation.set(0, 0, 0); });
-    this.yardTrains.warm(8);
+    this.yardTrains.warm(10);
   }
   acquire(type) { return type === 'yardTrain' ? this.yardTrains.acquireRandom(this.rng) : this.pools[type].acquireRandom(this.rng); }
   release(g) { g.visible = false; if (g.parent) g.parent.remove(g); if (g.userData.type === 'yardTrain') this.yardTrains.release(g); else this.pools[g.userData.type].release(g); }

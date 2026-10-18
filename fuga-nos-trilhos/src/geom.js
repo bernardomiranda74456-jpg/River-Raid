@@ -102,3 +102,36 @@ export function railGeometry(len) {
   for (let i = 0; i < uv.count; i++) uv.setXY(i, pos.getX(i) * 4 + pos.getY(i) * 4, pos.getZ(i) * 0.5);
   return g;
 }
+
+const _mm = new THREE.Matrix4();
+/**
+ * Mescla, dentro de um Group, todas as malhas estáticas que compartilham o mesmo
+ * material em uma única malha (reduz draw calls). Malhas com múltiplos
+ * materiais, InstancedMesh ou marcadas com userData.keep são preservadas.
+ */
+export function mergeByMaterial(root) {
+  const buckets = new Map();
+  const remove = [];
+  root.updateMatrixWorld(true);
+  root.traverse((o) => {
+    if (!o.isMesh || o.isInstancedMesh || o === root) return;
+    if (Array.isArray(o.material) || o.userData.keep) return;
+    // matriz relativa à raiz
+    _mm.copy(o.matrixWorld);
+    if (root.matrixWorld.determinant() !== 0) _mm.premultiply(new THREE.Matrix4().copy(root.matrixWorld).invert());
+    const g = (o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone()).applyMatrix4(_mm);
+    const key = o.material.uuid;
+    if (!buckets.has(key)) buckets.set(key, { material: o.material, geos: [], cast: false, recv: false });
+    const b = buckets.get(key);
+    b.geos.push(g); b.cast = b.cast || o.castShadow; b.recv = b.recv || o.receiveShadow;
+    remove.push(o);
+  });
+  if (remove.length <= 1) return root;
+  for (const o of remove) o.parent.remove(o);
+  for (const b of buckets.values()) {
+    const m = new THREE.Mesh(b.geos.length === 1 ? b.geos[0] : mergeGeoms(b.geos), b.material);
+    m.castShadow = b.cast; m.receiveShadow = b.recv;
+    root.add(m);
+  }
+  return root;
+}

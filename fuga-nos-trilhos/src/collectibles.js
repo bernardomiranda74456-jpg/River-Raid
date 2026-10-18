@@ -13,53 +13,61 @@ const _hide = new THREE.Matrix4().makeScale(0, 0, 0);
 export const PU = { MAGNET: 'magnet', JETPACK: 'jetpack', SNEAKERS: 'sneakers', MULTIPLIER: 'multiplier', HOVERBOARD: 'hoverboard', KEY: 'key' };
 
 export class Coins {
+  /**
+   * Moedas instanciadas com slots compactos: `mesh.count` é sempre o número de
+   * moedas ativas (instâncias ocultas não custam triângulos). Os índices
+   * entregues ao resto do jogo são ids estáveis; `slotOf` faz a indireção.
+   */
   constructor(scene, M, capacity = 1500) {
     this.capacity = capacity;
-    const geo = mergeGeoms([
-      cyl(0.42, 0.42, 0.09, 24), new THREE.TorusGeometry(0.4, 0.05, 8, 24).rotateX(Math.PI / 2),
-      cyl(0.2, 0.2, 0.11, 6),
-    ]);
+    const geo = mergeGeoms([cyl(0.42, 0.42, 0.1, 18), cyl(0.3, 0.3, 0.13, 12)]);
     geo.rotateX(Math.PI / 2); // deitada no plano XY (face para o jogador), gira em Y no shader
     this.mesh = new THREE.InstancedMesh(geo, M.coin, capacity);
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.mesh.frustumCulled = false;
     this.mesh.castShadow = false;
     scene.add(this.mesh);
-    this.x = new Float32Array(capacity); this.y = new Float32Array(capacity); this.z = new Float32Array(capacity);
+    this.x = new Float32Array(capacity); this.y = new Float32Array(capacity); this.z = new Float32Array(capacity); // por id
     this.active = new Uint8Array(capacity);
+    this.slotOf = new Int32Array(capacity); this.idAt = new Int32Array(capacity);
+    this.count = 0;
     this.free = [];
-    for (let i = capacity - 1; i >= 0; i--) { this.free.push(i); this.mesh.setMatrixAt(i, _hide); }
-    this.mesh.instanceMatrix.needsUpdate = true;
-    this.mesh.count = capacity;
+    for (let i = capacity - 1; i >= 0; i--) this.free.push(i);
+    this.mesh.count = 0;
   }
+  _write(slot, x, y, z) { _m.makeTranslation(x, y, z); this.mesh.setMatrixAt(slot, _m); this.mesh.instanceMatrix.needsUpdate = true; }
   add(x, y, z) {
     if (!this.free.length) return -1;
-    const i = this.free.pop();
-    this.x[i] = x; this.y[i] = y; this.z[i] = z; this.active[i] = 1;
-    _m.makeTranslation(x, y, z);
-    this.mesh.setMatrixAt(i, _m);
-    this.mesh.instanceMatrix.needsUpdate = true;
-    return i;
+    const id = this.free.pop();
+    this.x[id] = x; this.y[id] = y; this.z[id] = z; this.active[id] = 1;
+    const slot = this.count++;
+    this.slotOf[id] = slot; this.idAt[slot] = id;
+    this._write(slot, x, y, z);
+    this.mesh.count = this.count;
+    return id;
   }
-  remove(i) {
-    if (i < 0 || !this.active[i]) return;
-    this.active[i] = 0;
-    this.mesh.setMatrixAt(i, _hide);
-    this.mesh.instanceMatrix.needsUpdate = true;
-    this.free.push(i);
+  remove(id) {
+    if (id < 0 || !this.active[id]) return;
+    this.active[id] = 0;
+    const slot = this.slotOf[id], last = this.count - 1;
+    if (slot !== last) {
+      const lid = this.idAt[last];
+      this.idAt[slot] = lid; this.slotOf[lid] = slot;
+      this._write(slot, this.x[lid], this.y[lid], this.z[lid]);
+    }
+    this.count--; this.mesh.count = this.count;
+    this.free.push(id);
   }
-  move(i, x, y, z) {
-    this.x[i] = x; this.y[i] = y; this.z[i] = z;
-    _m.makeTranslation(x, y, z);
-    this.mesh.setMatrixAt(i, _m);
-    this.mesh.instanceMatrix.needsUpdate = true;
+  move(id, x, y, z) {
+    this.x[id] = x; this.y[id] = y; this.z[id] = z;
+    this._write(this.slotOf[id], x, y, z);
   }
   shift(dz) {
-    for (let i = 0; i < this.capacity; i++) {
-      if (!this.active[i]) continue;
-      this.z[i] += dz;
-      _m.makeTranslation(this.x[i], this.y[i], this.z[i]);
-      this.mesh.setMatrixAt(i, _m);
+    for (let slot = 0; slot < this.count; slot++) {
+      const id = this.idAt[slot];
+      this.z[id] += dz;
+      _m.makeTranslation(this.x[id], this.y[id], this.z[id]);
+      this.mesh.setMatrixAt(slot, _m);
     }
     this.mesh.instanceMatrix.needsUpdate = true;
   }
