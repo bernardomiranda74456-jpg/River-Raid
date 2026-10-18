@@ -544,7 +544,7 @@ export class Track {
       if (c.zone !== 'tunnel' || c.z + CHUNK_LEN < playerZ - 10 || c.z > playerZ + 70) continue;
       for (const seg of c.tunnelLamps) for (const l of seg.userData.lamps) { if (nt < this.tunnelPos.length && Math.abs(l.z + c.z - playerZ - 15) < 40) seg.localToWorld(this.tunnelPos[nt++].copy(l)); }
     }
-    this.env.setTunnelLights(this.tunnelPos, Math.min(nt, 3));
+    this.env.setTunnelLights(this.tunnelPos, Math.min(nt, 2));
     // emissores (fumaça/vapor)
     let ne = 0;
     for (const c of this.chunks) {

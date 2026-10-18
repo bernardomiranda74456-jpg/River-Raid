@@ -114,7 +114,11 @@ export class PostFX {
     this.composer.addPass(this.renderPass);
     this.gtao = null;
     if (preset.ao) {
-      this.gtao = new GTAOPass(scene, camera, w, h);
+      // GTAO em resolução reduzida (aoScale): o passe de normais/profundidade é o mais caro
+      const aoS = preset.aoScale || 0.5;
+      this.gtao = new GTAOPass(scene, camera, Math.floor(w * aoS), Math.floor(h * aoS));
+      const gtaoSetSize = this.gtao.setSize.bind(this.gtao);
+      this.gtao.setSize = (ww, hh) => gtaoSetSize(Math.max(1, Math.floor(ww * aoS)), Math.max(1, Math.floor(hh * aoS)));
       this.gtao.output = GTAOPass.OUTPUT.Default;
       this.gtao.updateGtaoMaterial({ radius: 0.9, distanceExponent: 1.2, thickness: 1.2, scale: 1.0, samples: preset.msaa ? 16 : 12, distanceFallOff: 1, screenSpaceRadius: false });
       this.gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 3, radiusExponent: 1, rings: 2, samples: 8 });
@@ -146,11 +150,10 @@ export class PostFX {
     if (this.smaa) this.smaa.enabled = s.smaa;
   }
   setSize(w, h) {
+    // o composer guarda o próprio pixel ratio: precisa acompanhar o do renderer
+    this.composer.setPixelRatio(this.renderer.getPixelRatio()); // já redimensiona todos os passes
     this.composer.setSize(w, h);
-    const pr = this.renderer.getPixelRatio();
     this.final.uniforms.uAspect.value = w / h;
-    if (this.gtao) this.gtao.setSize(Math.floor(w * pr), Math.floor(h * pr));
-    if (this.smaa) this.smaa.setSize(Math.floor(w * pr), Math.floor(h * pr));
   }
   /** Atualiza uniforms do passe final. */
   update(dt, { speedT, flash, sunScreen, flareAmt, timeOfDayTint, tunnel, night, rain, dead }) {

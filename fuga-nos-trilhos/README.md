@@ -115,6 +115,14 @@ teste de sobrevivência usado no desenvolvimento rodaram 6 sementes por 120 s (�
 | `src/audio.js` | Web Audio: 20 efeitos sintetizados, ambiência (vento, chuva, jato, rumble) e loop musical procedural (bateria, baixo, arpejo com delay, pad; tom e progressão sorteados por corrida; andamento sobe com a velocidade). |
 | `src/input.js`, `src/ui.js`, `src/save.js`, `src/skins.js`, `src/missions.js`, `src/autopilot.js` | Entrada, interface, persistência, skins, missões, piloto automático. |
 
+**Sem travadas de shader**: o número de luzes na cena é fixo (postes, faróis, lanterna e
+luzes de túnel ficam sempre presentes e só mudam de intensidade), porque o Three.js
+recompila todos os shaders quando a quantidade de luzes visíveis muda. A sombra do sol fica
+sempre ativa e apenas deixa de ser re-renderizada à noite. Todos os shaders, incluindo os de
+props guardados nos pools e os do pós-processamento, são compilados na tela de carregamento
+contra o mesmo alvo de renderização usado no jogo; numa corrida noturna de 40 s com chuva
+ocorrem zero compilações.
+
 **Sem alocação no loop**: pools de chunks, props, obstáculos, registros, partículas e
 power-ups são pré-aquecidos no carregamento (todos os shaders são compilados antes do menu);
 vetores temporários são reutilizados; moedas (slots compactos, `mesh.count` = ativas) e
@@ -125,12 +133,12 @@ Alto: ~150–200 k triângulos e ~250–350 objetos por passe (3 passes: sombra,
 
 ## Presets gráficos
 
-| Preset | Pixel ratio | Sombras (PCF Vogel, raio) | GTAO | Bloom | AA | Motion blur / aberração | Partículas |
+| Preset | Pixel ratio máx. | Sombras (PCF Vogel, raio) | GTAO | Bloom | AA | Motion blur / aberração | Partículas |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Baixo | 1 | 1024, raio 1 | não | não | não | não | 35 % |
-| Médio | ≤1.5 | 2048, raio 2 | não | sim | SMAA | blur sim / aberração não | 70 % |
-| Alto | ≤2 | 2048, raio 3 | sim | sim | SMAA | sim | 100 % |
-| Ultra | ≤2 | 4096, raio 4 | sim (16 amostras) | sim | MSAA 4x + SMAA | sim | 140 % |
+| Médio | ≤1.25 | 2048, raio 2 | não | sim | SMAA | blur sim / aberração não | 70 % |
+| Alto | ≤1.5 | 2048, raio 3 | sim (meia resolução) | sim | SMAA | sim | 100 % |
+| Ultra | ≤2 | 4096, raio 4 | sim (75 % da resolução, 16 amostras) | sim | MSAA 4x + SMAA | sim | 140 % |
 
 As sombras usam o `PCFShadowMap` do Three r186 (comparação por hardware com 5 amostras em
 disco de Vogel e ruído por pixel; `PCFSoftShadowMap` foi removido nessa versão), com
@@ -138,8 +146,9 @@ disco de Vogel e ruído por pixel; `PCFSoftShadowMap` foi removido nessa versão
 tremer.
 
 O preset é escolhido pelo nome da GPU (`WEBGL_debug_renderer_info`) e tipo de dispositivo;
-nos primeiros 6 s de corrida, se a média ficar abaixo de 42 fps, o jogo baixa um preset,
-reduz o pixel ratio e desliga o GTAO (e salva a escolha). Cada efeito pode ser ligado ou
+a detecção automática nunca passa do Alto (o Ultra só por escolha manual). Durante o jogo,
+uma **resolução dinâmica** mede o fps a cada 2 s: abaixo de 50 fps reduz o pixel ratio em
+0,25 (até 0,75) e, no mínimo, desliga o GTAO; acima de 58 fps por 6 s volta a subir. Cada efeito pode ser ligado ou
 desligado em Configurações. `?quality=low|medium|high|ultra` força um preset.
 
 Parâmetros de URL úteis: `tod=18.2` (hora), `rain=1`, `speed=28`, `seed=7`, `auto=1`

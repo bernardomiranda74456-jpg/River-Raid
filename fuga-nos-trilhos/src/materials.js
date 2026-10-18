@@ -209,7 +209,7 @@ export async function buildMaterials(preset, onProgress) {
     M.skylineEmissive = tex(sk.emissive, { srgb: true, wrap: true });
     M.signs = {};
     const names = ['Aurora', 'Pátio Norte', 'Vila Catenária', 'Largo do Viaduto', 'Jardim Fumaça', 'Ponte Seca'];
-    M.stationSigns = names.map((n) => new THREE.MeshStandardMaterial({ map: tex(T.stationSign(1024, 192, n), { srgb: true, wrap: false }), roughness: 0.5, metalness: 0.2, emissive: 0xffffff, emissiveMap: null, emissiveIntensity: 0 }));
+    M.stationSigns = names.map((n) => { const t = tex(T.stationSign(1024, 192, n), { srgb: true, wrap: false }); return new THREE.MeshStandardMaterial({ map: t, roughness: 0.5, metalness: 0.2, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 0 }); });
     M.stationNames = names;
     M.warning = std({ map: tex(T.warningSign(512, 256, 'CUIDADO'), { srgb: true, wrap: false }), roughness: 0.6 });
     M.warning2 = std({ map: tex(T.warningSign(512, 256, 'NÃO ULTRAPASSE'), { srgb: true, wrap: false }), roughness: 0.6 });
