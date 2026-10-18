@@ -16,19 +16,19 @@ async function run(ctxOpts, prefix, mobile) {
   page.on('pageerror', (e) => logs.push(`[${prefix} pageerror] ${e.message}`));
   await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'load' });
   await page.waitForFunction(() => window.__game, null, { timeout: 60000 }); await page.waitForTimeout(600);
-  await page.screenshot({ path: path.join(out, `${prefix}-menu.png`) });
-  await page.click('#btn-skins'); await page.waitForTimeout(200); await page.screenshot({ path: path.join(out, `${prefix}-skins.png`) }); await page.click('#btn-skins-back');
-  await page.click('#btn-settings'); await page.waitForTimeout(200); await page.screenshot({ path: path.join(out, `${prefix}-settings.png`) }); await page.click('#btn-settings-back');
+  await page.screenshot({ path: path.join(out, `${prefix}-menu.png`), timeout: 240000 });
+  await page.click('#btn-skins'); await page.waitForTimeout(200); await page.screenshot({ path: path.join(out, `${prefix}-skins.png`), timeout: 240000 }); await page.click('#btn-skins-back');
+  await page.click('#btn-settings'); await page.waitForTimeout(200); await page.screenshot({ path: path.join(out, `${prefix}-settings.png`), timeout: 240000 }); await page.click('#btn-settings-back');
   if (mobile) {
     await page.evaluate(() => { const g = window.__game; g.settings.applyPreset('low'); g.testDt = 1 / 20; g.skipRender = true; });
     await page.click('#btn-play');
     await page.evaluate(() => new Promise((res) => { const g = window.__game; const target = g.frame + 160; const chk = () => (g.frame >= target ? res() : setTimeout(chk, 100)); chk(); }));
     await page.evaluate(() => { const g = window.__game; g.testDt = 0.00001; g.skipRender = false; g.settings.applyPreset('medium'); g.ui.touch.enabled = true; g.ui.showHud(true); });
     await page.evaluate(() => new Promise((res) => { const g = window.__game; const target = g.frame + 3; const chk = () => (g.frame >= target ? res() : setTimeout(chk, 100)); chk(); }));
-    await page.screenshot({ path: path.join(out, `${prefix}-hud.png`) });
+    await page.screenshot({ path: path.join(out, `${prefix}-hud.png`), timeout: 240000 });
   } else {
     await page.evaluate(() => { window.__game.ui.showResults({ won: true, roundReached: 3, podium: [{ name: 'Você', skin: { name: 'Tangerina', colA: '#ff6b35', colB: '#ffd23f', pattern: 1, accent: '#2b2d42', hat: 'cap', eye: '#2d7bd6' } }, { name: 'Pipoca', skin: { colA: '#3fa7ff', colB: '#dff6ff', pattern: 2, accent: '#ffffff', hat: 'headband', eye: '#1b4d8a' } }, { name: 'Bolota', skin: { colA: '#8fd14f', colB: '#2e7d32', pattern: 3, accent: '#ffeb3b', hat: 'antenna', eye: '#5a3d1a' } }], playerRank: 1, eliminatedRound: null }); });
-    await page.waitForTimeout(200); await page.screenshot({ path: path.join(out, `${prefix}-results.png`) });
+    await page.waitForTimeout(200); await page.screenshot({ path: path.join(out, `${prefix}-results.png`), timeout: 240000 });
   }
   await ctx.close();
 }

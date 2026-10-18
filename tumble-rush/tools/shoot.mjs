@@ -25,7 +25,7 @@ const shotHQ = async (name) => {
   await ev(() => { const g = window.__game; g.testDt = 0.00001; g.skipRender = false; g.settings.applyPreset('high'); });
   // wait until frames were actually rendered with the new settings (first one compiles shaders)
   await ev(() => new Promise((res) => { const g = window.__game; const target = g.frame + 3; const chk = () => (g.frame >= target ? res() : setTimeout(chk, 100)); chk(); }));
-  await page.screenshot({ path: path.join(out, `${prefix}-${name}.png`) }); console.log('shot', name);
+  await page.screenshot({ path: path.join(out, `${prefix}-${name}.png`), timeout: 240000 }); console.log('shot', name);
   await ev(() => { const g = window.__game; g.settings.applyPreset('low'); g.testDt = 1 / 20; g.skipRender = true; });
   await page.waitForTimeout(300);
 };

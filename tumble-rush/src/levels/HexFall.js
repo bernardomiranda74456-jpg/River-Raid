@@ -22,7 +22,7 @@ export class HexFall extends LevelBase {
   build() {
     const M = this.M;
     this.env = new Environment({ scene: this.scene, renderer: this.game.renderer, camera: this.game.camera, materials: M, settings: this.settings,
-      preset: { elevation: 34, azimuth: 60, turbidity: 3.5, rayleigh: 2.0, mie: 0.006, mieG: 0.82, fogColor: 0xb9a8ae, fogDensity: 0.0014, sunColor: 0xffe0c0, sunIntensity: 5.2, envIntensity: 0.15, hemi: 0.26, hemiSky: 0xe0d0ff, hemiGround: 0x6a5a6a, exposure: 0.8, groundBounce: 0x8a7a8a } });
+      preset: { elevation: 34, azimuth: 60, turbidity: 1.6, rayleigh: 1.0, mie: 0.003, mieG: 0.78, fogColor: 0x9a94a8, fogDensity: 0.0011, skyScale: 0.32, sunColor: 0xffe0c0, sunIntensity: 5.2, envIntensity: 0.15, hemi: 0.3, hemiSky: 0xd0d8ff, hemiGround: 0x9aa0b0, exposure: 0.72, groundBounce: 0x8a8a9a } });
     // cloud sea below the arena
     const ct = toTexture(cloudSprite(256, 9), { srgb: true, wrap: false }); const cm = new THREE.SpriteMaterial({ map: ct, transparent: true, depthWrite: false, opacity: 0.55, color: 0xa8b4c4, fog: true });
     const sea = new THREE.Group(); for (let i = 0; i < 120; i++) { const s = new THREE.Sprite(cm); const r = 30 + Math.random() * 260; const a = Math.random() * Math.PI * 2; s.position.set(Math.cos(a) * r, -62 - Math.random() * 14, Math.sin(a) * r); const sc = 40 + Math.random() * 60; s.scale.set(sc, sc * 0.45, 1); sea.add(s); } this.deco(sea, false); this.sea = sea;

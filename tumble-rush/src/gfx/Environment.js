@@ -22,6 +22,10 @@ export class Environment {
     const phi = THREE.MathUtils.degToRad(90 - p.elevation), theta = THREE.MathUtils.degToRad(p.azimuth);
     this.sunDir = new THREE.Vector3().setFromSphericalCoords(1, phi, theta);
     u.sunPosition.value.copy(this.sunDir);
+    // the procedural sky is very bright in HDR; scale the visible dome (the PMREM copy keeps its own intensity)
+    sky.material.uniforms.uSkyScale = { value: p.skyScale ?? 0.55 };
+    sky.material.fragmentShader = sky.material.fragmentShader.replace('uniform float mieDirectionalG;', 'uniform float mieDirectionalG; uniform float uSkyScale;').replace('gl_FragColor = vec4( texColor, 1.0 );', 'gl_FragColor = vec4( texColor * uSkyScale, 1.0 );');
+    sky.material.needsUpdate = true;
     this.scene.add(sky);
 
     // --- environment map from sky ---

@@ -17,8 +17,8 @@ const _q = new THREE.Quaternion(), _e = new THREE.Euler();
 
 export class LavaClimb extends LevelBase {
   constructor(game) {
-    super(game); this.name = 'Corrida da Lava'; this.kind = 'race'; this.qualify = 16; this.duration = 150; this.killY = -60;
-    this.lavaStart = -9; this.lavaY = this.lavaStart; this.lavaSpeed = 0.27; this.lavaAccel = 0.0011; this.raceTime = 0; this.racing = false;
+    super(game); this.name = 'Corrida da Lava'; this.kind = 'race'; this.qualify = 16; this.duration = 180; this.killY = -60;
+    this.lavaStart = -9; this.lavaY = this.lavaStart; this.lavaSpeed = 0.24; this.lavaAccel = 0.00095; this.raceTime = 0; this.racing = false;
     this.emberT = 0; this.spawnYaw = Math.PI / 2; this.introCam = { from: new THREE.Vector3(-70, 48, -70), look: new THREE.Vector3(10, 30, 0) };
   }
 
@@ -131,13 +131,14 @@ export class LavaClimb extends LevelBase {
     return { ang, q };
   }
   /** Tall safety fence (posts + bars + invisible wall) along both edges of a walkway span. */
-  _fence(f, x0, x1, y0, y1, width = W, height = 2.2) {
+  _fence(f, x0, x1, y0, y1, width = W, height = 3.6) {
     const L = Math.hypot(x1 - x0, y1 - y0); const ang = Math.atan2(y1 - y0, x1 - x0); const q = f.quat(0, 0, ang); const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
     for (const s of [-1, 1]) {
       const z = s * (width / 2 + 0.12);
       const w = f.v3(cx, cy, z + s * 0.4).add(new THREE.Vector3(0, height / 2, 0).applyQuaternion(q)); this.box([L, height, 0.9], [w.x, w.y, w.z], [0, 0, 0], null, { quat: q, noMesh: true });
-      for (const by of [0.72, 1.32, 1.92]) { const b = f.v3(cx, cy, z).add(new THREE.Vector3(0, by, 0).applyQuaternion(q)); this.box([L, 0.09, 0.09], [b.x, b.y, b.z], [0, 0, 0], this.M.metal, { quat: q, noCollider: true, uv: 0.5 }); }
-      for (let x = x0 + 1; x < x1; x += 3.5) { const yy = y0 + (y1 - y0) * (x - x0) / (x1 - x0); this.box([0.12, height, 0.12], f.pos(x, yy + height / 2, z), f.rot(0, 0, 0), this.M.darkMetal, { noCollider: true, uv: 0.5 }); }
+      for (const by of [0.72, 1.32, 1.92, 2.52]) { const b = f.v3(cx, cy, z).add(new THREE.Vector3(0, by, 0).applyQuaternion(q)); this.box([L, 0.09, 0.09], [b.x, b.y, b.z], [0, 0, 0], this.M.metal, { quat: q, noCollider: true, uv: 0.5 }); }
+      const postH = Math.min(height, 2.7);
+      for (let x = x0 + 1; x < x1; x += 3.5) { const yy = y0 + (y1 - y0) * (x - x0) / (x1 - x0); this.box([0.12, postH, 0.12], f.pos(x, yy + postH / 2, z), f.rot(0, 0, 0), this.M.darkMetal, { noCollider: true, uv: 0.5 }); }
     }
   }
   _wps(f, xs, yFn, flags = {}) { for (const x of xs) this.wp(...f.pos(x, yFn(x) + 0.2, 0), flags); }

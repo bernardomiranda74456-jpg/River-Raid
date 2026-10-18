@@ -38,7 +38,8 @@ void main(){
   vec3 veryHot = vec3(1.0, 0.55, 0.12) * 6.0;
   vec3 crustCol = vec3(0.045, 0.028, 0.024) * (0.6 + 0.8 * fbm(p * 6.0)) + vec3(0.35, 0.06, 0.0) * (1.0 - crust) * 0.35;
   vec3 col = mix(melt, crustCol, crust);
-  col += veryHot * (edge * 0.5 + veins * 0.7) * pulse;
+  float dist0 = length(vWorld - uCam); float nearF = mix(0.25, 1.0, smoothstep(160.0, 30.0, dist0)); // veins sparkle less far away
+  col += veryHot * (edge * 0.5 + veins * 0.7) * pulse * nearF;
   col += vec3(1.0, 0.25, 0.04) * smoothstep(0.2, -0.3, vWave) * 0.15 * (1.0 - crust); // troughs glow
   col *= uIntensity;
   // distance fog

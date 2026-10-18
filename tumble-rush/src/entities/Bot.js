@@ -15,7 +15,7 @@ export class Bot {
   constructor(ch, level, seed) {
     this.ch = ch; this.level = level; this.rnd = mulberry32(seed);
     this.skill = 0.35 + this.rnd() * 0.65;      // 0.35..1
-    this.speedMul = 0.86 + this.skill * 0.14;    // 0.86..1
+    this.speedMul = 0.9 + this.skill * 0.1;      // 0.9..1
     this.wp = 0; this.lateral = (this.rnd() - 0.5) * 4; this.lateralT = 0;
     this.hesitate = 0; this.waiting = 0; this.stuck = 0; this.thinkT = this.rnd() * 0.1; this.mistakeT = 2 + this.rnd() * 6;
     this.dir = new THREE.Vector3(); this.reactDelay = 0.15 + (1 - this.skill) * 0.4;

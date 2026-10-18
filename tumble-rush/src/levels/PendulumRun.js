@@ -19,8 +19,8 @@ export class PendulumRun extends LevelBase {
   build() {
     const M = this.M;
     this.env = new Environment({ scene: this.scene, renderer: this.game.renderer, camera: this.game.camera, materials: M, settings: this.settings,
-      preset: { elevation: 40, azimuth: 140, turbidity: 3, rayleigh: 1.4, mie: 0.004, mieG: 0.8, fogColor: 0xa9c4dc, fogDensity: 0.0021, sunColor: 0xfff4e0, sunIntensity: 5.0, envIntensity: 0.13, hemi: 0.24, hemiSky: 0xbfd8f5, hemiGround: 0x2a5a6a, exposure: 0.72, groundBounce: 0x1f4a5a } });
-    this.water = new Water(this.scene, { y: -16, sunDir: this.env.sunDir, fogColor: 0xa9c4dc, fogDensity: 0.0021, deep: 0x07263a, shallow: 0x146878, sky: 0x8fb8dc }); this.disposables.push(this.water);
+      preset: { elevation: 40, azimuth: 140, turbidity: 3, rayleigh: 1.4, mie: 0.004, mieG: 0.8, fogColor: 0x9fb6cc, fogDensity: 0.0019, sunColor: 0xfff4e0, sunIntensity: 5.0, envIntensity: 0.13, hemi: 0.24, hemiSky: 0xbfd8f5, hemiGround: 0x2a5a6a, exposure: 0.72, groundBounce: 0x1f4a5a, skyScale: 0.38 } });
+    this.water = new Water(this.scene, { y: -16, sunDir: this.env.sunDir, fogColor: 0x9fb6cc, fogDensity: 0.0019, deep: 0x07263a, shallow: 0x146878, sky: 0x8fb8dc }); this.disposables.push(this.water);
     this.paintRed = M.paint('#c8352b'); this.paintBlue = M.paint('#2d6fb3'); this.paintYellow = M.paint('#e8b72a', { edgeDirt: 0.35 }); this.paintGreen = M.paint('#3f9d4a'); this.paintWhite = M.paint('#e9e4dc', { edgeDirt: 0.4 }); this.paintTeal = M.paint('#2a8f8a');
     const f = new Frame(new THREE.Vector3(0, 0, 0), 0); this.f = f;
     // scenery: cliffs and islands

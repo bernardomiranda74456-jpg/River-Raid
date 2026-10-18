@@ -2,7 +2,7 @@
 
 Jogo web 3D de corrida de obstáculos estilo *battle royale* (32 bonecos, 3 rodadas, só um fica de pé), inspirado no gênero de *Fall Guys / Stumble Guys*, construído do zero com **Three.js + Rapier**. Nome, personagens, mapas e todos os assets são originais e gerados proceduralmente — não há nenhum arquivo de textura, modelo ou áudio externo.
 
-![Lobby](screenshots/final-lobby.png)
+![Corrida da Lava](screenshots/03-lava-climb-overview.png)
 
 ## Como rodar
 
@@ -115,6 +115,27 @@ O preset inicial é escolhido pela heurística de GPU (`GPUDetect.js`); cada op�
 ## Testes automatizados
 
 `node tools/shoot.mjs <rodada> <prefixo> [segundos]` abre o jogo no Chromium headless (SwiftShader), roda a simulação com dt fixo (o jogador é dirigido pela IA), tira screenshots em preset Ultra (lobby, meio da corrida, lava subindo, ragdoll) e imprime mensagens de erro/aviso do console. Requer `npm i` (Playwright) e o Chromium do Playwright.
+
+## Screenshots
+
+Capturas feitas pelo harness headless (`tools/shoot.mjs`, preset Alta, SwiftShader) e salvas em `screenshots/`:
+
+| | |
+| --- | --- |
+| ![](screenshots/01-menu.png) Menu com palco 3D ao fundo | ![](screenshots/02-skins.png) Seleção de personagem |
+| ![](screenshots/03-lava-climb-overview.png) Corrida da Lava — plano geral (câmera de abertura) | ![](screenshots/05-lava-climb-race.png) Corrida da Lava — meio da corrida |
+| ![](screenshots/07-lava-climb-lava-rising.png) Lava subindo | ![](screenshots/09-lava-climb-finish.png) Chegada |
+| ![](screenshots/12-pendulum-run-hammers.png) Pista dos Pêndulos | ![](screenshots/13-pendulum-run-slide.png) Escorregador de gosma |
+| ![](screenshots/14-hex-fall-overview.png) Blocos que Somem | ![](screenshots/15-hex-fall-race.png) Blocos caindo |
+| ![](screenshots/10-ragdoll.png) Ragdoll | ![](screenshots/18-mobile-hud.png) Layout mobile (joystick virtual) |
+
+## Passes de polimento gráfico (registro)
+
+1. **Exposição e ambiente** — o céu procedural do Three.js é muito luminoso em HDR; a primeira versão ficou estourada. Solução: `environmentIntensity` ~0,16, sol a 5 lux, exposição ~1,0 e, na terceira passada, um fator de brilho só para o domo visível (`uSkyScale`), que deixou o horizonte legível sem escurecer os materiais.
+2. **Lava** — passou de "amarelo chapado" para crosta escura com canais de magma, borda incandescente e veias finas (duas camadas de fbm com domain warping), com as veias atenuadas à distância para não cintilar.
+3. **Desempenho** — de 1 741 draw calls / 2,3 M triângulos para ~450 / ~0,6 M por quadro com *batching* de geometria estática por material, instancing dos bonecos e tesselação menor nas rochas.
+4. **Composição** — câmera mais alta e afastada, câmera de abertura sobrevoando o mapa no lobby, grades e cercas nas passarelas (também corrigiram mortes em massa por ragdolls lançados), decoração da praça inicial, bloom restrito a emissivos (limiar 2,4).
+5. **Bugs encontrados pelos testes automáticos** — recompilação de shaders ao reconstruir o CSM (chave de programa por instância), tunelamento de ragdolls em paredes finas (paredes de 0,9 m + CCD no tronco), blocos hexagonais armando antes da largada, IA parando em cima de blocos que somem.
 
 ## Licenças
 
