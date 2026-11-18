@@ -1,12 +1,12 @@
 # Ritmo
 
-App mobile (iPhone e Android) para desafios de treino entre amigos: grupo privado, check-in manual com foto, feed por dia, ranking com fatores por modalidade, chat do grupo e convite pelo WhatsApp.
+App para iPhone e iPad (iOS/iPadOS) para desafios de treino entre amigos: grupo privado, check-in manual com foto, feed por dia, ranking com fatores por modalidade, chat do grupo e convite pelo WhatsApp.
 
-- **App:** Expo SDK 58 · React Native 0.88 · TypeScript · Expo Router (código único iOS/Android)
+- **App:** Expo SDK 58 · React Native 0.88 · TypeScript · Expo Router. O código é multiplataforma, mas o projeto está configurado só para iOS/iPadOS (`platforms: ["ios"]`, iPad em tela cheia, retrato).
 - **Backend:** Supabase (Auth por código de e-mail, Postgres com RLS, Storage privado, Realtime)
 - **Pontuação oficial no servidor:** `pontos = round(minutos × fator)` por check-in, tabela de fatores versionada
 
-> Status de execução (18/11/2026): testes SQL (102 asserções) e testes Jest (33) passam; `tsc` e ESLint limpos; bundle iOS/Android gerado com `expo export`. Nada foi executado em simulador nem em aparelho físico neste ambiente (sem Xcode/Android SDK aqui). Veja [O que falta de você](#o-que-falta-de-você).
+> Status de execução (18/11/2026): testes SQL (102 asserções) e testes Jest (33) passam; `tsc` e ESLint limpos; bundle iOS gerado com `expo export`. Nada foi executado em simulador nem em aparelho físico neste ambiente (sem Xcode aqui). Veja [O que falta de você](#o-que-falta-de-você).
 
 ## Sumário
 
@@ -17,7 +17,7 @@ App mobile (iPhone e Android) para desafios de treino entre amigos: grupo privad
 5. [Regras de pontuação](#regras-de-pontuação)
 6. [Segurança e acesso por grupo](#segurança-e-acesso-por-grupo)
 7. [Gerar versões beta (EAS)](#gerar-versões-beta-eas)
-8. [Distribuir o piloto: TestFlight e teste interno do Play](#distribuir-o-piloto-testflight-e-teste-interno-do-play)
+8. [Distribuir o piloto pelo TestFlight](#distribuir-o-piloto-pelo-testflight)
 9. [Roteiro de aceitação](docs/roteiro-aceitacao.md)
 10. [O que falta de você](#o-que-falta-de-você)
 
@@ -50,7 +50,7 @@ ritmo/
 
 ## Rodar localmente
 
-Pré-requisitos: Node 22+, npm, Docker (para o Supabase local) e, para rodar em aparelho, o app **Expo Go** ou um *development build* (veja [EAS](#gerar-versões-beta-eas)).
+Pré-requisitos: Node 22+, npm, Docker (para o Supabase local) e, para rodar no iPhone/iPad, o app **Expo Go** (App Store) ou um *development build* (veja [EAS](#gerar-versões-beta-eas)).
 
 ```bash
 cd ritmo
@@ -65,12 +65,12 @@ cp .env.example .env          # cole a API URL e a publishable key do passo 1
 #   no aparelho físico troque 127.0.0.1 pelo IP da sua máquina na rede local
 
 # 3) App
-npx expo start                # leia o QR code com o Expo Go (iOS/Android)
+npx expo start                # leia o QR code com a câmera do iPhone/iPad (abre no Expo Go)
 ```
 
 Os e-mails de login locais aparecem no **Mailpit** (`http://127.0.0.1:54324`). O template em `supabase/templates/magic_link.html` envia o código de 6 dígitos em vez de link mágico. O seed cria `ana@ritmo.dev` (organizadora), `bruno@ritmo.dev`, `carla@ritmo.dev` no grupo **SUPERA26** e `dani@ritmo.dev` fora do grupo; faça login pelo app com esses e-mails e pegue o código no Mailpit.
 
-> O app funciona no Expo Go para desenvolvimento. Para TestFlight/Play use os builds do EAS.
+> O app funciona no Expo Go para desenvolvimento. Para TestFlight use os builds do EAS.
 
 ## Configurar o backend (Supabase hospedado)
 
@@ -100,7 +100,7 @@ npm run typecheck     # tsc --noEmit
 npm run lint          # eslint (regras do Expo + React Compiler)
 npm test              # Jest: pontuação, ranking/empates, datas no fuso, convite, fatores
 npm run test:db       # testes SQL em um Postgres local (não precisa do stack Supabase)
-npm run export:check  # bundle iOS/Android com Metro, sem Xcode/Android Studio
+npm run export:check  # bundle iOS com Metro, sem Xcode
 ```
 
 `npm run test:db` espera um PostgreSQL acessível (`PGHOST`, `PGUSER`, `PGPASSWORD`; padrão `localhost/postgres/postgres`). Ele cria o banco `ritmo_test`, aplica stubs mínimos dos esquemas `auth`/`storage`, as migrações, o seed e os arquivos `supabase/tests/*.sql`, que impersonam usuários (`set role authenticated` + claims JWT) para exercitar RLS e políticas de fotos. Para rodar os mesmos testes no Supabase local: `npx supabase start && PGPORT=54322 npm run test:db`.
@@ -129,48 +129,36 @@ Casos cobertos (entre outros): 30 min caminhada 5 km/h = 30; 30 min corrida 6:30
 npm install -g eas-cli
 eas login
 eas init                       # cria o projeto no Expo e grava extra.eas.projectId em app.json
-eas build:configure            # confirma o eas.json (já incluído)
 
 # Development build (inclui expo-dev-client; usa o Metro da sua máquina)
-eas build --profile development --platform android     # .apk instalável
-eas build --profile development --platform ios         # precisa de conta Apple Developer (dispositivos registrados)
-eas build --profile development-simulator --platform ios
+npm run build:dev              # para iPhone/iPad registrados (conta Apple Developer)
+npm run build:sim              # para o Simulador do Xcode
 
-# Preview interno (sem lojas): APK e, no iOS, distribuição ad hoc
-eas build --profile preview --platform all
+# Preview interno (ad hoc, sem App Store): instala em até 100 aparelhos registrados
+npm run build:preview
 
-# Produção (lojas): .aab e .ipa, versão incrementada automaticamente
-eas build --profile production --platform all
+# Produção (TestFlight / App Store), versão incrementada automaticamente
+npm run build:prod
 ```
 
 Variáveis: os builds leem `EXPO_PUBLIC_*` das variáveis do EAS por ambiente (`eas env:create`, passo 6 do backend). Para builds locais, `.env` basta.
 
-Identificadores já definidos: `com.ritmo.app` (iOS `bundleIdentifier` e Android `package`), esquema `ritmo://`. Troque se quiser outro domínio.
+Identificador já definido: `com.ritmo.app` (`bundleIdentifier`), esquema `ritmo://`. Troque se quiser outro.
 
-## Distribuir o piloto: TestFlight e teste interno do Play
-
-### iPhone (TestFlight)
+## Distribuir o piloto pelo TestFlight
 
 1. Conta no [Apple Developer Program](https://developer.apple.com/programs) (US$ 99/ano).
-2. `eas build --profile production --platform ios` (o EAS cria certificado e perfil de provisionamento; faça login com seu Apple ID quando pedir).
+2. `npm run build:prod` (o EAS cria certificado e perfil de provisionamento; faça login com seu Apple ID quando pedir).
 3. `eas submit --platform ios` → cria/seleciona o app no App Store Connect e envia o build. Preencha `submit.production.ios.ascAppId` no `eas.json` com o *Apple ID* do app (App Store Connect → App Information) para os próximos envios.
 4. No App Store Connect → TestFlight: aguarde o processamento (10–15 min), responda o questionário de criptografia (já marcado `ITSAppUsesNonExemptEncryption=false`), crie um grupo de testadores **externos** (até 10.000 pessoas, só e-mail; a primeira versão passa por uma revisão leve) ou **internos** (até 100, membros da equipe), e ative o **link público** do TestFlight.
-5. Cole o link público em `EXPO_PUBLIC_TESTFLIGHT_URL`; ele passa a sair na mensagem de convite do WhatsApp.
-
-### Android (teste interno do Google Play)
-
-1. Conta no [Google Play Console](https://play.google.com/console) (US$ 25 uma vez). Crie o app **Ritmo** (pacote `com.ritmo.app`).
-2. Crie uma *service account* com acesso ao app e envie a chave JSON ao EAS (`eas credentials --platform android` → *Google Service Account*), conforme [docs.expo.dev/submit/android](https://docs.expo.dev/submit/android/).
-3. `eas build --profile production --platform android` (gera `.aab`, keystore gerenciada pelo EAS).
-4. `eas submit --platform android` envia para a faixa **internal** (`eas.json` já aponta `track: internal`).
-5. No Play Console → *Testes → Teste interno*: adicione os e-mails dos testadores (até 100) e copie o **link de participação**. Cole em `EXPO_PUBLIC_PLAY_URL`.
-6. O primeiro envio fica em rascunho até você completar a ficha da loja e as declarações (política de privacidade, segurança de dados); o teste interno não exige revisão completa.
+5. Cole o link público em `EXPO_PUBLIC_TESTFLIGHT_URL` (variável do EAS); ele passa a sair na mensagem de convite do WhatsApp.
+6. O mesmo build serve para iPhone e iPad: o app é universal, roda em tela cheia no iPad, em retrato.
 
 ### Links de convite
 
 - O código de 8 caracteres sempre funciona: *Entrar com código*. O app também lê um código ou link copiado da área de transferência.
 - `ritmo://join/CODIGO` abre o app quando instalado (links de esquema não são clicáveis no WhatsApp; o código está na mensagem).
-- Para links `https://seu-dominio/join/CODIGO` clicáveis que abrem o app, configure `EXPO_PUBLIC_INVITE_BASE_URL`, troque `ritmo.example.com` em `app.json` (`associatedDomains` e `intentFilters`) pelo seu domínio e hospede os arquivos `apple-app-site-association` e `.well-known/assetlinks.json` nesse domínio. Pendente de um domínio seu.
+- Para links `https://seu-dominio/join/CODIGO` clicáveis que abrem o app, configure `EXPO_PUBLIC_INVITE_BASE_URL`, troque `ritmo.example.com` em `app.json` (`associatedDomains`) pelo seu domínio e hospede o arquivo `apple-app-site-association` nesse domínio. Pendente de um domínio seu.
 
 ## O que falta de você
 
@@ -180,12 +168,11 @@ Identificadores já definidos: `com.ritmo.app` (iOS `bundleIdentifier` e Android
 | SMTP personalizado no Supabase | o e-mail padrão não entrega código para amigos | Auth → SMTP |
 | Template *Magic Link* com `{{ .Token }}` | login por código de 6 dígitos | Auth → Email Templates |
 | Conta Expo + `eas init` | builds em nuvem; grava `projectId` em `app.json` | `eas init` |
-| Apple Developer Program | TestFlight | `eas build/submit --platform ios` |
-| Google Play Console + service account | teste interno | `eas build/submit --platform android` |
-| Links do TestFlight/Play e domínio (opcional) | mensagem de convite completa e links https | `.env` / variáveis do EAS |
+| Apple Developer Program | TestFlight e builds para aparelho | `npm run build:prod` / `npm run submit:ios` |
+| Link do TestFlight e domínio (opcional) | mensagem de convite completa e links https | variáveis do EAS |
 
 ## Fechamento desta entrega
 
-- **Executado neste ambiente:** migrações + seed + 102 asserções SQL (PostgreSQL 16 local com stubs de `auth`/`storage`), 33 testes Jest, `tsc`, ESLint, `expo export` (bundle iOS e Android).
-- **Não executado aqui:** simulador iOS/Android e aparelho físico (sem Xcode/Android SDK neste container; o Supabase local via Docker também não pôde ser iniciado por bloqueio de rede). O [roteiro de aceitação](docs/roteiro-aceitacao.md) descreve o que validar em um iPhone e um Android com três contas.
-- **Depende de distribuição:** TestFlight, teste interno do Play, SMTP e domínio de links (tabela acima).
+- **Executado neste ambiente:** migrações + seed + 102 asserções SQL (PostgreSQL 16 local com stubs de `auth`/`storage`), 33 testes Jest, `tsc`, ESLint, `expo export` (bundle iOS).
+- **Não executado aqui:** Simulador e iPhone/iPad físicos (sem Xcode neste container; o Supabase local via Docker também não pôde ser iniciado por bloqueio de rede). O [roteiro de aceitação](docs/roteiro-aceitacao.md) descreve o que validar em um iPad e um iPhone com três contas.
+- **Depende de distribuição:** TestFlight, SMTP e domínio de links (tabela acima).

@@ -1,6 +1,6 @@
 # Ritmo — notas para agentes e pessoas
 
-App Expo (SDK 58, Expo Router, rotas em `src/app`) + Supabase. Leia o `README.md` antes de mudar o backend.
+App Expo (SDK 58, Expo Router, rotas em `src/app`) + Supabase. Projeto configurado só para iOS/iPadOS (`platforms` em `app.json`). Leia o `README.md` antes de mudar o backend.
 
 Regras do projeto:
 - Interface em português do Brasil. Identidade: azul-petróleo (`Brand.petrol`) + verde-lima (`Brand.lime`) em `src/constants/theme.ts`.

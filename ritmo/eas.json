@@ -8,17 +8,19 @@
       "developmentClient": true,
       "distribution": "internal",
       "channel": "development",
-      "ios": { "simulator": false },
-      "android": { "buildType": "apk" }
+      "ios": {
+        "simulator": false
+      }
     },
     "development-simulator": {
       "extends": "development",
-      "ios": { "simulator": true }
+      "ios": {
+        "simulator": true
+      }
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview",
-      "android": { "buildType": "apk" }
+      "channel": "preview"
     },
     "production": {
       "distribution": "store",
@@ -30,10 +32,6 @@
     "production": {
       "ios": {
         "ascAppId": "SUBSTITUA-PELO-APPLE-ID-DO-APP"
-      },
-      "android": {
-        "track": "internal",
-        "releaseStatus": "completed"
       }
     }
   }
