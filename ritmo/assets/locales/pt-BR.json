@@ -1,0 +1,5 @@
+{
+  "CFBundleDisplayName": "Ritmo",
+  "NSCameraUsageDescription": "O Ritmo usa a câmera para tirar a foto do seu treino.",
+  "NSPhotoLibraryUsageDescription": "O Ritmo usa suas fotos para anexar uma imagem ao seu treino."
+}

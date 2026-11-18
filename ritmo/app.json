@@ -1,0 +1,77 @@
+{
+  "expo": {
+    "name": "Ritmo",
+    "slug": "ritmo",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "ritmo",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.ritmo.app",
+      "supportsTablet": false,
+      "icon": "./assets/expo.icon",
+      "infoPlist": {
+        "CFBundleDisplayName": "Ritmo",
+        "CFBundleDevelopmentRegion": "pt-BR",
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": ["whatsapp"]
+      },
+      "associatedDomains": ["applinks:ritmo.example.com"]
+    },
+    "android": {
+      "package": "com.ritmo.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F4C5C",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [{ "scheme": "https", "host": "ritmo.example.com", "pathPrefix": "/join" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "locales": {
+      "pt-BR": "./assets/locales/pt-BR.json"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0F4C5C",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 96
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O Ritmo usa suas fotos para anexar uma imagem ao seu treino.",
+          "cameraPermission": "O Ritmo usa a câmera para tirar a foto do seu treino."
+        }
+      ],
+      "expo-dev-client"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "SUBSTITUA-PELO-ID-DO-EAS-INIT"
+      }
+    }
+  }
+}
