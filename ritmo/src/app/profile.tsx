@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Banner, Button, Input, Screen, Txt } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { profilesApi, toApiError } from '@/lib/api';
+import { clearWebConfig, env } from '@/lib/env';
 import { useAuth } from '@/providers/auth';
 
 export default function ProfileScreen() {
@@ -35,6 +36,9 @@ export default function ProfileScreen() {
       {error ? <Banner message={error} onRetry={save} /> : null}
       <Button title="Salvar" onPress={save} disabled={name.trim().length < 1} loading={busy} />
       <Button title="Sair da conta" variant="outline" icon="log-out-outline" onPress={async () => { await signOut(); router.replace('/(auth)/login'); }} />
+      {env.canConfigureAtRuntime && !env.fromBuild ? (
+        <Button title="Trocar o projeto Supabase" variant="ghost" icon="server-outline" onPress={async () => { await signOut(); clearWebConfig(); }} />
+      ) : null}
     </Screen>
   );
 }

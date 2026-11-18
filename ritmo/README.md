@@ -10,6 +10,7 @@ App para iPhone e iPad (iOS/iPadOS) para desafios de treino entre amigos: grupo 
 
 ## Sumário
 
+0. [Testar só com o iPad (sem Mac)](#testar-só-com-o-ipad-sem-mac)
 1. [Estrutura](#estrutura)
 2. [Rodar localmente](#rodar-localmente)
 3. [Configurar o backend (Supabase hospedado)](#configurar-o-backend-supabase-hospedado)
@@ -20,6 +21,30 @@ App para iPhone e iPad (iOS/iPadOS) para desafios de treino entre amigos: grupo 
 8. [Distribuir o piloto pelo TestFlight](#distribuir-o-piloto-pelo-testflight)
 9. [Roteiro de aceitação](docs/roteiro-aceitacao.md)
 10. [O que falta de você](#o-que-falta-de-você)
+
+## Testar só com o iPad (sem Mac)
+
+O mesmo código roda no Safari como *web app*. Não substitui o build nativo do TestFlight, mas permite usar o Ritmo de verdade, com fotos, convites, ranking e chat, sem Xcode e sem conta de desenvolvedor. Tudo abaixo é feito no navegador do iPad.
+
+**1. Backend (10 min, grátis)**
+
+1. Crie uma conta em [supabase.com](https://supabase.com) e um projeto (região *South America (São Paulo)*).
+2. *SQL Editor → New query*: cole o conteúdo de [`supabase/ritmo-setup.sql`](supabase/ritmo-setup.sql) e toque em **Run**. Isso cria tabelas, regras de acesso, a tabela de fatores e o bucket privado de fotos.
+3. *Authentication → Emails → Templates → Magic Link*: troque o corpo pelo conteúdo de [`supabase/templates/magic_link.html`](supabase/templates/magic_link.html) (assunto: “Seu código de acesso ao Ritmo”). Sem isso o e-mail traz um link em vez do código.
+4. *Project Settings → API Keys*: anote a **Project URL** e a **publishable key**.
+5. Para convidar amigos: *Project Settings → Auth → SMTP Settings* com um provedor grátis (Resend, Brevo). O remetente padrão do Supabase só entrega para o e-mail da sua própria conta e poucas vezes por hora, o que basta para você testar sozinho.
+
+**2. Abrir o app no iPad**
+
+- Pela publicação no GitHub Pages: em *Settings → Pages → Source* escolha **GitHub Actions** uma vez; o workflow `ritmo-web.yml` publica a cada push em `https://<seu-usuario>.github.io/River-Raid/ritmo/`. Se o deploy for recusado por regra de ambiente, em *Settings → Environments → github-pages* adicione a branch `claude/ritmo-workout-challenge-app-azzfd4`. Opcional: em *Settings → Secrets and variables → Actions → Variables* crie `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` para o app já abrir conectado.
+- Ou por qualquer hospedagem estática: `./scripts/build-web.sh` gera `dist/` (use `./scripts/build-web.sh /subcaminho` se o site não ficar na raiz).
+- Na primeira abertura o app pede a Project URL e a publishable key (ficam salvas só nesse navegador). Depois, no Safari, toque em **Compartilhar → Adicionar à Tela de Início**: o Ritmo abre em tela cheia como um app. Os amigos fazem o mesmo com o link.
+
+Limites da versão web: sem notificações; a foto vem da câmera ou da galeria pelo seletor do Safari; o link `ritmo://` não se aplica (use o código do grupo ou o link https do site, que já abre o app web).
+
+**3. TestFlight sem Mac**
+
+O EAS constrói na nuvem a partir do GitHub, então dá para fazer pelo iPad: crie uma conta em [expo.dev](https://expo.dev), crie um projeto **ritmo**, copie o *Project ID* para `extra.eas.projectId` em `app.json` (edição direta no GitHub), em *Project → GitHub* conecte este repositório com *base directory* `ritmo`, e em *Builds → Build from GitHub* escolha a branch, plataforma iOS e perfil `production`. O envio ao TestFlight (`submit`) precisa de uma conta Apple Developer (US$ 99/ano) e de uma *App Store Connect API Key* cadastrada em *Credentials* no expo.dev; com isso o workflow `.eas/workflows` ou o botão *Submit* no site fazem o resto.
 
 ## Estrutura
 
@@ -44,7 +69,10 @@ ritmo/
 │   ├── templates/magic_link.html# e-mail com o código OTP
 │   ├── tests/                   # testes SQL (pontuação, idempotência, RLS, fotos)
 │   └── config.toml              # Supabase local
+├── supabase/ritmo-setup.sql     # todas as migrações em um arquivo, para o SQL Editor
 ├── scripts/db-test.sh           # roda os testes SQL em um Postgres local
+├── scripts/build-web.sh         # versão web (Safari/iPad) em dist/
+├── scripts/serve-web.js         # serve dist/ localmente
 └── docs/roteiro-aceitacao.md
 ```
 

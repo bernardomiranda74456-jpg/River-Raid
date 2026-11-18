@@ -60,7 +60,7 @@ export default function LoginScreen() {
         </View>
 
         {!env.isConfigured ? (
-          <Banner kind="info" message="Backend não configurado. Defina EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY no .env." />
+          <Banner kind="info" message="Backend não configurado. Defina EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY no .env (ou nas variáveis do EAS)." />
         ) : null}
 
         <View style={{ gap: Spacing.three }}>

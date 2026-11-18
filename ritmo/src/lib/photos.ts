@@ -4,6 +4,7 @@
  */
 import { File } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
+import { Platform } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 import { toApiError } from '@/lib/api';
@@ -13,11 +14,8 @@ export const PHOTO_BUCKET = 'workout-photos';
 export type PickedPhoto = { uri: string; width: number; height: number; mimeType: string };
 
 async function pick(source: 'camera' | 'library'): Promise<PickedPhoto | null> {
-  if (source === 'camera') {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) return null;
-  } else {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (Platform.OS !== 'web') {
+    const perm = source === 'camera' ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) return null;
   }
   const opts: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.7, allowsEditing: false, exif: false };
@@ -36,7 +34,7 @@ export const photos = {
   /** Idempotente: o mesmo caminho é sobrescrito em reenvios (upsert). */
   upload: async (path: string, photo: PickedPhoto): Promise<string> => {
     try {
-      const bytes = await new File(photo.uri).arrayBuffer();
+      const bytes = Platform.OS === 'web' ? await (await fetch(photo.uri)).arrayBuffer() : await new File(photo.uri).arrayBuffer();
       const { error } = await supabase.storage
         .from(PHOTO_BUCKET)
         .upload(path, bytes, { contentType: photo.mimeType || 'image/jpeg', upsert: true });

@@ -62,7 +62,8 @@
       }
     },
     "platforms": [
-      "ios"
+      "ios",
+      "web"
     ]
   }
 }

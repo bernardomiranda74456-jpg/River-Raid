@@ -6,13 +6,22 @@ import { useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { WebConfigScreen } from '@/components/web-config';
 import { Colors } from '@/constants/theme';
+import { env } from '@/lib/env';
 import { AuthProvider, useAuth } from '@/providers/auth';
 import { GroupProvider, useGroup } from '@/providers/group';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
+  if (!env.isConfigured && env.canConfigureAtRuntime) {
+    return (
+      <SafeAreaProvider>
+        <WebConfigScreen />
+      </SafeAreaProvider>
+    );
+  }
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
