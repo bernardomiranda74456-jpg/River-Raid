@@ -8,7 +8,7 @@ import { Banner, Button, Input, Screen, Txt } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { toApiError } from '@/lib/api';
-import { env } from '@/lib/env';
+import { env, webAppUrl } from '@/lib/env';
 import { localStore } from '@/lib/storage-keys';
 import { supabase } from '@/lib/supabase';
 
@@ -34,7 +34,7 @@ export default function LoginScreen() {
       const cleanEmail = email.trim().toLowerCase();
       const { error: err } = await supabase.auth.signInWithOtp({
         email: cleanEmail,
-        options: { shouldCreateUser: true, data: { display_name: name.trim() } },
+        options: { shouldCreateUser: true, data: { display_name: name.trim() }, emailRedirectTo: webAppUrl() },
       });
       if (err) throw err;
       await localStore.setLastEmail(cleanEmail);
@@ -55,7 +55,7 @@ export default function LoginScreen() {
           </View>
           <Txt variant="display">Ritmo</Txt>
           <Txt variant="body" color={theme.textSecondary}>
-            Desafios de treino entre amigos. Entre com seu e-mail: enviamos um código de 6 dígitos, sem senha.
+            Desafios de treino entre amigos. Entre com seu e-mail: enviamos um código de acesso, sem senha.
           </Txt>
         </View>
 
@@ -80,7 +80,7 @@ export default function LoginScreen() {
 
         {error ? <Banner message={error} onRetry={valid ? sendCode : undefined} /> : null}
 
-        <Button title="Receber código por e-mail" icon="mail" onPress={sendCode} disabled={!valid} loading={sending} />
+        <Button title="Receber acesso por e-mail" icon="mail" onPress={sendCode} disabled={!valid} loading={sending} />
         <Txt variant="caption" style={{ textAlign: 'center' }}>
           O nome aparece no feed e no ranking. Você pode mudar depois.
         </Txt>

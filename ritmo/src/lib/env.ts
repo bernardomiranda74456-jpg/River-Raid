@@ -37,6 +37,12 @@ export const env = {
   canConfigureAtRuntime: Platform.OS === 'web',
 };
 
+/** Endereço do app web, usado como destino do link de login enviado por e-mail. */
+export function webAppUrl(): string | undefined {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return undefined;
+  return `${window.location.origin}${process.env.EXPO_BASE_URL ?? ''}/`;
+}
+
 /** Salva a configuração no navegador e recarrega a página para recriar o cliente. */
 export function saveWebConfig(supabaseUrl: string, key: string) {
   if (Platform.OS !== 'web') return;

@@ -12,7 +12,8 @@ export const supabase = createClient(
       storage: Platform.OS === 'web' ? undefined : AsyncStorage,
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: false,
+      // No navegador, o link do e-mail volta com a sessão na URL (login por link, sem SMTP próprio).
+      detectSessionInUrl: Platform.OS === 'web',
     },
   },
 );

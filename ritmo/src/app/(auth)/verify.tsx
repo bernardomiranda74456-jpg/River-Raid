@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { Banner, Button, Input, Screen, Txt } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { toApiError } from '@/lib/api';
+import { webAppUrl } from '@/lib/env';
 import { supabase } from '@/lib/supabase';
 
 export default function VerifyScreen() {
@@ -34,7 +35,7 @@ export default function VerifyScreen() {
     setError(null);
     setResent(false);
     try {
-      const { error: err } = await supabase.auth.signInWithOtp({ email: email!, options: { shouldCreateUser: true, data: { display_name: name } } });
+      const { error: err } = await supabase.auth.signInWithOtp({ email: email!, options: { shouldCreateUser: true, data: { display_name: name }, emailRedirectTo: webAppUrl() } });
       if (err) throw err;
       setResent(true);
     } catch (err) {
@@ -47,7 +48,7 @@ export default function VerifyScreen() {
       <Screen keyboard contentStyle={{ gap: Spacing.four }}>
         <View style={{ gap: Spacing.one }}>
           <Txt variant="title">Digite o código</Txt>
-          <Txt variant="caption">Enviamos 6 dígitos para {email}. Confira também a caixa de spam.</Txt>
+          <Txt variant="caption">Enviamos um e-mail para {email}. Digite o código de 6 dígitos ou, se o e-mail trouxer só um link, toque nele neste mesmo navegador. Confira também a caixa de spam.</Txt>
         </View>
         <Input
           value={code}
