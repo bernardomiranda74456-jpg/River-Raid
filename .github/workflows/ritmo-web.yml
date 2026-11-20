@@ -29,10 +29,11 @@ jobs:
       - run: npm ci
       - name: Exportar versão web
         env:
-          # Opcional: defina estas variáveis em Settings → Secrets and variables → Actions → Variables.
-          # Sem elas, o app pede a URL e a publishable key na primeira abertura.
-          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
-          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          # Valores públicos do projeto Supabase do piloto (a publishable key pode ir no bundle;
+          # a proteção vem das políticas RLS). Variáveis do repositório têm precedência.
+          # A secret key nunca entra aqui.
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL || 'https://bjlwoymchcanhaejplgw.supabase.co' }}
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_5GunsQNSu2g6r-zBP9C1MQ_RnYpyoAi' }}
           EXPO_PUBLIC_TESTFLIGHT_URL: ${{ vars.EXPO_PUBLIC_TESTFLIGHT_URL }}
         run: ./scripts/build-web.sh "/${{ github.event.repository.name }}/ritmo"
       - name: Montar site (a raiz continua com os jogos do repositório)
