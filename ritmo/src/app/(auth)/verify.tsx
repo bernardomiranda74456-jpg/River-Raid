@@ -48,7 +48,7 @@ export default function VerifyScreen() {
       <Screen keyboard contentStyle={{ gap: Spacing.four }}>
         <View style={{ gap: Spacing.one }}>
           <Txt variant="title">Digite o código</Txt>
-          <Txt variant="caption">Enviamos um e-mail para {email}. Digite o código de 6 dígitos ou, se o e-mail trouxer só um link, toque nele neste mesmo navegador. Confira também a caixa de spam.</Txt>
+          <Txt variant="caption">Enviamos um código de 6 dígitos para {email}. Confira também a caixa de spam.</Txt>
         </View>
         <Input
           value={code}

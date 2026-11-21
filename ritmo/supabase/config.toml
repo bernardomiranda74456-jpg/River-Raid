@@ -260,8 +260,13 @@ otp_expiry = 3600
 # Ritmo: login por código de 6 dígitos (OTP) em vez de link mágico.
 # No projeto hospedado, copie o mesmo HTML em Authentication > Email Templates > Magic Link.
 [auth.email.template.magic_link]
-subject = "Seu código de acesso ao Ritmo"
+subject = "Seu código para entrar no Ritmo"
 content_path = "./supabase/templates/magic_link.html"
+
+# Primeiro acesso de cada pessoa usa o modelo de confirmação; mesmo texto, com o código.
+[auth.email.template.confirmation]
+subject = "Seu código para entrar no Ritmo"
+content_path = "./supabase/templates/confirmation.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
